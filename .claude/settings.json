@@ -1,0 +1,11 @@
+{
+  "enabledPlugins": {
+    "productivity-skills@mhattingpete-claude-skills": true,
+    "code-operations-skills@mhattingpete-claude-skills": true,
+    "supabase@claude-plugins-official": false,
+    "context7@claude-plugins-official": true,
+    "gitlab@claude-plugins-official": false,
+    "engineering-workflow-skills@mhattingpete-claude-skills": true,
+    "code-review@claude-plugins-official": true
+  }
+}

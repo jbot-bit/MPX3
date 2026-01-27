@@ -1,0 +1,41 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls:*)",
+      "Bash(wc:*)",
+      "Bash(sort:*)",
+      "Bash(done)",
+      "Bash(python:*)",
+      "Bash(robocopy:*)",
+      "Bash(xargs:*)",
+      "Bash(claude config list:*)",
+      "Bash(claude mcp list:*)",
+      "Bash(claude skills list:*)",
+      "Bash(claude mcp disable:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(gh pr create:*)",
+      "Bash(gh pr view:*)",
+      "Bash(grep:*)",
+      "Bash(find:*)",
+      "Bash(tail:*)",
+      "Bash(head:*)",
+      "Bash(duckdb:*)",
+      "Bash(pytest:*)",
+      "Bash(mkdir:*)",
+      "Bash(mv:*)",
+      "Bash(cp:*)",
+      "Bash(rm:*)",
+      "Bash(*backfill*:*)",
+      "Bash(*build_daily_features*:*)",
+      "Bash(*test_app_sync*:*)",
+      "Bash(*check_db*:*)",
+      "Bash(*execution_engine*:*)",
+      "Bash(git init:*)"
+    ]
+  }
+}
