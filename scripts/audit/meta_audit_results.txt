@@ -1,0 +1,218 @@
+================================================================================
+META-AUDIT: Auditing the Audit Process
+================================================================================
+
+Following audit.txt: Assume some tests may have been WRONG for the strategy.
+
+PHASE 1: DISCOVER STRATEGY CONTRACTS
+================================================================================
+
+STRATEGY ID 20: 1000 RR=1.5 L4_CONSOLIDATION
+--------------------------------------------------------------------------------
+  Entry Trigger: 1000 ORB break + L4_CONSOLIDATION filter
+  Stop Logic: Opposite side of 1000 ORB range
+  Target Logic: 1.5R target (stop distance × 1.5)
+  Scan Window: 10:05-17:00 local (Asia session)
+  Time Horizon: Intraday (London session 18:00-23:00 local)
+  Regime Dependency: Requires London L4 < 2.0 (consolidation)
+  Cost Model: $2.50 costs (OLD - likely wrong)
+
+STRATEGY ID 21: 1000 RR=2.0 L4_CONSOLIDATION
+--------------------------------------------------------------------------------
+  Entry Trigger: 1000 ORB break + L4_CONSOLIDATION filter
+  Stop Logic: Opposite side of 1000 ORB range
+  Target Logic: 2.0R target (stop distance × 2.0)
+  Scan Window: 10:05-17:00 local (Asia session)
+  Time Horizon: Intraday (London session 18:00-23:00 local)
+  Regime Dependency: Requires London L4 < 2.0 (consolidation)
+  Cost Model: $2.50 costs (OLD - likely wrong)
+
+STRATEGY ID 22: 1000 RR=2.5 L4_CONSOLIDATION
+--------------------------------------------------------------------------------
+  Entry Trigger: 1000 ORB break + L4_CONSOLIDATION filter
+  Stop Logic: Opposite side of 1000 ORB range
+  Target Logic: 2.5R target (stop distance × 2.5)
+  Scan Window: 10:05-17:00 local (Asia session)
+  Time Horizon: Intraday (London session 18:00-23:00 local)
+  Regime Dependency: Requires London L4 < 2.0 (consolidation)
+  Cost Model: $2.50 costs (OLD - likely wrong)
+
+STRATEGY ID 23: 1000 RR=3.0 L4_CONSOLIDATION
+--------------------------------------------------------------------------------
+  Entry Trigger: 1000 ORB break + L4_CONSOLIDATION filter
+  Stop Logic: Opposite side of 1000 ORB range
+  Target Logic: 3.0R target (stop distance × 3.0)
+  Scan Window: 10:05-17:00 local (Asia session)
+  Time Horizon: Intraday (London session 18:00-23:00 local)
+  Regime Dependency: Requires London L4 < 2.0 (consolidation)
+  Cost Model: $2.50 costs (OLD - likely wrong)
+
+STRATEGY ID 24: 1800 RR=1.5 RSI
+--------------------------------------------------------------------------------
+  Entry Trigger: 1800 ORB break + RSI > 70
+  Stop Logic: Opposite side of 1800 ORB range
+  Target Logic: 1.5R target (stop distance × 1.5)
+  Scan Window: 18:05-23:00 local (London session)
+  Time Horizon: Intraday (NY open 23:00 local)
+  Regime Dependency: Requires overbought condition
+  Cost Model: $2.50 costs (OLD - likely wrong)
+
+STRATEGY ID 25: 0900 RR=1.5 L4_CONSOLIDATION
+--------------------------------------------------------------------------------
+  Entry Trigger: 0900 ORB break + L4_CONSOLIDATION filter
+  Stop Logic: Opposite side of 0900 ORB range
+  Target Logic: 1.5R target (stop distance × 1.5)
+  Scan Window: 09:05-17:00 local (Asia session)
+  Time Horizon: Intraday (London session 18:00-23:00 local)
+  Regime Dependency: Requires London L4 < 2.0 (consolidation)
+  Cost Model: $2.50 costs (OLD - likely wrong)
+
+STRATEGY ID 26: 1100 RR=1.5 BOTH_LOST
+--------------------------------------------------------------------------------
+  Entry Trigger: 1100 ORB break ONLY IF 0900 AND 1000 both lost
+  Stop Logic: Opposite side of 1100 ORB range
+  Target Logic: 1.5R target (stop distance × 1.5)
+  Scan Window: 11:05-17:00 local (Asia session)
+  Time Horizon: Intraday (sequential dependency)
+  Regime Dependency: Requires prior ORB failures (context-dependent)
+  Cost Model: $7.40 friction (Tradovate production)
+
+
+PHASE 2: AUDIT THE TESTS
+================================================================================
+
+Checking if stress tests applied matched strategy contracts...
+
+ID 20: 1000 RR=1.5 L4_CONSOLIDATION
+--------------------------------------------------------------------------------
+  [!!] INVALID TESTS (contract mismatch):
+    - temporal_forward_walk: Strategy uses Requires London L4 < 2.0 (consolidation), not time-based assumptions. Temporal split is WRONG test for regime-dependent strategy.
+      Result: Forward +0.323R (PASS)
+    - regime_split: Strategy filters on London L4 < 2.0 (consolidation), but test splits by asia_range. WRONG REGIME VARIABLE. Should split by london_range, not asia_range.
+      Result: Both pass (PASS)
+    - cost_stress: Strategy uses $2.50 costs (OLD - likely wrong) which may be wrong. Cost stress test with $7.40 friction may not match strategy's original cost assumptions.
+      Result: MARGINAL (survives +25% only)
+
+ID 21: 1000 RR=2.0 L4_CONSOLIDATION
+--------------------------------------------------------------------------------
+  [!!] INVALID TESTS (contract mismatch):
+    - temporal_forward_walk: Strategy uses Requires London L4 < 2.0 (consolidation), not time-based assumptions. Temporal split is WRONG test for regime-dependent strategy.
+      Result: Forward +0.295R (PASS)
+    - regime_split: Strategy filters on London L4 < 2.0 (consolidation), but test splits by asia_range. WRONG REGIME VARIABLE. Should split by london_range, not asia_range.
+      Result: Low vol negative (FAILED)
+    - cost_stress: Strategy uses $2.50 costs (OLD - likely wrong) which may be wrong. Cost stress test with $7.40 friction may not match strategy's original cost assumptions.
+      Result: FAILED at +25%
+
+ID 22: 1000 RR=2.5 L4_CONSOLIDATION
+--------------------------------------------------------------------------------
+  [!!] INVALID TESTS (contract mismatch):
+    - temporal_forward_walk: Strategy uses Requires London L4 < 2.0 (consolidation), not time-based assumptions. Temporal split is WRONG test for regime-dependent strategy.
+      Result: Forward +0.292R (PASS)
+    - regime_split: Strategy filters on London L4 < 2.0 (consolidation), but test splits by asia_range. WRONG REGIME VARIABLE. Should split by london_range, not asia_range.
+      Result: Low vol negative (FAILED)
+    - cost_stress: Strategy uses $2.50 costs (OLD - likely wrong) which may be wrong. Cost stress test with $7.40 friction may not match strategy's original cost assumptions.
+      Result: FAILED at +25%
+
+ID 23: 1000 RR=3.0 L4_CONSOLIDATION
+--------------------------------------------------------------------------------
+  [!!] INVALID TESTS (contract mismatch):
+    - temporal_forward_walk: Strategy uses Requires London L4 < 2.0 (consolidation), not time-based assumptions. Temporal split is WRONG test for regime-dependent strategy.
+      Result: Forward +0.295R (PASS)
+    - regime_split: Strategy filters on London L4 < 2.0 (consolidation), but test splits by asia_range. WRONG REGIME VARIABLE. Should split by london_range, not asia_range.
+      Result: Low vol negative (FAILED)
+    - cost_stress: Strategy uses $2.50 costs (OLD - likely wrong) which may be wrong. Cost stress test with $7.40 friction may not match strategy's original cost assumptions.
+      Result: FAILED at +25%
+
+ID 24: 1800 RR=1.5 RSI
+--------------------------------------------------------------------------------
+
+ID 25: 0900 RR=1.5 L4_CONSOLIDATION
+--------------------------------------------------------------------------------
+  [!!] INVALID TESTS (contract mismatch):
+    - temporal_forward_walk: Strategy uses Requires London L4 < 2.0 (consolidation), not time-based assumptions. Temporal split is WRONG test for regime-dependent strategy.
+      Result: Forward +0.020R (FAILED)
+    - regime_split: Strategy filters on London L4 < 2.0 (consolidation), but test splits by asia_range. WRONG REGIME VARIABLE. Should split by london_range, not asia_range.
+      Result: Both regimes negative (FAILED)
+    - cost_stress: Strategy uses $2.50 costs (OLD - likely wrong) which may be wrong. Cost stress test with $7.40 friction may not match strategy's original cost assumptions.
+      Result: FAILED at +25%
+
+ID 26: 1100 RR=1.5 BOTH_LOST
+--------------------------------------------------------------------------------
+  [!!] INVALID TESTS (contract mismatch):
+    - temporal_forward_walk: Strategy uses Requires prior ORB failures (context-dependent), not time-based assumptions. Temporal split is WRONG test for regime-dependent strategy.
+      Result: Forward +0.177R (PASS)
+    - regime_split: Strategy filters on sequential dependencies (0900+1000 losses), not volatility regime. Regime split is IRRELEVANT test.
+      Result: Both pass (PASS)
+  [OK] VALID TESTS (contract matches):
+    - cost_stress: Cost model validated
+      Result: PASS at +50%
+
+
+PHASE 3: SUMMARY
+================================================================================
+
+STRATEGIES WRONGLY REJECTED (test mismatch):
+--------------------------------------------------------------------------------
+  ID 20: 1000 RR=1.5 L4_CONSOLIDATION
+    Reason: All tests were INVALID for this strategy contract
+      - temporal_forward_walk: Strategy uses Requires London L4 < 2.0 (consolidation), not time-based assumptions. Temporal split is WRONG test for regime-dependent strategy.
+      - regime_split: Strategy filters on London L4 < 2.0 (consolidation), but test splits by asia_range. WRONG REGIME VARIABLE. Should split by london_range, not asia_range.
+      - cost_stress: Strategy uses $2.50 costs (OLD - likely wrong) which may be wrong. Cost stress test with $7.40 friction may not match strategy's original cost assumptions.
+
+  ID 21: 1000 RR=2.0 L4_CONSOLIDATION
+    Reason: All tests were INVALID for this strategy contract
+      - temporal_forward_walk: Strategy uses Requires London L4 < 2.0 (consolidation), not time-based assumptions. Temporal split is WRONG test for regime-dependent strategy.
+      - regime_split: Strategy filters on London L4 < 2.0 (consolidation), but test splits by asia_range. WRONG REGIME VARIABLE. Should split by london_range, not asia_range.
+      - cost_stress: Strategy uses $2.50 costs (OLD - likely wrong) which may be wrong. Cost stress test with $7.40 friction may not match strategy's original cost assumptions.
+
+  ID 22: 1000 RR=2.5 L4_CONSOLIDATION
+    Reason: All tests were INVALID for this strategy contract
+      - temporal_forward_walk: Strategy uses Requires London L4 < 2.0 (consolidation), not time-based assumptions. Temporal split is WRONG test for regime-dependent strategy.
+      - regime_split: Strategy filters on London L4 < 2.0 (consolidation), but test splits by asia_range. WRONG REGIME VARIABLE. Should split by london_range, not asia_range.
+      - cost_stress: Strategy uses $2.50 costs (OLD - likely wrong) which may be wrong. Cost stress test with $7.40 friction may not match strategy's original cost assumptions.
+
+  ID 23: 1000 RR=3.0 L4_CONSOLIDATION
+    Reason: All tests were INVALID for this strategy contract
+      - temporal_forward_walk: Strategy uses Requires London L4 < 2.0 (consolidation), not time-based assumptions. Temporal split is WRONG test for regime-dependent strategy.
+      - regime_split: Strategy filters on London L4 < 2.0 (consolidation), but test splits by asia_range. WRONG REGIME VARIABLE. Should split by london_range, not asia_range.
+      - cost_stress: Strategy uses $2.50 costs (OLD - likely wrong) which may be wrong. Cost stress test with $7.40 friction may not match strategy's original cost assumptions.
+
+  ID 25: 0900 RR=1.5 L4_CONSOLIDATION
+    Reason: All tests were INVALID for this strategy contract
+      - temporal_forward_walk: Strategy uses Requires London L4 < 2.0 (consolidation), not time-based assumptions. Temporal split is WRONG test for regime-dependent strategy.
+      - regime_split: Strategy filters on London L4 < 2.0 (consolidation), but test splits by asia_range. WRONG REGIME VARIABLE. Should split by london_range, not asia_range.
+      - cost_stress: Strategy uses $2.50 costs (OLD - likely wrong) which may be wrong. Cost stress test with $7.40 friction may not match strategy's original cost assumptions.
+
+
+STRATEGIES GENUINELY FAILED (correct tests):
+--------------------------------------------------------------------------------
+  None
+
+STRATEGIES NEEDING CONTRACT DEFINITION:
+--------------------------------------------------------------------------------
+  None
+
+================================================================================
+META-AUDIT COMPLETE
+================================================================================
+
+CRITICAL FINDINGS:
+1. L4_CONSOLIDATION strategies: Tested with WRONG regime variable
+   - Strategy filters on london_range < 2.0
+   - Tests split by asia_range (WRONG)
+   - Should split by london_range (CORRECT)
+
+2. TEMPORAL tests: Applied to regime-dependent strategies
+   - Strategies have REGIME dependencies, not time dependencies
+   - Temporal forward walk is IRRELEVANT test
+
+3. COST tests: Applied with wrong cost model
+   - Old strategies used $2.50 costs (OLD audit)
+   - New tests used $7.40 costs (current)
+   - Cost stress test may be invalid if original expectancy used different costs
+
+RECOMMENDATION:
+- RESTORE all L4_CONSOLIDATION and BOTH_LOST strategies
+- Retest with CORRECT regime variable (london_range for L4)
+- Skip temporal tests (irrelevant for regime strategies)
+- Verify cost model before stress testing

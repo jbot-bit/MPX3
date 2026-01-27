@@ -1,0 +1,36 @@
+PHASE 2.5 — UNBLOCK MORE EDGES (MGC FAST PATH)
+
+Goal:
+Increase usable edges for MGC without lookahead.
+
+PART A — Implement the 2 rewrites as NEW candidate specs (do not backtest yet)
+1) Rewrite Edge 2 (0900 dependency):
+   - Condition must use only break_dir availability:
+     require orb_2300_break_dir = 'NONE' AND orb_0030_break_dir = 'NONE'
+   - Then trade 0900 breakout normally.
+
+2) Rewrite Edge 7 (0900→1000):
+   - Condition must NOT use trade outcome.
+   - Use: orb_0900_break_dir must equal orb_1000_break_dir, and orb_0900_break_dir != 'NONE'
+   - Then trade 1000 breakout normally.
+
+Deliver:
+- Write both rewritten edges to: research/phase2_rewrites.md
+- Ensure each edge has explicit timestamps and required fields list.
+
+PART B — Generate more MGC candidates using ONLY proven-safe structures
+Run a discovery batch for MGC across sessions:
+- sessions: 1800, 2300, 0030, 1100, 0900, 1000
+- allowed structures:
+  - extended scan windows
+  - ORB size normalized filters (percent of price)
+  - 2-step sweep → rejection entries
+  - directional_bias gating (must prove inputs are pre-entry)
+- output: top 50 candidates into research outputs (CSV/JSON) with key metrics
+- DO NOT promote to validated_setups
+- DO NOT touch production DB except importing to edge_candidates as DRAFT via trading_app/edge_import.py
+
+Stop after:
+- Top-50 candidate report created
+- Candidates imported as DRAFT into edge_candidates
+- No approvals/promotions performed

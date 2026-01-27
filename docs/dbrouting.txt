@@ -1,0 +1,33 @@
+(DB ROUTING): Fix canonical DB enforcement so tests pass.
+
+Goal:
+- Remove all direct duckdb.connect() calls in active code and route ALL DB access through:
+  from trading_app.cloud_mode import get_database_connection
+  conn = get_database_connection()
+
+Do NOT change Trade Mode logic or AI Source Lock behavior.
+
+Steps:
+1) Run `pytest -q` and focus ONLY on failures from:
+   - tests/test_no_hardcoded_db_paths.py
+   - tests/test_canonical_env.py
+
+2) Replace each duckdb.connect() in these files with get_database_connection():
+   - trading_app/ai_memory.py
+   - trading_app/data_loader.py
+   - trading_app/ml_dashboard.py
+   - trading_app/mobile_ui.py
+   - trading_app/research_runner.py
+   - trading_app/strategy_discovery.py
+   - trading_app/utils.py
+   (and any others the test reports)
+
+3) Fix UnicodeDecodeError in tests reading cloud_mode.py:
+   - Wherever a file is opened without encoding, use encoding="utf-8", errors="ignore".
+
+4) Ensure `pytest -q` no longer fails due to hardcoded DB paths.
+
+Deliverable:
+- Commit-style summary of changed files + exact replacements.
+- `pytest -q` output showing those failures are gone.
+STOP after this task.

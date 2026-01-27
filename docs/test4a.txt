@@ -1,0 +1,32 @@
+CRITICAL FIX — EDGE BACKTEST ENGINE IS INCOMPLETE
+
+Finding:
+Phase 3 tested ONLY baseline ORB outcomes from daily_features_v2.
+Candidate-specific logic (RR, SL mode, filters, extended windows, bias) was NOT applied.
+Therefore Phase 3 results are invalid for edge evaluation.
+
+Task:
+1. STOP using precomputed ORB outcomes for edge testing.
+2. Build / use a backtest path that:
+   - Iterates raw bars_1m
+   - Detects ORB formation
+   - Applies EACH candidate’s:
+     - entry rule
+     - stop rule
+     - RR
+     - scan window (including extended to 09:00 where specified)
+     - filters (size, bias, compression, etc.)
+3. Re-test ONLY these edges first:
+   - 2300 ORB extended window (HALF SL)
+   - 0030 ORB extended window (HALF SL)
+4. Output:
+   - trades
+   - win_rate
+   - avg_r
+   - time-to-resolution
+   - comparison vs baseline short-window ORB
+5. Do NOT touch validated_setups or config.py.
+
+Goal:
+Prove that extended-window logic is the source of profitability and unlock promotion.
+ 

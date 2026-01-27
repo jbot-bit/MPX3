@@ -1,0 +1,55 @@
+
+================================================================================
+EXECUTION METRICS ANALYSIS - VALIDATED SETUPS
+================================================================================
+
+Analyzing 3 validated setups with real execution (slippage + commission)...
+Commission: $1.50 per trade
+Slippage: 1.5 ticks (0.15 points = $1.50)
+Total cost: $3.00 per trade (matches optimization assumptions)
+
+================================================================================
+1100 ORB (BEST): Stop=0.2, RR=8.0
+================================================================================
+
+Found 526 days with 1100 ORB breakouts
+
+================================================================================
+EXECUTION METRICS REPORT
+================================================================================
+
+Total trades: 526
+
+SLIPPAGE & ENTRY QUALITY:
+  Avg slippage: 1.5 ticks ($1.50)
+  Avg entry distance from ORB edge: 0.73 points
+
+CANONICAL METRICS (ORB-edge anchored):
+  Win rate: 25.7%
+  Avg R: +0.731
+  Total R: +384.7
+  Avg cost: 0.579R
+
+REAL METRICS (entry-to-stop, with slippage):
+  Win rate: 25.7%
+  Avg R: -0.217
+  Total R: -113.9
+  Avg cost: 0.259R
+
+COMPARISON:
+  Avg canonical risk: 0.90 points
+  Avg real risk: 1.78 points
+  Risk difference: +0.88 points
+  Performance degradation: -0.948R
+  Avg bars to outcome: 16.2
+
+Traceback (most recent call last):
+  File "C:\Users\sydne\OneDrive\Desktop\MPX2_fresh\analyze_execution_metrics_validated_setups.py", line 199, in <module>
+    result = analyze_setup(
+  File "C:\Users\sydne\OneDrive\Desktop\MPX2_fresh\analyze_execution_metrics_validated_setups.py", line 152, in analyze_setup
+    print_metrics_report(agg)
+  File "C:\Users\sydne\OneDrive\Desktop\MPX2_fresh\execution_metrics.py", line 361, in print_metrics_report
+    print("\u26a0\ufe0f  SIGNIFICANT DEGRADATION from slippage and real execution")
+  File "C:\Users\sydne\AppData\Local\Programs\Python\Python310\lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+UnicodeEncodeError: 'charmap' codec can't encode characters in position 0-1: character maps to <undefined>

@@ -1,0 +1,88 @@
+Broad, Safe Claude Prompt (Project-agnostic, honest)
+
+Copy–paste this:
+
+You are acting as a skeptical systems auditor, not an implementer.
+
+Assume:
+
+Some strategies may have been tested with the wrong tests
+
+Some failures may be test–strategy mismatches, not true edge failures
+
+Your task has three phases:
+Phase 1 — Discover the Strategy Contracts (do not assume)
+
+For each strategy/setup under evaluation:
+
+Infer or extract what the strategy actually is:
+
+entry trigger
+
+stop logic
+
+target logic
+
+trade lifetime / scan window
+
+cost assumptions
+
+If any of this is unclear or implicit, flag it as undefined, do not guess.
+
+Phase 2 — Audit the Tests (not the results)
+
+For each stress test applied:
+
+Identify what the test assumes about:
+
+execution rules
+
+time horizon
+
+volatility regime
+
+cost model
+
+Compare test assumptions vs strategy contract.
+
+Classify outcomes strictly as:
+
+✅ VALID TEST (contract matches)
+
+⚠️ INVALID TEST (contract mismatch)
+
+❌ UNTESTABLE (strategy contract undefined)
+
+Do not judge profitability yet.
+
+Phase 3 — Retest Only Where Valid
+
+Only rerun stress tests where:
+
+strategy contract is explicit
+
+test assumptions fully match that contract
+
+If a strategy cannot be validly tested, mark it:
+
+NEEDS_CONTRACT_DEFINITION
+
+Rules
+
+Do not optimize.
+
+Do not add new logic.
+
+Do not “improve” strategies.
+
+If unsure → fail closed.
+
+Output facts, mismatches, and uncertainties only.
+
+Deliverables:
+
+Table: Strategy → Contract → Tests Applied → Match Status
+
+List of strategies wrongly rejected due to test mismatch
+
+List of strategies that genuinely failed correct tests

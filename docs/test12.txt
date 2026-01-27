@@ -1,0 +1,102 @@
+You are Claude Code operating inside:
+C:\Users\sydne\OneDrive\myprojectx2_cleanpush
+
+GOAL (TIME-BOXED 30 MINUTES)
+Build and run QUICK backtests for MGC Asia sessions:
+- 0900 ORB
+- 1000 ORB
+- 1100 ORB
+
+These must be:
+- Zero-lookahead (hard assertions)
+- Reproducible (deterministic outputs)
+- Fast (finish within ~30 minutes)
+
+IMPORTANT CONTEXT
+We discovered a major correctness issue: HALF SL mode was missing in some paths and caused big expectancy differences.
+So your backtests MUST support BOTH:
+- sl_mode = "HALF" (stop at ORB midpoint)
+- sl_mode = "FULL" (stop at opposite ORB edge)
+And compare them.
+
+DATA
+Use bars_1m table (columns include: ts_utc, symbol, open, high, low, close, volume).
+Use daily_features_v2 for ORB levels if available, but you may compute ORBs from bars_1m to be safe.
+Timezone is Brisbane local for session times, but bars are ts_utc — handle conversion correctly.
+
+FAST MODE CONSTRAINTS
+To ensure speed:
+- Default to last 120 trading days (configurable).
+- Only test these RR values: [1.0, 1.5, 2.0, 3.0]
+- Only 1 entry type: first 1m CLOSE outside ORB after ORB completes
+- Windows:
+  - 0900 ORB forms 09:00–09:05; scan entries 09:05–11:00; force exit at 11:00
+  - 1000 ORB forms 10:00–10:05; scan entries 10:05–12:00; force exit at 12:00
+  - 1100 ORB forms 11:00–11:05; scan entries 11:05–13:00; force exit at 13:00
+(Use consistent “force exit” so we can compare.)
+
+OUTPUTS REQUIRED (MUST WRITE TO research/quick_asia/)
+1) CSV of results per config:
+   orb_time, rr, sl_mode, trades, win_rate, avg_r, profit_factor, max_dd_r, avg_minutes_to_resolve
+2) Top 5 configs per orb_time printed to console + saved to MD report
+3) A “sanity report” with hard checks:
+   - Any lookahead violations = FAIL (raise)
+   - Any trades with entry before ORB end = FAIL
+   - Any trades with exits outside hold window = FAIL
+   - Determinism: rerun 1 config twice and assert identical trades hash
+
+IMPLEMENTATION TASKS (DO IN ORDER)
+A) Create script: research/quick_asia/run_quick_asia_backtests.py
+   - CLI args: --instrument MGC --days 120 --outdir research/quick_asia
+B) Create helper: research/quick_asia/asia_backtest_core.py
+   - Functions: compute_orb_levels(), simulate_orb_breakout(), compute_metrics()
+C) Create runner that executes all configs and writes:
+   - research/quick_asia/asia_results.csv
+   - research/quick_asia/asia_report.md
+   - research/quick_asia/asia_sanity.md
+
+D) RUN IT NOW:
+   python research/quick_asia/run_quick_asia_backtests.py --instrument MGC --days 120
+
+STOP CONDITIONS
+- Do NOT modify validated_setups
+- Do NOT modify config.py
+- Do NOT import/approve/promote anything
+- Only create files under research/quick_asia/
+
+DELIVERABLE IN CHAT
+After running, paste:
+- the top 5 configs for each ORB time
+- whether sanity checks passed
+- file paths written
+IMPORTANT CORRECTION — SESSION LOGIC
+
+Do NOT force exits by default.
+
+Instead, implement TWO explicit backtest modes:
+
+MODE 1: ISOLATION_MODE
+- Purpose: verify raw edge expectancy
+- Force exit at session boundary (e.g. 0900 exits at 11:00)
+- No cross-session influence
+- Used only to validate entry/SL/RR correctness
+
+MODE 2: CONTINUATION_MODE
+- Purpose: model real Asia session behavior
+- No forced exit
+- Trade may continue across 0900 → 1000 → 1100
+- Exits ONLY via:
+  - SL
+  - TP
+  - Explicit session invalidation rules (if defined)
+
+The engine must:
+- Run BOTH modes
+- Report results separately
+- Never mix statistics between modes
+- Clearly label outputs as ISOLATION vs CONTINUATION
+
+If continuation logic is not defined yet:
+- Leave trade open until TP/SL
+- Record max adverse/favorable excursion
+- Do NOT infer exits implicitly

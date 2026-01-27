@@ -1,0 +1,34 @@
+================================================================================
+CORRECT VALIDATION - $7.40 RT COSTS (Mandatory)
+================================================================================
+
+Cost Model: $7.40 RT (Tradovate production)
+Point Value: $10.00
+Approval Threshold: +0.15R at $7.40 costs
+
+Testing 7 MGC strategies...
+
+ID 20: 1000 RR=1.5 L4_CONSOLIDATION
+--------------------------------------------------------------------------------
+  [FAIL] Insufficient trades: 0 < 30
+
+ID 21: 1000 RR=2.0 L4_CONSOLIDATION
+--------------------------------------------------------------------------------
+  [FAIL] Insufficient trades: 0 < 30
+
+ID 22: 1000 RR=2.5 L4_CONSOLIDATION
+--------------------------------------------------------------------------------
+  [FAIL] Insufficient trades: 0 < 30
+
+ID 23: 1000 RR=3.0 L4_CONSOLIDATION
+--------------------------------------------------------------------------------
+  [FAIL] Insufficient trades: 0 < 30
+
+ID 24: 1800 RR=1.5 RSI
+--------------------------------------------------------------------------------
+  TEST 1: Regime split (SKIPPED - sequential/indicator strategy)
+  TEST 2: Expectancy at $7.40 costs (MANDATORY)
+Traceback (most recent call last):
+  File "C:\Users\sydne\OneDrive\Desktop\MPX2_fresh\scripts\audit\correct_validation_740_costs.py", line 213, in <module>
+    expectancy_740 = calculate_expectancy_740(trades, rr, MGC_POINT_VALUE, MGC_FRICTION)
+NameError: name 'calculate_expectancy_740' is not defined

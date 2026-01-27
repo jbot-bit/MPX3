@@ -1,0 +1,206 @@
+Step 1 — Understand the pieces (plain English)
+
+There are 4 different extension mechanisms in Claude Code. Most people confuse them.
+
+1) Skills (you already touched this)
+
+What: Markdown files Claude reads when invoked
+
+Purpose: Persistent rules, preferences, memory
+
+Stateful? Yes (via file edits)
+
+You control: 100%
+
+👉 This is your long-term memory + behavior layer
+
+2) Agents (sub-agents)
+
+What: Named workers with a role + tools
+
+Purpose: Offload tasks without polluting main context
+
+Examples:
+
+planner → designs approach
+
+explore → scans repo fast
+
+bash → runs commands
+
+reviewer → critiques code
+
+Stateful? No (ephemeral per run)
+
+Invocation:
+
+@agentname
+
+or “use the X agent to…”
+
+👉 This is parallel brains, not memory
+
+3) Plugins / Tools
+
+What: External capabilities (FS, shell, git, HTTP, etc.)
+
+Purpose: Let Claude do things, not just think
+
+Examples:
+
+file system access
+
+git commit
+
+shell scripts
+
+hooks
+
+Stateful? Indirectly (via files/DBs)
+
+You don’t write these — Claude Code exposes them
+
+👉 This is hands, not intelligence
+
+4) Hooks (automation glue)
+
+What: Scripts triggered by events
+
+Purpose: Automation + lifecycle control
+
+Examples:
+
+on session stop
+
+after command
+
+before exit
+
+👉 This is autopilot
+
+Confirm this mental model makes sense before we continue.
+
+Step 2 — The actual minimal setup you need
+
+You only need ONE of each:
+
+Required
+
+✅ skills/reflect.md → learning engine
+
+✅ 1–2 core skills (code_review, project_conventions)
+
+✅ Built-in agents (already there, you just aren’t using them)
+
+Optional (later)
+
+⏳ stop hook
+
+⏳ auto-reflect
+
+You are not missing 50 features. You’re missing activation.
+
+Confirm.
+
+Step 3 — How to use agents (you already have them)
+
+You don’t install agents. They already exist.
+
+Ways to invoke
+
+Explicit:
+
+@explore scan the repo for duplicate logic
+
+
+Implicit:
+
+use the explore agent to find where RR is calculated
+
+Best practice (important)
+
+Use agents for:
+
+scanning
+
+planning
+
+validation
+
+Keep main thread for decisions
+
+This protects context and reduces hallucination.
+
+Confirm.
+
+Step 4 — How skills + agents + reflect connect (this is the “system”)
+
+Flow:
+
+You work with Claude (agents help)
+
+You correct something
+
+You run /reflect
+
+Reflect updates a skill
+
+Next session:
+
+That skill changes how Claude behaves
+
+Agents inherit that behavior automatically
+
+That’s the self-improving loop.
+
+No DB required.
+
+Step 5 — Why you feel like you’re “not using features”
+
+Because Claude Code is pull-based, not push-based.
+
+Nothing activates unless:
+
+you invoke a skill
+
+you call an agent
+
+a hook fires
+
+There is no hidden magic mode you’re missing.
+
+Step 6 — What I recommend for you specifically
+
+Given:
+
+large repo
+
+ADHD overload
+
+strong need for canonical control
+
+Your ideal stack:
+
+Skills:
+
+project_conventions.md
+
+code_review.md
+
+reflect.md
+
+Agents you actually use:
+
+explore (repo scanning)
+
+planner (before big changes)
+
+bash (execution only)
+
+Hooks:
+
+❌ auto-reflect (for now)
+
+✅ manual /reflect
+
+This gives power without chaos.

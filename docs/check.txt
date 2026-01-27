@@ -1,0 +1,33 @@
+Claude — I need you to sanity-check my backtest results for two separate questions that overlap:
+
+1) ORDER TYPE: Market vs Limit (execution cost/price effects)
+2) ENTRY TYPE: Close-confirm vs Touch/penetration (signal/trigger effects)
+
+Your job:
+- Treat these as TWO different experiments and make sure I’m not mixing them.
+- Tell me if my comparisons are fair, and if not, how to restructure them.
+
+What to do:
+1) Read the output I paste.
+2) Identify which comparisons are:
+   - “execution-only” (same trigger, different order)
+   - “strategy/entry change” (different trigger/entry condition)
+3) Check for common backtest biases:
+   - lookahead
+   - same-bar ordering issues (entry vs stop/TP)
+   - unrealistic limit fills from OHLC
+   - risk not recalculated from actual entry to stop
+   - cost handling inconsistent across modes
+4) Tell me:
+   - What is actually proven by my results (in plain English)
+   - What is NOT proven
+   - The single best next test to run to confirm robustness
+
+Output format:
+- Bullet points
+- Clear verdicts: “execution conclusion”, “entry conclusion”
+- List any red flags + what to change
+
+I will paste:
+- the relevant code snippet(s) OR the trigger/fill rules
+- the summary tables (R/opp, fill rate, win rate)

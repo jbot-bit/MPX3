@@ -1,0 +1,52 @@
+I need you to audit and correct my ORB execution logic so it matches how trading actually works in real life.
+
+Right now, I’m concerned that my backtest may be mixing up:
+- the condition that *signals* a trade,
+- the price and timing assumed for the *fill*,
+- and the logic used to resolve stops and targets afterward.
+
+Please do the following at a conceptual + implementation level:
+
+1) Audit the current ORB entry logic and clearly explain:
+   - what event currently triggers a trade (candle close crossing vs price touching the ORB),
+   - what price is assumed as the fill (close, next open, ORB boundary, etc.),
+   - what costs are being applied (commission, slippage), and *when* they are applied.
+
+2) Refactor the execution logic so these three things are always treated as separate and explicit:
+   - signal trigger (price + time)
+   - fill (price + time, and whether a fill actually occurs)
+   - post-entry price path used for SL/TP resolution (MAE/MFE logic)
+
+3) Introduce clear, configurable execution modes so I can compare realistic behaviours:
+   - a “close-confirm then enter immediately” style (market-style fill),
+   - a “close-confirm then wait for a retrace to the ORB boundary” style (limit-style fill),
+   - and a pure “touch-based limit at ORB boundary” style.
+   Each mode should document exactly:
+   - what triggers the trade,
+   - when and how a fill can occur,
+   - when no trade should occur.
+
+4) Make sure fills are never assumed if price never actually trades at that level.
+   If price gaps or runs away, the trade should simply not exist in modes that require a touch.
+
+5) Add deterministic handling for edge cases, especially:
+   - both ORB high and low being touched in the same bar.
+   Choose a rule, apply it consistently, and document it.
+
+6) Keep stop-loss and take-profit logic unchanged, but verify that:
+   - costs are not double-counted,
+   - slippage is only applied where it would exist in real trading,
+   - and MAE/MFE is still computed from the true fill price.
+
+7) Add or update tests that prove:
+   - immediate-entry modes produce trades as soon as the signal fires,
+   - limit-style modes only enter when a touch actually occurs,
+   - trade counts differ between modes for the same signals,
+   - outcome resolution logic is unchanged across modes.
+
+Finally:
+- show me the code diff,
+- summarize how trade counts and expectancy change across the main ORB sessions,
+- and briefly explain why certain modes incur slippage while others do not.
+
+The goal is not to optimise results, but to make the backtest structurally honest and aligned with real execution mechanics.

@@ -1,0 +1,42 @@
+Proceed to Phase 2 ONLY.
+
+Build a deterministic Research Runner (NO LLM decisions).
+
+Requirements:
+1) Implement a CLI script:
+   pipeline/run_edge_candidate.py --candidate-id N
+
+2) The runner must:
+   - Load the candidate from edge_candidates
+   - Populate code_version (git commit hash)
+   - Populate data_version (last candle ts or dataset fingerprint)
+   - Use test_config_json to control test parameters
+   - Run backtests using ONLY our existing DB tables/views and execution logic
+
+3) Metrics to compute and write:
+   - metrics_json: win_rate, avg_r, total_r, n_trades, max_dd
+   - robustness_json:
+       * walk-forward (at least 3 folds)
+       * regime split (ATR high vs low OR trend up/down)
+   - slippage_assumptions_json: 0/1/2 tick stress
+
+4) After completion:
+   - Update status from DRAFT → TESTED
+   - Refuse to run if status is not DRAFT
+
+5) Tests (pytest):
+   - Candidate status becomes TESTED
+   - metrics_json populated
+   - robustness_json populated
+   - Runner is deterministic (same inputs → same outputs)
+
+Constraints:
+- No changes to Trade Mode
+- No AI usage
+- Use canonical DB connection
+- Stop and report after Phase 2
+
+Deliverables:
+- Script
+- Supporting module(s)
+- Tests

@@ -1,0 +1,28 @@
+================================================================================
+REVERSE ENGINEER ALL STRATEGIES - GROUND TRUTH VALIDATION
+================================================================================
+
+CANONICAL COST MODEL (MANDATORY):
+  Friction: $7.40 RT
+  Point Value: $10.00
+  Approval Threshold: +0.15R at $7.40
+
+METHODOLOGY: Each strategy validated INDIVIDUALLY from ground truth data.
+
+Found 7 strategies in validated_setups
+
+================================================================================
+PHASE 1: REVERSE ENGINEER EACH STRATEGY'S ACTUAL FILTER
+================================================================================
+
+STRATEGY ID 20: 1000 ORB RR=1.5 full
+--------------------------------------------------------------------------------
+  Filter: L4_CONSOLIDATION (session type: London consolidation day)
+  SQL: london_type_code = 'L4_CONSOLIDATION'
+
+  Ground truth trades: 92
+  Calculating expectancy with CANONICAL formulas...
+Traceback (most recent call last):
+  File "C:\Users\sydne\OneDrive\Desktop\MPX2_fresh\scripts\audit\reverse_engineer_all_strategies.py", line 163, in <module>
+    exp_740 = calculate_canonical_expectancy(trades, rr, MGC_POINT_VALUE, MGC_FRICTION)
+NameError: name 'calculate_canonical_expectancy' is not defined

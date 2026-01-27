@@ -1,0 +1,64 @@
+# Secrets
+.env
+.env.*
+*.key
+*.pem
+
+# Databases / backups
+*.db
+*.db.wal
+*.db-shm
+*.duckdb
+data/db/
+data/backups/
+
+# Python / venv
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Logs
+*.log
+logs/
+
+# Windows reserved filenames
+nul
+
+# Temporary task files
+delete.txt
+fix.txt
+maintenance.txt
+scope.txt
+candidate_claude.txt
+
+# Runtime logs
+trading_app.log
+log.txt
+
+# Audit outputs (generated)
+audit_reports/
+
+# Edge discovery results (generated)
+edge_discovery_results/
+edge_discovery.log
+edge_discovery_live.log
+edge_discovery_quick.log
+
+# Secrets
+attached_assets/*.env
+*.env
+.env
+
+gold.db.backup*
+
+# Auto Claude data directory
+.auto-claude/
+
+# Auto Claude generated files
+.auto-claude-security.json
+.auto-claude-status
+.claude_settings.json
+.worktrees/
+.security-key
+logs/security/

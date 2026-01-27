@@ -1,0 +1,77 @@
+You are working in:
+C:\Users\sydne\OneDrive\myprojectx2_cleanpush
+Branch: restore-edge-pipeline
+
+GOAL:
+Take the Asia ORB research results (0900 / 1000 / 1100) and safely integrate them into the app so they are:
+- Persisted
+- Reproducible
+- Zero-lookahead
+- Promotion-gated
+
+ABSOLUTE RULES:
+- Do NOT write directly to validated_setups.
+- Do NOT modify config.py.
+- Do NOT assume research results are correct — verify before promotion.
+- Use existing edge lifecycle: research → edge_candidates → approval → promotion.
+- If anything is ambiguous, STOP and report.
+
+TASK 1 — CONVERT RESEARCH → EDGE SPECS
+From research/quick_asia outputs:
+- Identify ONLY configs that are:
+  - avg_r > 0
+  - passed determinism + zero-lookahead
+  - stable across splits (if available)
+
+Create a structured spec for each viable edge:
+- instrument (MGC)
+- orb_time (0900 or 1000 only)
+- entry rule
+- stop rule (HALF or FULL)
+- rr
+- scan window
+- exit rules (isolation vs continuation)
+- filters used (if any)
+- expected metrics (WR, avg_r, trades)
+
+Write these to:
+research/asia_edge_specs.json
+
+TASK 2 — IMPORT INTO edge_candidates (DRAFT ONLY)
+Using trading_app/edge_import.py:
+- Import each spec as a new row in edge_candidates
+- status = 'DRAFT'
+- source = 'asia_orb_research'
+- notes must include:
+  - file path of source CSV
+  - date range tested
+  - determinism hash
+  - isolation/continuation mode
+
+Verify:
+- No duplicates
+- No overwrites
+- No promotions
+
+TASK 3 — SAFETY VERIFICATION
+Before stopping:
+- Query edge_candidates and list all new Asia edges
+- Confirm:
+  - sl_mode is correct per ORB
+  - rr matches research
+  - orb_time correct
+- Run test_app_sync.py to confirm NOTHING in production changed
+
+TASK 4 — WRITE A SHORT HANDOFF DOC
+Create:
+research/ASIA_READY_FOR_REVIEW.md
+
+Include:
+- Which Asia edges are viable
+- Which are explicitly rejected (e.g. 1100)
+- Clear recommendation:
+  - Promote / Do not promote / Needs more testing
+
+STOP AFTER TASK 4.
+DO NOT PROMOTE ANY EDGE.
+WAIT FOR USER CONFIRMATION.

@@ -1,0 +1,70 @@
+You are Claude Code working in this repo.
+
+GOAL:
+Add a SECOND lane called RESEARCH MODE that can discover and test new edges using ONLY our own data, while keeping TRADE MODE locked fail-closed.
+
+NON-NEGOTIABLE:
+- TRADE MODE (existing AI Source Lock) must remain unchanged and fail-closed.
+- RESEARCH MODE may explore, but still must use ONLY our DB/data/tools (no external market knowledge).
+- Research outputs must NEVER be traded unless promoted through a hard gate into validated_setups.
+
+WHAT TO IMPLEMENT (MINIMAL, IN THIS ORDER):
+
+PHASE 1 — DB + Data Model (foundation)
+1) Create table edge_candidates in gold.db (migration script).
+   Required columns:
+   - candidate_id (PK)
+   - created_at_utc
+   - instrument
+   - name
+   - hypothesis_text
+   - feature_spec_json (how it’s defined)
+   - filter_spec_json (entry/stop/target/filters)
+   - test_window_start, test_window_end
+   - metrics_json (WR, avgR, totalR, n, drawdown, MAE/MFE, etc.)
+   - robustness_json (walk-forward / regime split results)
+   - slippage_assumptions_json
+   - status (DRAFT, TESTED, APPROVED, REJECTED)
+   - notes
+
+PHASE 2 — Research Runner (code, no LLM decisions)
+2) Add a script/module that can:
+   - take a candidate spec
+   - run backtests on our existing tables/views
+   - compute metrics + robustness checks (walk-forward + regime split)
+   - write results back to edge_candidates
+
+PHASE 3 — Promotion Gate (hard rules)
+3) Implement a promote_candidate(candidate_id) function that:
+   - checks objective thresholds (min trades, min avgR after slippage, stability)
+   - if PASS: inserts into validated_setups
+   - if FAIL: refuses promotion and records why
+   Promotion must be deterministic code, not LLM.
+
+PHASE 4 — Research AI (allowed to explore, still DB-only)
+4) Add a new AI entrypoint “Research Chat” that:
+   - can request DB slices and summaries
+   - can propose candidate specs
+   - must store proposals in edge_candidates with status=DRAFT
+   - must never write to validated_setups directly
+   - must output “proposal + test plan”, not trade commands
+
+PHASE 5 — Tests
+5) Add pytest coverage:
+   - TRADE MODE unchanged (existing tests still pass)
+   - Research Chat cannot call trade execution
+   - Research Chat cannot insert into validated_setups
+   - Promotion gate refuses if thresholds not met
+   - Promotion gate inserts correct row when thresholds met
+
+CONSTRAINTS:
+- Use canonical DB connection module.
+- No new apps. Integrate into existing app_trading_hub.py as a new tab (“RESEARCH”) or separate page but within trading_app/.
+- Keep changes minimal. Implement Phase 1 first, then stop and report.
+
+DELIVERABLE:
+After Phase 1, output:
+- exact SQL/migration file
+- where table lives
+- how to verify with a simple SELECT
+Then wait for my “next”.

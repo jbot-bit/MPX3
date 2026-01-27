@@ -1,0 +1,138 @@
+You are Claude Code operating on my local machine.
+
+CRITICAL CONTEXT
+There is a VERIFIED discrepancy:
+
+- validated_setups claims:
+  - 2300 ORB Extended: +0.403R
+  - 0030 ORB Extended: +0.254R
+- All current backtests (baseline + proper engine) show NEGATIVE results
+- ORB calculation itself is VERIFIED CORRECT
+- Therefore: the positive results MUST have come from additional FILTERS / LOGIC
+  that are NOT currently applied.
+
+These filters/logics were implemented in OLDER project folders and are missing now.
+
+TARGET DIRECTORIES (MUST SCAN ALL):
+- C:\Users\sydne\OneDrive\MYPROJECTX2
+- C:\Users\sydne\OneDrive\MYPROJECTX2 - COPY
+
+PRIMARY OBJECTIVE
+Find, extract, and reconstruct the EXACT filters / rules / logic that:
+- were applied to 2300 / 0030 ORBs
+- materially increased expectancy
+- explain the +0.403R / +0.254R results
+
+This is a forensic recovery task.
+
+NON-NEGOTIABLE RULES
+- DO NOT assume results are wrong.
+- DO NOT invalidate validated_setups yet.
+- ASSUME the edge logic existed and was later lost.
+- ZERO lookahead only.
+- If logic is ambiguous, document hypotheses clearly.
+
+STEP 1 — FULL FORENSIC SCAN
+Recursively scan BOTH directories for files containing ANY of:
+- "2300"
+- "0030"
+- "NIGHT"
+- "OVERNIGHT"
+- "EXTENDED"
+- "FILTER"
+- "WINDOW"
+- "SESSION"
+- "ASIA"
+- "LIQUIDITY"
+- "SWEEP"
+- "REJECTION"
+- "FADE"
+- "BIAS"
+- "ORB_SIZE"
+- "VOLATILITY"
+- "RANGE"
+- "CONDITION"
+- "GATE"
+
+Include:
+- .py
+- .md
+- .txt
+- .csv
+- notebooks if present
+
+Produce a TABLE:
+[file_path | file_type | purpose | relevant logic found]
+
+STEP 2 — EXTRACT ALL FILTERS
+From the discovered files, extract **every filter or modifier** that could affect results, including but not limited to:
+
+- ORB size bounds
+- volatility regimes
+- time-of-day constraints
+- minimum closes outside ORB
+- delay before entry
+- rejection confirmation
+- session dependency (Asia → London → NY)
+- sweep + fade logic
+- bias alignment
+- partial-day exclusion
+- range compression / expansion filters
+- trade invalidation rules
+
+For EACH filter:
+- exact condition
+- when it is evaluated (timestamp)
+- what trades it removes
+- whether it is zero-lookahead compliant
+
+STEP 3 — MAP FILTERS → PERFORMANCE
+For each discovered filter:
+- Explain qualitatively WHY it improves expectancy
+- Identify which session(s) it applies to
+- Mark relevance to:
+  - 2300 ORB
+  - 0030 ORB
+  - both
+
+Build a “MOST LIKELY MISSING FILTER SET” that explains:
+- why baseline is negative
+- why filtered result is strongly positive
+
+STEP 4 — RECONSTRUCT PHASE 2 LOGIC
+Using the recovered filters, reconstruct the most plausible Phase 2 rule set:
+
+Example output format (DO NOT GUESS — INFER FROM FILES):
+
+2300 ORB EXTENDED — RECONSTRUCTED
+- ORB: 23:00–23:05
+- Scan: 23:05 → 09:00
+- Entry: first close outside ORB AFTER X condition
+- Filters:
+  - ORB size between A–B %
+  - Asia range compression < C
+  - Minimum N closes outside
+  - No counter-sweep before entry
+- SL: HALF
+- RR: 1.5
+- Exit: TP/SL or 09:00
+
+Same for 0030.
+
+STEP 5 — VALIDATION PLAN
+Produce a concrete plan to:
+- re-apply ONLY the recovered filters
+- rerun backtest
+- confirm whether results converge toward:
+  +0.403R (2300)
+  +0.254R (0030)
+
+If convergence occurs → validated_setups is CONFIRMED
+If not → identify exactly which assumption breaks
+
+STOP CONDITIONS
+- Do NOT promote, delete, or modify validated_setups.
+- Do NOT change config.py.
+- End by reporting findings + reconstructed logic + next action.
+
+THIS TASK IS ABOUT RECOVERING LOST EDGE LOGIC — NOT BUILDING NEW EDGES.

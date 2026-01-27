@@ -1,0 +1,20 @@
+DECISION: Phase 2 is the current source of truth.
+
+Reason:
+Phase 4A extended-window backtest is INVALID due to a confirmed midnight rollover bug.
+Entries fire at 00:00 with wrong ORB reference, corrupting results.
+
+Instructions:
+1. Discard Phase 4A results.
+2. Treat Phase 2 results for:
+   - 2300 ORB extended
+   - 0030 ORB extended
+   as provisionally approved research.
+3. Do NOT attempt further large scans.
+4. If fixing backtest:
+   - ONLY fix trading-day boundary + entry detection
+   - Re-test ONLY 2300/0030 extended
+5. No changes to validated_setups or config.py unless explicitly approved.
+
+Goal:
+Stabilize system, preserve valid edges, avoid analysis paralysis.

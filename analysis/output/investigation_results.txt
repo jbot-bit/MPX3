@@ -1,0 +1,234 @@
+====================================================================================================
+INVESTIGATION: ORB EDGE SOURCES
+====================================================================================================
+
+Cost Model: $8.40 RT (commission $2.40 + spread $2.00 + slippage $4.00)
+
+====================================================================================================
+TASK 1: SESSION MAPPING (Brisbane -> NY Time)
+====================================================================================================
+
+ORB Time Mapping (Brisbane -> NY):
+
+Date         ORB (BNE)  NY Time    Session             
+------------------------------------------------------------
+2024-01-01   09:00      18:00      NY_OVERNIGHT        
+2024-01-01   10:00      19:00      NY_OVERNIGHT        
+2024-01-01   23:00      08:00      NY_PRE_OPEN         
+2024-01-01   00:30      09:30      NY_CASH_HOURS       
+2024-01-15   09:00      18:00      NY_OVERNIGHT        
+2024-01-15   10:00      19:00      NY_OVERNIGHT        
+2024-01-15   23:00      08:00      NY_PRE_OPEN         
+2024-01-15   00:30      09:30      NY_CASH_HOURS       
+2024-02-01   09:00      18:00      NY_OVERNIGHT        
+2024-02-01   10:00      19:00      NY_OVERNIGHT        
+2024-02-01   23:00      08:00      NY_PRE_OPEN         
+2024-02-01   00:30      09:30      NY_CASH_HOURS       
+2024-02-15   09:00      18:00      NY_OVERNIGHT        
+2024-02-15   10:00      19:00      NY_OVERNIGHT        
+2024-02-15   23:00      08:00      NY_PRE_OPEN         
+2024-02-15   00:30      09:30      NY_CASH_HOURS       
+2024-03-01   09:00      19:00      NY_OVERNIGHT        
+2024-03-01   10:00      20:00      NY_OVERNIGHT        
+2024-03-01   23:00      09:00      NY_CASH_HOURS       
+2024-03-01   00:30      10:30      NY_CASH_HOURS       
+2024-03-15   09:00      19:00      NY_OVERNIGHT        
+2024-03-15   10:00      20:00      NY_OVERNIGHT        
+2024-03-15   23:00      09:00      NY_CASH_HOURS       
+2024-03-15   00:30      10:30      NY_CASH_HOURS       
+2024-04-01   09:00      19:00      NY_OVERNIGHT        
+2024-04-01   10:00      20:00      NY_OVERNIGHT        
+2024-04-01   23:00      09:00      NY_CASH_HOURS       
+2024-04-01   00:30      10:30      NY_CASH_HOURS       
+2024-04-15   09:00      19:00      NY_OVERNIGHT        
+2024-04-15   10:00      20:00      NY_OVERNIGHT        
+2024-04-15   23:00      09:00      NY_CASH_HOURS       
+2024-04-15   00:30      10:30      NY_CASH_HOURS       
+2024-05-01   09:00      19:00      NY_OVERNIGHT        
+2024-05-01   10:00      20:00      NY_OVERNIGHT        
+2024-05-01   23:00      09:00      NY_CASH_HOURS       
+2024-05-01   00:30      10:30      NY_CASH_HOURS       
+2024-05-15   09:00      19:00      NY_OVERNIGHT        
+2024-05-15   10:00      20:00      NY_OVERNIGHT        
+2024-05-15   23:00      09:00      NY_CASH_HOURS       
+2024-05-15   00:30      10:30      NY_CASH_HOURS       
+2024-06-01   09:00      19:00      NY_OVERNIGHT        
+2024-06-01   10:00      20:00      NY_OVERNIGHT        
+2024-06-01   23:00      09:00      NY_CASH_HOURS       
+2024-06-01   00:30      10:30      NY_CASH_HOURS       
+2024-06-15   09:00      19:00      NY_OVERNIGHT        
+2024-06-15   10:00      20:00      NY_OVERNIGHT        
+2024-06-15   23:00      09:00      NY_CASH_HOURS       
+2024-06-15   00:30      10:30      NY_CASH_HOURS       
+
+KEY FINDINGS:
+- 09:00 Brisbane = NY overnight/pre-market (depending on DST)
+- 10:00 Brisbane = NY overnight/pre-market (depending on DST)
+- 23:00 Brisbane = NY morning (depending on DST)
+- 00:30 Brisbane = NY morning/midday (depending on DST)
+
+Full mapping saved to: analysis/output/session_mapping_brisbane_ny.csv
+
+====================================================================================================
+LOADING DATA
+====================================================================================================
+
+Loaded 740 days of data
+
+====================================================================================================
+TASK 2: DECOMPOSE 1000 ORB EDGE
+====================================================================================================
+
+BASELINE: 1000 ORB (No Filters)
+----------------------------------------------------------------------------------------------------
+Trades: 523
+Win Rate: 51.1%
+Expectancy: +0.396R
+Random Baseline: +0.289R (50% WR)
+Edge vs Random: +0.107R
+[PASS] BEATS RANDOM
+
+TEST 1: DIRECTIONAL BIAS
+----------------------------------------------------------------------------------------------------
+UP Breaks: 247 trades, WR=55.5%, Exp=+0.518R
+DOWN Breaks: 276 trades, WR=47.1%, Exp=+0.286R
+Asymmetry: 0.232R
+>> WEAK directional bias
+
+TEST 2: L4_CONSOLIDATION FILTER
+----------------------------------------------------------------------------------------------------
+L4=YES: 90 trades, WR=64.4%, Exp=+0.926R
+L4=NO: 433 trades, WR=48.3%, Exp=+0.286R
+Delta: +0.640R
+L4=YES vs Random: +0.357R
+[PASS] L4=YES beats random
+
+TEST 3: VOLATILITY REGIME (ATR Quintiles)
+----------------------------------------------------------------------------------------------------
+Q1_LOW: 101 trades, WR=48.5%, Exp=+0.124R vs Random=+0.229R [FAIL]
+Q2: 100 trades, WR=44.0%, Exp=+0.057R vs Random=+0.282R [FAIL]
+Q3: 101 trades, WR=57.4%, Exp=+0.576R vs Random=+0.439R [PASS]
+Q4: 100 trades, WR=52.0%, Exp=+0.494R vs Random=+0.580R [FAIL]
+Q5_HIGH: 101 trades, WR=54.5%, Exp=+0.832R vs Random=+0.795R [PASS]
+
+TEST 4: ORB SIZE REGIME (Size Quintiles)
+----------------------------------------------------------------------------------------------------
+Q1_SMALL: 111 trades, WR=54.1%, Exp=+0.001R vs Random=+0.016R [FAIL]
+Q2: 108 trades, WR=45.4%, Exp=+0.105R vs Random=+0.265R [FAIL]
+Q3: 99 trades, WR=47.5%, Exp=+0.319R vs Random=+0.458R [FAIL]
+Q4: 100 trades, WR=58.0%, Exp=+0.816R vs Random=+0.664R [PASS]
+Q5_LARGE: 105 trades, WR=50.5%, Exp=+0.784R vs Random=+0.843R [FAIL]
+
+====================================================================================================
+ABLATION STUDY: ISOLATE MINIMAL CONDITIONS
+====================================================================================================
+
+Baseline (no filters)          N=523 WR= 51.1% Exp=+0.396R Random=+0.289R Edge=+0.107R [PASS]
+L4 only                        N=90  WR= 64.4% Exp=+0.926R Random=+0.569R Edge=+0.357R [PASS]
+Q1_LOW volatility only         N=101 WR= 48.5% Exp=+0.124R Random=+0.229R Edge=-0.104R [FAIL]
+Q5_HIGH volatility only        N=101 WR= 54.5% Exp=+0.832R Random=+0.795R Edge=+0.038R [PASS]
+L4 + Q1_LOW volatility         N=12  WR= 58.3% Exp=+0.445R Random=+0.033R Edge=+0.412R [PASS]
+L4 + Q5_HIGH volatility        N=34  WR= 70.6% Exp=+1.380R Random=+0.915R Edge=+0.465R [PASS]
+
+Ablation results saved to: analysis/output/ablation_1000_orb.csv
+
+====================================================================================================
+TASK 3: NIGHT ORBs vs RANDOM BASELINE
+====================================================================================================
+
+2300 ORB BASELINE
+----------------------------------------------------------------------------------------------------
+Trades: 522
+Win Rate: 47.5%
+Expectancy: +0.514R
+Random Baseline: +0.511R (50% WR)
+Edge vs Random: +0.003R
+[PASS] BEATS RANDOM
+
+0030 ORB BASELINE
+----------------------------------------------------------------------------------------------------
+Trades: 523
+Win Rate: 44.2%
+Expectancy: +0.436R
+Random Baseline: +0.544R (50% WR)
+Edge vs Random: -0.108R
+[FAIL] FAILS vs RANDOM
+
+2300 ORB + L4_CONSOLIDATION
+----------------------------------------------------------------------------------------------------
+Trades: 90
+Win Rate: 48.9%
+Expectancy: +0.614R
+Random Baseline: +0.737R (50% WR)
+Edge vs Random: -0.123R
+[FAIL] FAILS vs RANDOM
+
+0030 ORB + L4_CONSOLIDATION
+----------------------------------------------------------------------------------------------------
+Trades: 90
+Win Rate: 41.1%
+Expectancy: +0.367R
+Random Baseline: +0.737R (50% WR)
+Edge vs Random: -0.370R
+[FAIL] FAILS vs RANDOM
+
+====================================================================================================
+TASK 4: FIND '1000-LIKE' STATES AT NIGHT ORBs
+====================================================================================================
+
+1000-LIKE STATE DEFINITION (from ablation study above):
+- Best performer at 1000 ORB was identified in ablation study
+- Now testing if same conditions work at 2300/0030 ORBs
+
+Best 1000 ORB condition: L4 + Q5_HIGH volatility
+  Edge vs Random: +0.465R
+
+REPRODUCING '1000-LIKE' CONDITIONS AT NIGHT ORBs:
+----------------------------------------------------------------------------------------------------
+2300 ORB + L4        N=90  Exp=+0.614R Random=+0.737R Edge=-0.123R [FAIL]
+0030 ORB + L4        N=90  Exp=+0.367R Random=+0.737R Edge=-0.370R [FAIL]
+
+====================================================================================================
+FINAL VERDICT
+====================================================================================================
+
+KEY FINDINGS:
+
+1. SESSION MAPPING:
+   - ORB times are correctly mapped Brisbane -> NY
+   - 09:00/10:00 Brisbane = NY overnight/pre-market
+   - 23:00/00:30 Brisbane = NY morning/midday
+
+2. 1000 ORB EDGE SOURCE:
+   [PASS] 1000 ORB BEATS random baseline by +0.107R
+   - Baseline: +0.396R (51.1% WR, 523 trades)
+   - Random: +0.289R (50% WR)
+
+3. L4_CONSOLIDATION FILTER:
+   [PASS] L4 filter at 1000 ORB BEATS random by +0.357R
+   - L4=YES: +0.926R (64.4% WR, 90 trades)
+
+4. NIGHT ORBs (2300, 0030):
+   [PASS] 2300 ORB BEATS random by +0.003R
+   [FAIL] 0030 ORB FAILS vs random (edge = -0.108R)
+
+5. NIGHT ORBs + L4_CONSOLIDATION:
+   [FAIL] 2300 ORB + L4 FAILS vs random (edge = -0.123R)
+   [FAIL] 0030 ORB + L4 FAILS vs random (edge = -0.370R)
+
+====================================================================================================
+HONESTY OVER OUTCOME
+====================================================================================================
+
+CRITICAL FINDING: Night ORBs FAIL random-entry test at baseline.
+
+This means:
+- The 'edge' at night ORBs is NO BETTER than flipping a coin
+- Any perceived edge is PURELY asymmetric RR math (not timing skill)
+- RECOMMENDATION: REJECT night ORBs unless filtered state beats random
+
+Even L4 filter does NOT help night ORBs beat random.
+- RECOMMENDATION: REJECT night ORBs entirely
+
+Analysis complete.
+====================================================================================================

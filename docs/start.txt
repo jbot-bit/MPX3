@@ -1,0 +1,165 @@
+YOU ARE CLAUDE CODE WORKING INSIDE THIS REPO. DO NOT GUESS PATHS OR FILES — SEARCH THE CODEBASE.
+
+MISSION:
+Implement a PERMANENT, CODE-ENFORCED “AI SOURCE LOCK” so the AI can ONLY answer using our own DB/candle data + our own engine outputs. Prompt-only controls are NOT acceptable. This must be enforced every time by code gates + tests + CI.
+
+NON-NEGOTIABLE BEHAVIOR:
+- The AI MUST NOT use any general trading knowledge or outside training data.
+- The AI MUST NOT infer missing values.
+- If data is missing -> HARD REFUSE with “NOT AVAILABLE / INSUFFICIENT DATA” and list what’s missing.
+- Trade suggestions ONLY allowed if strategy_engine returns an ENTER signal with concrete entry/SL/TP from our code.
+
+AUTHORITY ORDER:
+1) gold.db + live candle data tables/views (canonical DB)
+2) strategy_engine / execution_engine outputs
+3) docs explain only (never override DB)
+
+CANONICAL PROJECT RULES:
+- Use ONLY the production apps:
+  - trading_app/app_trading_hub.py (desktop)
+  - trading_app/app_mobile.py (mobile)
+- Obey canonical enforcement system: no shadow DBs, no hardcoded DB paths, route all DB access through canonical connection module. (See existing canonical enforcement patterns and tests.)
+- Keep changes minimal and centralized (“one choke point”).
+
+WHAT TO BUILD (DO ALL):
+
+A) Create a single choke-point function for ALL model calls
+- Identify where the LLM is called (ai_assistant / chat module).
+- Refactor so there is exactly ONE function that performs model calls, e.g.:
+  - trading_app/ai_guard.py: guarded_chat_answer(question, context, evidence_pack)
+- No other file may call the model client directly.
+
+B) Evidence Pack (mandatory input)
+Create a strict EvidencePack dataclass (or pydantic model) that is assembled BEFORE any LLM call.
+Required fields (minimum):
+- instrument
+- timeframe(s)
+- candle_tables_used (e.g., bars_1m, bars_5m)
+- ts_utc_start, ts_utc_end (exact query window)
+- setup_rows_used (from validated_setups): setup_id, strategy_name, orb_time, rr_target, sl_mode, tier, win_rate, avg_r, trade_count
+- engine_eval (from strategy_engine): status WAIT/ENTER, direction, entry_price, stop_price, target_price, orb_high, orb_low
+- facts[] (atomic statements derived from DB/code only)
+- queries[] (sanitized SQL strings OR query descriptors)
+
+C) Hard “fail-closed” gate
+Implement validate_evidence_pack(evidence_pack) that:
+- rejects None evidence_pack
+- rejects missing required fields
+- rejects any NULL/None for fields needed by the user request
+- rejects trade recommendation if engine_eval.status != ENTER
+On rejection:
+- return a standardized refusal message WITHOUT calling the LLM.
+
+D) Locked System Prompt (must be used every time)
+- Create a prompt file, e.g. trading_app/prompts/LOCKED_SYSTEM_PROMPT.txt
+- The prompt must explicitly state:
+  - “You may ONLY use the Evidence Pack content.”
+  - “If information is not in Evidence Pack, you must refuse.”
+  - “No external knowledge, no general trading advice.”
+- The app must load this file and prepend to every model call.
+- The user question must never be sent alone to the model (must include Evidence Pack).
+
+E) Enforce “no bypass” at code level
+- Add an AST scan test that FAILS if any file (except the one choke-point module) imports/calls the model client directly.
+- Similar to existing enforcement tests style (e.g., no hardcoded DB paths).
+- Add a second test that fails if the locked prompt file is missing or not loaded.
+
+F) Add safety/integrity tests proving the lock
+Add pytest tests:
+1) No Evidence Pack -> must refuse (and must NOT call model)
+2) Missing win_rate/avg_r/setup_id -> must refuse (no estimating)
+3) No candles (empty DB result) -> must refuse
+4) WAIT signal -> must return “NO TRADE (WAIT)” (no trade recommendation)
+5) ENTER signal -> allowed, and response must include:
+   - sources used (tables + ts range + setup_id)
+   - entry/SL/TP exactly matching engine_eval
+
+G) Add runtime self-checks (fail closed)
+On app startup:
+- assert_ai_lock_enabled():
+  - verifies LOCKED_SYSTEM_PROMPT.txt exists
+  - verifies guarded path is being used
+  - verifies bypass test patterns are not present
+If fails:
+- display “AI LOCK MISCONFIGURED” and disable AI responses.
+
+H) Logging/Audit (optional but preferred)
+- Add debug flag to log:
+  - evidence pack summary
+  - final response
+This is for replayability and proving “no outside knowledge”.
+
+DELIVERABLES:
+1) Implemented code + refactor so ONLY guarded function calls the model.
+2) LOCKED_SYSTEM_PROMPT.txt added and used.
+3) New tests added and passing.
+4) Update brief doc snippet in APP_USAGE_GUIDE.md or relevant README:
+   - “AI Source Lock: what it is, how to verify, how to run tests.”
+
+FINISH OUTPUT:
+- List changed/added files
+- Commands to run tests locally
+- Explain how the lock cannot be bypassed (because code gate + tests + runtime checks)
+
+NOW IMPLEMENT. DO NOT STOP UNTIL TESTS PASS.
+
+
+
+AI SOURCE LOCK — STRICT MODE (FAIL-CLOSED)
+
+You are an assistant inside a trading application. You are NOT a general trading advisor.
+
+ABSOLUTE RULE:
+You may ONLY use information contained in the provided EVIDENCE PACK.
+You must treat the Evidence Pack as the ONLY source of truth.
+
+FORBIDDEN:
+- Using any outside knowledge, general trading heuristics, or “what usually works”
+- Inferring or estimating missing values
+- Adding market context not present in the Evidence Pack
+- Recommending trades unless explicitly permitted by the Evidence Pack (see below)
+
+REQUIRED INPUTS:
+You will be given:
+1) USER QUESTION
+2) EVIDENCE PACK (structured data from our database + our strategy/execution engines)
+
+If the Evidence Pack is missing, empty, or lacks required fields:
+- DO NOT answer the question.
+- Respond with a refusal in the exact format under “REFUSAL FORMAT”.
+
+TRADE RECOMMENDATIONS RULE:
+You may recommend or describe a trade ONLY if:
+- Evidence Pack contains engine_eval.status = "ENTER"
+- Evidence Pack includes concrete entry_price, stop_price, target_price, direction
+- Evidence Pack includes orb_high and orb_low
+- Evidence Pack includes a validated setup row with setup_id and strategy_name
+
+If engine_eval.status != "ENTER":
+- You must output “NO TRADE (WAIT)” and explain only using Evidence Pack facts.
+
+OUTPUT RULES (MANDATORY):
+Every response MUST include:
+A) DECISION
+B) FACTS USED (bullets; only from Evidence Pack)
+C) SOURCES USED (tables/views + ts range + setup_id(s) if any)
+D) NEXT ACTION (one short line)
+
+If user asks anything outside dataset/tools scope (news, other symbols, macro, “what should happen next”):
+- Refuse using the refusal format.
+
+REFUSAL FORMAT (EXACT):
+DECISION: NOT AVAILABLE
+REASON: <one sentence stating missing/out-of-scope>
+MISSING: <comma-separated list of missing fields or required data>
+SOURCES USED: <tables/views if any, else "none">
+NEXT ACTION: <what user must provide or what data must be loaded>
+
+STYLE:
+- Be concise.
+- Do not add tips.
+- Do not speculate.
+- If uncertain, refuse.
+
+REMINDER:
+Evidence Pack is the only truth. No Evidence Pack, no answer.

@@ -1,0 +1,53 @@
+================================================================================
+AUTONOMOUS STRATEGY VALIDATOR
+================================================================================
+
+Canonical Cost Model: $7.40 RT (MANDATORY)
+Point Value: $10.00
+Approval Threshold: +0.15R at $7.40
+
+Methodology: 6-Phase Autonomous Validation
+================================================================================
+
+Found 7 strategies to validate
+
+================================================================================
+VALIDATING: ID 20 | 1000 ORB RR=1.5 full
+================================================================================
+
+PHASE 1: Ground Truth Discovery
+--------------------------------------------------------------------------------
+Filter: L4_CONSOLIDATION (session type)
+SQL: london_type_code = 'L4_CONSOLIDATION'
+[PASS] Found 92 ground truth trades
+
+PHASE 2: Data Integrity Validation
+--------------------------------------------------------------------------------
+[PASS] Data integrity checks passed
+
+PHASE 3: Single-Trade Reconciliation
+--------------------------------------------------------------------------------
+Trade 1 (2025-11-27): DOWN LOSS
+  Stop: 2.20 pts | Risk: $29.40
+  Realized R: -1.000R
+Trade 2 (2025-05-15): DOWN LOSS
+  Stop: 5.20 pts | Risk: $59.40
+  Realized R: -1.000R
+Trade 3 (2024-05-21): UP LOSS
+  Stop: 2.00 pts | Risk: $27.40
+  Realized R: -1.000R
+Trade 4 (2024-04-01): UP WIN
+  Stop: 2.90 pts | Risk: $36.40
+  Realized R: +0.992R
+Trade 5 (2026-01-09): DOWN WIN
+  Stop: 3.10 pts | Risk: $38.40
+  Realized R: +1.018R
+[PASS] Single-trade reconciliation completed
+
+PHASE 4: Statistical Validation
+--------------------------------------------------------------------------------
+[PASS] Sample size: 92 >= 30
+Traceback (most recent call last):
+  File "C:\Users\sydne\OneDrive\Desktop\MPX2_fresh\scripts\audit\autonomous_strategy_validator.py", line 258, in <module>
+    exp_740 = calculate_expectancy(trades, rr, MGC_POINT_VALUE, MGC_FRICTION_740)
+NameError: name 'calculate_expectancy' is not defined

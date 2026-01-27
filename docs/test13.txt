@@ -1,0 +1,59 @@
+You are in repo: C:\Users\sydne\OneDrive\myprojectx2_cleanpush
+Branch: restore-edge-pipeline
+
+GOAL (tomorrow AM): Make the Asia 0900/1000/1100 backtests fully trustworthy and production-safe.
+
+CONSTRAINTS (non-negotiable):
+- ZERO LOOKAHEAD. Enforce by construction + add explicit checks.
+- Deterministic runs (hash trades).
+- NO writes to validated_setups or config.py during research.
+- Work in research/quick_asia/ only unless told otherwise.
+- If any bug is found, stop and write a short report + failing example.
+
+TASK 1 — FIX ISOLATION EXIT BUG
+- In the Asia isolation-mode backtest engine, ensure EVERY trade exits inside the allowed scan window.
+- Add assertions:
+  - entry_ts >= orb_end_ts
+  - exit_ts <= scan_end_ts  (for isolation mode ONLY)
+- Find the root cause of the “14 exits outside window”.
+- Add a unit test that reproduces the bug and then passes after fix.
+- Re-run the exact same 48-config grid and regenerate:
+  - research/quick_asia/asia_results.csv
+  - research/quick_asia/asia_report.md
+  - research/quick_asia/asia_sanity.md
+- Confirm exits_outside_window == 0.
+
+TASK 2 — STABILITY CHECK (FAST)
+- Re-run the same grid on 365 days (or max available) and also 3 time-splits.
+- Output:
+  - asia_results_365d.csv
+  - asia_results_splits.csv
+  - short markdown summary of which configs remain positive in >=2/3 splits.
+
+TASK 3 — CONTINUATION MODE (SESSION INTERACTION)
+- Implement continuation_mode for ONLY:
+  - 0900 best config (RR=2.0 HALF)
+  - 1000 best config (RR=3.0 FULL)
+- Rules:
+  - No forced exit.
+  - Exit only TP/SL unless an explicit invalidation rule exists.
+  - Track time-to-resolution.
+  - Track how often trades remain open into 1000/1100.
+- Output:
+  - asia_continuation_results.csv
+  - brief comparison table vs isolation.
+
+TASK 4 — QUICK STRESS TEST
+- Run simple stress tests on the 2 best configs:
+  - +1 tick slippage
+  - +2 tick slippage
+  - stop-first bias on ties
+- Output:
+  - asia_stress_results.csv
+  - summary: does expectancy stay > 0?
+
+DELIVERABLE: A single “Asia Production Candidate” recommendation:
+- One config for 0900 (or none)
+- One config for 1000 (or none)
+- Explicitly “1100: no trade” if still negative
+- Include exact entry/stop/target/scan rules and the validated metrics.

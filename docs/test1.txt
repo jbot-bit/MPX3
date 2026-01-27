@@ -1,0 +1,20 @@
+Proceed to PHASE 1 — FINDING.
+
+Rules:
+- Use ONLY the legitimate logic identified in PHASE 0:
+  - Extended-window ORBs
+  - Session transitions
+  - Liquidity sweep → delayed resolution
+  - Directional bias system
+  - EDE validation pipeline
+- Do NOT invent new concepts.
+- Search for NEW edges by REUSING this structure:
+  - Other sessions
+  - Other instruments
+  - Other stop/hold variants
+- Output ONLY candidate edges with:
+  - Clear hypothesis
+  - Why it should exist structurally
+  - What conditions it depends on
+
+STOP before backtesting.

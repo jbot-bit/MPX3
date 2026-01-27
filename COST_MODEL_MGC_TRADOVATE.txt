@@ -1,0 +1,72 @@
+# COST MODEL – MGC MICRO GOLD (TRADOVATE)
+
+This document defines numerical execution cost assumptions
+used by the Realized RR Engine defined in CANONICAL_LOGIC.md.
+
+These values are PARAMETERS, not rules.
+They may change without altering canonical logic.
+
+---
+
+## Contract Specification
+
+Symbol: MGC (Micro Gold)
+Tick Size: 0.10
+Tick Value: $1.00
+Point Value: $10.00
+
+---
+
+## Measured Broker Costs (Tradovate – From Performance Report)
+
+Observed:
+- Total Trade Fees & Commission: $1,273.72
+- Total Contracts Traded: 1,060
+- Total Trades: 231
+
+Derived:
+- Avg fee per contract-side ≈ $1.20
+- Avg round-trip fee per 1-lot ≈ $2.40
+
+---
+
+## Execution Cost Assumptions (Conservative Default)
+
+Per contract, round-trip:
+
+- Commission + exchange + NFA: $2.40
+- Slippage (normal conditions): 4 ticks = $4.00
+- Spread: 1 tick = $1.00
+
+### Total Friction per Trade
+$7.40 per contract (conservative, reality-anchored)
+
+---
+
+## RR Calculation (REALIZED)
+
+Risk_$ =
+(|Entry − Stop| × 10) + 7.40
+
+Reward_$ =
+(|Target − Entry| × 10) − 7.40
+
+Realized_RR =
+Reward_$ / Risk_$
+
+---
+
+## Stress Testing
+
+Increase slippage assumption:
+- Moderate stress: 8 ticks ($8)
+- Severe stress: 12–15 ticks ($12–15)
+
+---
+
+## Usage Rules
+
+- Use this model for backtests, expectancy, and prop-firm analysis
+- Do NOT subtract costs after RR is calculated
+- Costs MUST be embedded in risk and reward
+- Update this file if broker, fees, or execution conditions change

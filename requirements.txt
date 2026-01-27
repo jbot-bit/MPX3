@@ -1,0 +1,41 @@
+# Trading App Dependencies - Cloud Deployment Ready
+
+# Core
+streamlit>=1.28.0
+streamlit-autorefresh>=1.0.1
+pandas>=2.0.0
+numpy>=1.24.0
+
+# Database
+duckdb>=0.9.0
+
+# API & HTTP
+httpx>=0.24.0
+python-dotenv>=1.0.0
+anthropic>=0.40.0
+
+# Charting
+plotly>=5.17.0
+
+# Time zones
+pytz>=2023.3
+tzdata>=2023.3
+
+# ML (optional but recommended)
+lightgbm>=4.0.0
+
+# Optional: For historical data backfill (requires API key in secrets)
+# databento>=0.12.0
+anthropic
+duckdb
+httpx
+lightgbm
+numpy
+pandas
+plotly
+python-dotenv
+pytz
+streamlit
+streamlit-autorefresh
+tzdata
+openai

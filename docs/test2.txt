@@ -1,0 +1,38 @@
+PHASE 2 — VERIFICATION
+
+Scope:
+- Verify the 8 candidate edges from PHASE 1
+- Re-scan the 20 liquidity-related files already identified
+
+STRICT RULES:
+- Do NOT backtest
+- Do NOT invent new edges
+- Do NOT approve anything
+- Do NOT modify production code
+
+For EACH candidate edge:
+1. Explicitly list:
+   - Entry timestamp
+   - All data inputs used
+   - Latest timestamp of each input
+2. Confirm:
+   - Zero lookahead (PASS / FAIL)
+   - Required fields exist in daily_features_v2 (YES / NO)
+3. Output a verdict:
+   - PASS → eligible for Phase 3 testing
+   - FAIL → discard
+   - NEEDS REWRITE → specify exactly what must change
+
+Liquidity file check:
+- Re-check the 20 files containing:
+  liquidity / sweep / absorption / rejection / fade
+- Classify each as:
+  SAFE / TAINTED / DOC-ONLY
+- If TAINTED, state the exact lookahead issue.
+
+Final output:
+- Table of 8 edges with PASS/FAIL status
+- Short list of edges allowed to proceed to PHASE 3
+- List of tainted liquidity logic (if any)
+
+STOP after verification.

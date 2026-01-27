@@ -1,0 +1,49 @@
+# SKILL: reflect (session learning)
+
+## Purpose
+Capture useful learnings from the current session and update relevant skill files with flexible defaults.
+
+## What to extract (signals)
+- **Corrections**: user changed code, naming, architecture, UI, tests, or phrasing.
+- **Approvals**: user said “yes / that’s right / do that / ship it”.
+- **Repeated friction**: same mistake or preference showed up more than once.
+- **Context-specific wins**: something worked well *in this project*.
+
+## How to write memories (avoid boxing)
+Write updates as:
+- **Default preference**: “Default to X…”
+- **Preference strength**: “Prefer / Default / Usually / Sometimes / Avoid”
+- **Exception clause**: “Unless Y…”
+- **Scope**: “In this repo / In this module / In UI code / In research scripts”
+
+Never write memories as universal absolutes unless explicitly required.
+
+## Confidence levels
+- **High**: explicitly stated rule with clear scope and exception.
+- **Medium**: repeated preference or validated pattern.
+- **Low**: tentative observation—log as “Consider” not “Do”.
+
+## Output format (propose, don’t apply)
+1) **Detected signals** (quote short snippets)
+2) **Proposed updates** grouped by target skill file
+3) **Risk check**: could this overfit or box the user in?
+4) **Diff preview**
+5) Ask: **Apply? (Y/n)** and offer edits in natural language.
+
+## Guardrails
+- Do not add rigid rules about style unless the user explicitly wants it.
+- Prefer “small, reversible” changes (1–5 bullets).
+- If uncertain, log to a “review later” section instead of enforcing.
+- Never overwrite existing rules; append or refine with scope/exception.
+
+## Where to write updates
+Choose the closest matching file:
+- `skills/code_review.md`
+- `skills/testing.md`
+- `skills/frontend.md`
+- `skills/backend.md`
+- `skills/project_conventions.md`
+- Or create `skills/_pending_review.md` for low-confidence items.
+
+## Suggested commit message
+`skills: reflect session learnings (scoped defaults)`

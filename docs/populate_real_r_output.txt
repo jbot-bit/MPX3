@@ -1,0 +1,15 @@
+================================================================================
+POPULATING real_expected_r FOR VALIDATED SETUPS
+================================================================================
+
+Found 17 setups to process
+
+Processing setup #9: MPL 0030 ORB RR=1.0 SL=FULL...
+Traceback (most recent call last):
+  File "C:\Users\sydne\OneDrive\Desktop\MPX2_fresh\populate_real_expected_r.py", line 227, in <module>
+    main()
+  File "C:\Users\sydne\OneDrive\Desktop\MPX2_fresh\populate_real_expected_r.py", line 213, in main
+    print(f"  \u26a0\ufe0f  No trades found (skipped)")
+  File "C:\Users\sydne\AppData\Local\Programs\Python\Python310\lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+UnicodeEncodeError: 'charmap' codec can't encode characters in position 2-3: character maps to <undefined>

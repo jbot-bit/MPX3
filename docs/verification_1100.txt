@@ -1,0 +1,42 @@
+================================================================================
+VERIFICATION PROTOCOL: 1100 ORB
+================================================================================
+
+================================================================================
+STEP 1: Manual Verification (3-5 Sample Trades)
+================================================================================
+
+
+Verifying trade: 2024-03-19 00:00:00, 1100 ORB, RR=1.5, Stop=0.2
+  Break: UP, Entry: 2165.1
+  Risk: 0.22, Stop: 2164.5, Target: 2165.0
+  Outcome: WIN
+
+Verifying trade: 2025-07-09 00:00:00, 1100 ORB, RR=1.5, Stop=0.2
+  Break: DOWN, Entry: 3311.2
+  Risk: 0.80, Stop: 3312.8, Target: 3310.8
+  Outcome: WIN
+
+Verifying trade: 2025-01-08 00:00:00, 1100 ORB, RR=1.5, Stop=0.2
+  Break: DOWN, Entry: 2661.9
+  Risk: 0.58, Stop: 2662.6, Target: 2661.1
+  Outcome: LOSS
+
+Verifying trade: 2024-08-13 00:00:00, 1100 ORB, RR=1.5, Stop=0.2
+  Break: DOWN, Entry: 2509.4
+  Risk: 0.64, Stop: 2511.2, Target: 2509.6
+  Outcome: WIN
+
+Verifying trade: 2024-01-23 00:00:00, 1100 ORB, RR=1.5, Stop=0.2
+  Break: DOWN, Entry: 2023.3
+  Risk: 0.14, Stop: 2023.7, Target: 2023.4
+  Outcome: WIN
+
+Traceback (most recent call last):
+  File "C:\Users\sydne\OneDrive\Desktop\MPX2_fresh\verify_optimization_results.py", line 344, in <module>
+    step1_pass = manual_verify_samples(orb_time, results)
+  File "C:\Users\sydne\OneDrive\Desktop\MPX2_fresh\verify_optimization_results.py", line 242, in manual_verify_samples
+    print("\u2705 PASS: Manual verification complete (review outcomes above)")
+  File "C:\Users\sydne\AppData\Local\Programs\Python\Python310\lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+UnicodeEncodeError: 'charmap' codec can't encode character '\u2705' in position 0: character maps to <undefined>
