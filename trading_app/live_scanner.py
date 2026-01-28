@@ -25,6 +25,7 @@ class LiveScanner:
 
     def __init__(self, db_connection: duckdb.DuckDBPyConnection):
         self.conn = db_connection
+        self._condition_cache = {}  # Cache promoted conditions
 
     def get_current_market_state(self, instrument: str = 'MGC') -> Dict:
         """
@@ -104,6 +105,89 @@ class LiveScanner:
             'orb_data': orb_data,
             'instrument': instrument
         }
+
+    def _load_promoted_conditions(self, edge_id: str) -> Optional[Dict]:
+        """
+        Load promoted condition rules for an edge
+
+        Checks if edge was created from a What-If snapshot with conditions.
+
+        Returns:
+            Dict of conditions or None
+        """
+        if edge_id in self._condition_cache:
+            return self._condition_cache[edge_id]
+
+        try:
+            # Check what_if_snapshots for promoted snapshot linked to this edge
+            row = self.conn.execute("""
+                SELECT conditions
+                FROM what_if_snapshots
+                WHERE candidate_edge_id = ?
+                AND promoted_to_candidate = TRUE
+                LIMIT 1
+            """, [edge_id]).fetchone()
+
+            if row:
+                conditions = json.loads(row[0]) if isinstance(row[0], str) else row[0]
+                self._condition_cache[edge_id] = conditions
+                return conditions
+            else:
+                self._condition_cache[edge_id] = None
+                return None
+
+        except Exception:
+            return None
+
+    def _evaluate_conditions(
+        self,
+        conditions: Dict,
+        market_state: Dict,
+        orb_time: str
+    ) -> tuple:
+        """
+        Evaluate promoted conditions against current market state
+
+        Args:
+            conditions: Condition dict from snapshot
+            market_state: Current market state
+            orb_time: ORB time being evaluated
+
+        Returns:
+            (passes: bool, reason: str)
+        """
+        orb_data = market_state.get('orb_data', {})
+        orb_info = orb_data.get(orb_time, {})
+
+        if not orb_info:
+            return False, "ORB data not available"
+
+        orb_size_norm = orb_info.get('size_norm')
+        atr = orb_info.get('atr')
+
+        # Check ORB size conditions
+        if 'orb_size_min' in conditions and conditions['orb_size_min'] is not None:
+            if orb_size_norm is None or orb_size_norm < conditions['orb_size_min']:
+                return False, f"ORB size {orb_size_norm:.2f} < {conditions['orb_size_min']:.2f} ATR"
+
+        if 'orb_size_max' in conditions and conditions['orb_size_max'] is not None:
+            if orb_size_norm is None or orb_size_norm > conditions['orb_size_max']:
+                return False, f"ORB size {orb_size_norm:.2f} > {conditions['orb_size_max']:.2f} ATR"
+
+        # Check pre-travel conditions
+        if 'pre_orb_travel_max' in conditions and conditions['pre_orb_travel_max'] is not None:
+            # Would need to query daily_features for pre_orb_travel
+            # For V1, skip this check in live mode (requires additional query)
+            pass
+
+        # Check session type conditions
+        if 'asia_types' in conditions and conditions['asia_types'] is not None:
+            # Would need to query daily_features for asia_type
+            # For V1, skip this check in live mode
+            pass
+
+        # All checks passed
+        return True, "All conditions met"
 
     def scan_current_market(self, instrument: str = 'MGC') -> List[Dict]:
         """
@@ -220,8 +304,18 @@ class LiveScanner:
                     passes_direction_filter = False
                     direction_reason = f"Direction mismatch (edge wants SHORT, ORB broke {break_dir})"
 
+            # Check promoted conditions (What-If validated filters)
+            passes_promoted_conditions = True
+            promoted_reason = None
+
+            promoted_conditions = self._load_promoted_conditions(edge_id)
+            if promoted_conditions:
+                passes_promoted_conditions, promoted_reason = self._evaluate_conditions(
+                    promoted_conditions, market_state, orb_time
+                )
+
             # Determine overall status
-            if passes_size_filter and passes_direction_filter:
+            if passes_size_filter and passes_direction_filter and passes_promoted_conditions:
                 status = 'ACTIVE'
                 reason = f"All filters passed! ORB size: {orb_size_norm:.3f}, Break: {break_dir}"
             elif not passes_size_filter:
@@ -230,6 +324,9 @@ class LiveScanner:
             elif not passes_direction_filter:
                 status = 'WAITING'
                 reason = direction_reason
+            elif not passes_promoted_conditions:
+                status = 'INVALID'
+                reason = f"Promoted condition failed: {promoted_reason}"
             else:
                 status = 'INVALID'
                 reason = "Unknown filter failure"

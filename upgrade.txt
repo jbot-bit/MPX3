@@ -1,116 +1,395 @@
-You are the senior engineer. Build this COMPLETELY end-to-end. No skeletons, no “TODO later”, no mock data, no random stubs. If anything is missing, infer it from the existing codebase and wire it correctly. Keep it deterministic and reproducible.
+WORK DISCIPLINE (MANDATORY)
 
-GOAL
-Add a new V1 capability called “WHAT-IF ANALYZER” that plugs directly into the existing system (Research/Validation/Production + live scanning). It must answer: “Given condition X, does it improve/worsen Setup Y?” and allow promoting validated condition-rules into the live tracker feed as real gates.
+You MUST:
+1) Break this work into an explicit numbered task list before writing code.
+2) Each task must include:
+   - Purpose
+   - Inputs
+   - Outputs
+   - Definition of Done (verifiable)
+3) Complete tasks strictly in order. Do NOT jump ahead.
+4) After each task:
+   - State what changed
+   - State what was verified (tests, queries, UI proof)
+5) If ambiguity exists:
+   - Re-scan the repo
+   - Re-check this document
+   - Do NOT invent new architecture without justification
+6) No task is “done” unless it is wired into:
+   UI → backend → storage → validation → production (if applicable).
 
-V1 PRINCIPLES (NON-NEGOTIABLE)
-- Deterministic only. No semantic/NL layer yet. (We add semantic + memory later.)
-- Discovery/What-If can only create “candidate rule snapshots”. It must NOT bypass validation.
-- Only the existing validation pipeline (with mandatory control + gates + evidence) can create promoted production items.
-- Everything must be reproducible: same filters + same setup + same DB snapshot => same output.
-- Fail-closed everywhere (if data missing / ambiguous => block, show reason).
+If you are unsure, STOP and re-read this document before continuing.
 
-FEATURES TO BUILD (END-TO-END)
+🔒 SYSTEM INSTRUCTION (READ FIRST)
 
-1) WHAT-IF ANALYZER PANEL (UI)
-Add a panel inside the existing app that lets the operator:
-- Select one existing setup (validated/promoted item).
-- Define 1–3 structured conditions (dropdown + numeric thresholds + time windows).
-Examples conditions (implement a small but real V1 set):
-- ORB size (ticks/points) > N or < N for a chosen session/time
-- “No breakout within M minutes after ORB open” (requires breakout-time field or derivation)
-- Session range / volatility bucket (use existing features if present)
-All conditions must map to concrete deterministic filters over historical days.
+You are building this completely and end-to-end.
+No skeleton. No mock logic. No “future work” placeholders.
 
-The UI must show:
-- Baseline performance (all eligible days for setup)
-- Conditional performance (days matching condition set)
-- Non-matching performance (days not matching)
-- Delta metrics: win rate delta, expected R delta, max DD delta, sample size
-- Practical gates for “worth testing” (minimum sample size, minimum delta, etc.)
-- Clear warnings when sample size is too low or condition cannot be computed.
+If something is missing, design and implement it.
+If something already exists, integrate with it.
+If unsure, refer back to the Findings & Required Task Stubs document.
 
-2) WHAT-IF QUERY ENGINE (BACKEND)
-Implement a backend component that:
-- Accepts: setup_id (or setup definition), condition_set, date range (optional), instrument
-- Produces:
-  - Eligible day set for that setup
-  - Match day set for the condition
-  - Computes metrics for baseline/match/non-match deterministically from DB-backed history
-  - Uses the same honesty-first cost model used elsewhere (no duplication/contradiction)
-- Must be safe:
-  - No unsafe string-SQL concatenation. Use parameterization or a safe query builder pattern.
-- Must be fast:
-  - Cache results keyed by (setup, condition_set, date range, db fingerprint/version).
-- Return a structured result object used by UI and saved as a snapshot.
+Semantic / NL / embeddings layer is explicitly deferred.
+This is V1 = deterministic only.
 
-3) CANDIDATE RULE SNAPSHOT (STORAGE)
-When operator clicks “Save Snapshot”:
-- Persist a record that includes:
-  - Setup reference
-  - Full condition_set (structured)
-  - Exact query definition / parameters used
-  - Summary metrics (baseline/match/non-match + deltas)
-  - Sample sizes
-  - Timestamp
-  - Code version identifier (git hash if available)
-  - Database snapshot identifier if available
-This snapshot is NOT “production”. It is an evidence trail for “why we tested this”.
+🎯 OVERALL GOAL
 
-4) VALIDATION HANDOFF (PIPELINE INTEGRATION)
-Add a button “Send to Validation” that:
-- Creates a proper candidate edge/rule entry in the existing workflow
-- Links it back to the snapshot
-- Runs through your existing validation flow:
-  - Mandatory control baseline
-  - Gates (sample size, ExpR, stress tests, walk-forward, beats control)
-  - Evidence pack creation
-No shortcuts.
+Implement a deterministic What-If Analyzer that allows:
 
-Important:
-- If your current validation logic is strategy-based, extend it so it can validate “setup + additional condition rule” as a variant.
-- Keep backward compatibility: existing setups still validate as before.
+Testing conditional rules against historical data
 
-5) PROMOTION INTO LIVE TRACKER (PRODUCTION INTEGRATION)
-When a what-if rule variant is validated and then promoted:
-- It must appear in the live tracker feed as an additional gate for that setup.
-- Live evaluation:
-  - Compute today’s condition state deterministically from live/session features.
-  - Mark setup as ACTIVE / BLOCKED based on whether the condition gate passes today.
-- Display clearly:
-  - Which gate blocked it and why (e.g., “Asia ORB size 170 > 150 threshold”).
+Measuring impact on existing validated setups
 
-6) TESTS (MUST HAVE)
-Add/extend tests that prove end-to-end:
-- Query engine returns consistent results for same inputs
-- Snapshot saved correctly and round-trips (load snapshot => same output)
-- “Send to Validation” creates candidate and cannot bypass validation
-- Promotion guard still blocks anything without proper status/evidence
-- Live gate evaluation works for at least one promoted rule
+Persisting reproducible snapshots
 
-V1 SCOPE CONTROL
-- Start with a small, real set of conditions (2–4) that you can compute from existing DB fields.
-- If “no breakout within M minutes” cannot be computed from existing schema, then:
-  - Implement the minimal deterministic derivation using existing intraday data OR
-  - Replace with an equivalent V1 condition that is computable now (but document it and make the UI only show computable conditions).
-No fake data.
+Promoting condition variants into the validation pipeline
 
-OUTPUT REQUIREMENTS
-- Implement fully (UI + backend + storage + validation handoff + production integration + tests).
-- Update build status/docs to reflect the new capability and how to use it.
-- Keep everything clean: UI only presents; backend/orchestrator does logic and DB writes.
+Enforcing promoted conditions as live trading gates
 
-DELIVERABLE CHECKLIST (YOU MUST COMPLETE)
-- What-If panel works in the app with real results.
-- Conditions evaluate correctly and deterministically.
-- Snapshot persistence works.
-- Validation handoff works and produces runs/evidence as normal.
-- Promoted rules show in live tracker and actually gate today’s setups.
-- Tests pass.
+Maintaining full lineage, auditability, and fail-closed behavior
 
-NOW DO IT
-Start by scanning the repo to locate:
-- where validated/promoted setups are defined/stored
-- where live tracker computes today’s market/session features
-- what DB tables/columns can support the initial condition set
-Then implement in small commits with verification after each stage.
+This must integrate cleanly with:
+
+Existing edge discovery
+
+Validation (T6/T7)
+
+Live scanning
+
+Memory / monitoring systems (deterministic V1)
+
+🧠 REQUIRED SKILL USAGE (MANDATORY)
+
+Invoke these explicitly and repeatedly during the work:
+
+Design & Scope Control
+
+brainstorming — before architecture or condition design (prevent bloat)
+
+focus-mode — break work into small, finishable blocks
+
+Navigation & Safety
+
+quick-nav — to locate logic, flows, or data sources
+
+code-guardian — auto-activate on any trading / pipeline / validation edits
+
+Data & Integrity
+
+database-design — before adding or changing any schema
+
+strategy-validator — ensure all variants must pass full validation gates
+
+Quality Control
+
+code-review-pipeline — after each major task
+
+project-organizer — if new components increase repo entropy
+
+Runtime Intelligence (Deterministic V1)
+
+trading-memory — persist outcomes + metadata (no LLM)
+
+edge-evolution-tracker — register promoted variants for monitoring
+
+market-anomaly-detection — enforce condition gates pre-trade
+
+(UI aesthetics only where relevant)
+
+frontend-design — What-If Analyzer panel only
+
+mobile-android-design / mcp-builder — ignore for V1 unless explicitly needed
+
+📋 WORK RULES (NON-NEGOTIABLE)
+
+Break everything into numbered tasks
+
+Each task must include:
+
+Purpose
+
+Inputs
+
+Outputs
+
+Definition of Done
+
+Complete tasks in order
+
+After each task:
+
+Run checks/tests
+
+Summarize what is now provably working
+
+Refer back to the Findings document whenever unsure
+
+Do not invent parallel architectures
+
+🧩 TASK LIST (AUTHORITATIVE)
+✅ Task 0 — Orientation & Constraints
+
+Purpose
+
+Establish boundaries and confirm V1 scope
+
+Actions
+
+Use quick-nav to locate:
+
+Where setups are defined
+
+Where validation is invoked
+
+Where live scanning applies filters
+
+Use brainstorming to select 2–4 deterministic V1 conditions
+(e.g. ORB size thresholds, time-since-open, range compression)
+
+DoD
+
+Clear list of V1 conditions
+
+Explicit confirmation of non-semantic V1
+
+🧮 Task 1 — What-If Analyzer Engine (Deterministic)
+
+Purpose
+
+Evaluate condition sets against historical data
+
+Actions
+
+Build a deterministic query engine that:
+
+Accepts setup + condition rules
+
+Computes:
+
+baseline metrics
+
+condition-matched metrics
+
+non-matched metrics
+
+deltas
+
+Applies identical cost model + rules
+
+Add caching keyed by:
+
+setup
+
+condition hash
+
+data version
+
+Skills
+
+brainstorming
+
+database-design
+
+code-guardian
+
+DoD
+
+Same inputs always return same outputs
+
+Cached results reused
+
+No UI dependency
+
+📸 Task 2 — Snapshot Persistence (Reproducibility)
+
+Purpose
+
+Persist exact What-If results as immutable artifacts
+
+Actions
+
+Design snapshot storage with:
+
+Full condition definition
+
+Query parameters
+
+Metrics
+
+Data/version metadata
+
+Enable deterministic re-runs
+
+Skills
+
+database-design
+
+trading-memory
+
+DoD
+
+Snapshots can be reloaded and re-evaluated
+
+No hidden state or recomputation drift
+
+🖥️ Task 3 — What-If Analyzer UI Panel
+
+Purpose
+
+Allow interactive exploration without logic leakage
+
+Actions
+
+Add a panel that:
+
+Selects a base setup
+
+Applies condition rules
+
+Displays baseline vs conditional metrics
+
+Saves snapshots explicitly
+
+Skills
+
+frontend-design
+
+focus-mode
+
+DoD
+
+UI is read-only logic-wise
+
+All actions call backend engine only
+
+🔁 Task 4 — Validation Handoff (Variant Lineage)
+
+Purpose
+
+Turn snapshots into validate-able candidates
+
+Actions
+
+Enable “Promote Snapshot to Candidate”
+
+Create variant lineage:
+
+base setup → condition variant
+
+Force full validation pipeline (T6/T7)
+
+Skills
+
+strategy-validator
+
+code-guardian
+
+DoD
+
+No bypass paths
+
+Variants fail or pass like any other edge
+
+🚦 Task 5 — Live Trading Condition Gates
+
+Purpose
+
+Enforce validated conditions in real time
+
+Actions
+
+Extend live scanning to:
+
+Evaluate promoted condition rules
+
+Block trades when conditions fail
+
+Record block reasons
+
+Skills
+
+market-anomaly-detection
+
+edge-evolution-tracker
+
+DoD
+
+Live decisions explain why a trade was blocked
+
+No silent passes
+
+🧪 Task 6 — End-to-End Tests
+
+Purpose
+
+Prove system integrity
+
+Actions
+
+Add tests covering:
+
+Deterministic What-If evaluation
+
+Snapshot round-trip
+
+Validation promotion
+
+Live gate enforcement
+
+Skills
+
+code-review-pipeline
+
+strategy-validator
+
+DoD
+
+Full lifecycle tested
+
+No manual steps required
+
+📘 Task 7 — Documentation & Build Status
+
+Purpose
+
+Make the system operable without tribal knowledge
+
+Actions
+
+Document:
+
+What-If workflow
+
+Reproducibility guarantees
+
+Operator expectations
+
+Update build status
+
+Skills
+
+focus-mode
+
+DoD
+
+New capability clearly explained
+
+No ambiguity
+
+▶️ START NOW
+
+Invoke quick-nav to locate:
+
+Setup definitions
+
+Validation entry points
+
+Live scan logic
+
+Invoke brainstorming to lock V1 condition set
+
+Begin Task 1
+
+Do not skip steps.
+Do not compress tasks.
+Do not proceed without completing each DoD.

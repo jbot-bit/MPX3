@@ -537,6 +537,263 @@ with tab_research:
 
     st.divider()
 
+    # ========================================================================
+    # WHAT-IF ANALYZER - Interactive Condition Testing
+    # ========================================================================
+    st.subheader("🔬 What-If Analyzer")
+    st.caption("Test filter conditions against historical data with full reproducibility")
+
+    # Import What-If components
+    sys.path.insert(0, str(Path(__file__).parent.parent / "analysis"))
+    from what_if_engine import WhatIfEngine, ConditionSet
+    from what_if_snapshots import SnapshotManager
+
+    # Initialize engines
+    what_if_engine = WhatIfEngine(app_state.db_connection)
+    snapshot_manager = SnapshotManager(app_state.db_connection)
+
+    # Expandable section
+    with st.expander("▶️ Open What-If Analyzer", expanded=False):
+        st.markdown("""
+        **Purpose:** Test "what if" scenarios by applying filter conditions to historical data.
+
+        **How it works:**
+        1. Select a base setup (instrument, ORB, RR, etc.)
+        2. Apply filter conditions (ORB size, travel, session type, etc.)
+        3. See baseline vs conditional metrics
+        4. Save promising conditions as snapshots
+        5. Promote snapshots to validation candidates
+        """)
+
+        # Setup Selection
+        st.markdown("#### 1️⃣ Setup Selection")
+        col1, col2, col3 = st.columns(3)
+
+        with col1:
+            wi_instrument = st.selectbox("Instrument", ["MGC"], key="wi_instrument")
+            wi_orb_time = st.selectbox("ORB Time", ["0900", "1000", "1100", "1800", "2300", "0030"], index=1, key="wi_orb")
+
+        with col2:
+            wi_direction = st.selectbox("Direction", ["BOTH", "UP", "DOWN"], key="wi_direction")
+            wi_rr = st.number_input("RR", min_value=1.0, max_value=5.0, value=2.0, step=0.5, key="wi_rr")
+
+        with col3:
+            wi_sl_mode = st.selectbox("SL Mode", ["FULL", "HALF"], key="wi_sl_mode")
+            wi_date_range = st.selectbox("Date Range", ["Last Year", "Last 2 Years", "All Time"], index=1, key="wi_date_range")
+
+        # Parse date range
+        from datetime import datetime, timedelta
+        today = datetime.now().date()
+        if wi_date_range == "Last Year":
+            wi_date_start = str(today - timedelta(days=365))
+            wi_date_end = str(today)
+        elif wi_date_range == "Last 2 Years":
+            wi_date_start = str(today - timedelta(days=730))
+            wi_date_end = str(today)
+        else:
+            wi_date_start = None
+            wi_date_end = None
+
+        st.divider()
+
+        # Condition Filters
+        st.markdown("#### 2️⃣ Filter Conditions")
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+            st.markdown("**ORB Size Filter**")
+            wi_orb_size_enabled = st.checkbox("Enable ORB size filter", key="wi_orb_size_enabled")
+            if wi_orb_size_enabled:
+                wi_orb_size_min = st.number_input("Min ORB Size (x ATR)", min_value=0.0, max_value=5.0, value=0.5, step=0.1, key="wi_orb_size_min")
+                wi_orb_size_max = st.number_input("Max ORB Size (x ATR)", min_value=0.0, max_value=5.0, value=2.0, step=0.1, key="wi_orb_size_max")
+            else:
+                wi_orb_size_min = None
+                wi_orb_size_max = None
+
+            st.markdown("**Pre-Session Travel Filter**")
+            wi_travel_enabled = st.checkbox("Enable travel filter", key="wi_travel_enabled")
+            if wi_travel_enabled:
+                wi_travel_max = st.number_input("Max Pre-ORB Travel (x ATR)", min_value=0.0, max_value=10.0, value=2.5, step=0.5, key="wi_travel_max")
+            else:
+                wi_travel_max = None
+
+        with col2:
+            st.markdown("**Session Type Filter**")
+            wi_session_enabled = st.checkbox("Enable session type filter", key="wi_session_enabled")
+            if wi_session_enabled:
+                wi_asia_types = st.multiselect("Allowed Asia Types", ["QUIET", "CHOPPY", "TRENDING"], key="wi_asia_types")
+            else:
+                wi_asia_types = None
+
+            st.markdown("**Range Percentile Filter**")
+            wi_percentile_enabled = st.checkbox("Enable percentile filter", key="wi_percentile_enabled")
+            if wi_percentile_enabled:
+                wi_percentile_min = st.slider("Min Percentile", 0, 100, 0, 5, key="wi_percentile_min")
+                wi_percentile_max = st.slider("Max Percentile", 0, 100, 25, 5, key="wi_percentile_max")
+            else:
+                wi_percentile_min = None
+                wi_percentile_max = None
+
+        st.divider()
+
+        # Run Analysis Button
+        if st.button("🔍 Run What-If Analysis", type="primary", key="wi_run"):
+            with st.spinner("Analyzing..."):
+                try:
+                    # Build conditions dict
+                    conditions = {}
+                    if wi_orb_size_min is not None:
+                        conditions['orb_size_min'] = wi_orb_size_min
+                    if wi_orb_size_max is not None:
+                        conditions['orb_size_max'] = wi_orb_size_max
+                    if wi_travel_max is not None:
+                        conditions['pre_orb_travel_max'] = wi_travel_max
+                    if wi_asia_types:
+                        conditions['asia_types'] = wi_asia_types
+                    if wi_percentile_min is not None:
+                        conditions['orb_size_percentile_min'] = wi_percentile_min
+                    if wi_percentile_max is not None:
+                        conditions['orb_size_percentile_max'] = wi_percentile_max
+
+                    # Run analysis
+                    result = what_if_engine.analyze_conditions(
+                        instrument=wi_instrument,
+                        orb_time=wi_orb_time,
+                        direction=wi_direction,
+                        rr=wi_rr,
+                        sl_mode=wi_sl_mode,
+                        conditions=conditions,
+                        date_start=wi_date_start,
+                        date_end=wi_date_end
+                    )
+
+                    # Store result in session state for "Save Snapshot" button
+                    st.session_state['what_if_result'] = result
+                    st.session_state['what_if_conditions'] = conditions
+
+                    # Display Results
+                    st.markdown("#### 3️⃣ Results")
+
+                    # Metrics comparison
+                    col1, col2, col3 = st.columns(3)
+
+                    with col1:
+                        st.markdown("**📊 Baseline (No Filters)**")
+                        baseline = result['baseline']
+                        st.metric("Trades", baseline.sample_size)
+                        st.metric("Win Rate", f"{baseline.win_rate*100:.1f}%")
+                        st.metric("Expected R", f"{baseline.expected_r:.3f}R")
+                        st.metric("Max DD", f"{baseline.max_dd:.1f}R")
+
+                    with col2:
+                        st.markdown("**✅ Conditional (With Filters)**")
+                        conditional = result['conditional']
+                        st.metric("Trades", conditional.sample_size, delta=result['delta']['sample_size'])
+                        st.metric("Win Rate", f"{conditional.win_rate*100:.1f}%", delta=f"{result['delta']['win_rate_pct']:.1f} pct")
+                        st.metric("Expected R", f"{conditional.expected_r:.3f}R", delta=f"{result['delta']['expected_r']:.3f}R")
+                        st.metric("Max DD", f"{conditional.max_dd:.1f}R", delta=f"{result['delta']['max_dd']:.1f}R")
+
+                    with col3:
+                        st.markdown("**🎯 Verdict**")
+                        delta_exp_r = result['delta']['expected_r']
+                        if delta_exp_r >= 0.10:
+                            st.success("✅ **SIGNIFICANT IMPROVEMENT**")
+                            st.caption(f"+{delta_exp_r:.3f}R improvement")
+                        elif delta_exp_r >= 0.05:
+                            st.info("🟦 **MODEST IMPROVEMENT**")
+                            st.caption(f"+{delta_exp_r:.3f}R improvement")
+                        elif delta_exp_r >= 0.0:
+                            st.warning("⚠️ **MARGINAL IMPROVEMENT**")
+                            st.caption(f"+{delta_exp_r:.3f}R improvement")
+                        else:
+                            st.error("❌ **NO IMPROVEMENT**")
+                            st.caption(f"{delta_exp_r:.3f}R (worse)")
+
+                        # Stress test status
+                        if conditional.stress_25_pass:
+                            st.success("✅ +25% stress: PASS")
+                        else:
+                            st.error("❌ +25% stress: FAIL")
+
+                        if conditional.stress_50_pass:
+                            st.success("✅ +50% stress: PASS")
+                        else:
+                            st.error("❌ +50% stress: FAIL")
+
+                    st.divider()
+
+                    # Save Snapshot Button
+                    if delta_exp_r >= 0.05:  # Only show if improvement
+                        col_save1, col_save2 = st.columns([3, 1])
+                        with col_save1:
+                            wi_notes = st.text_input("Snapshot Notes", placeholder="e.g., Promising ORB size filter", key="wi_notes")
+                        with col_save2:
+                            if st.button("💾 Save Snapshot", type="primary", key="wi_save"):
+                                try:
+                                    snapshot_id = snapshot_manager.save_snapshot(
+                                        result=result,
+                                        notes=wi_notes if wi_notes else None,
+                                        created_by="user"
+                                    )
+                                    st.success(f"✅ Snapshot saved: `{snapshot_id[:16]}...`")
+                                    st.info("You can promote this snapshot to validation later")
+                                except Exception as e:
+                                    st.error(f"❌ Failed to save snapshot: {e}")
+                    else:
+                        st.caption("💡 Tip: Improve ExpR by +0.05R or more to enable snapshot saving")
+
+                except Exception as e:
+                    st.error(f"❌ Analysis failed: {e}")
+                    logger.error(f"What-If analysis error: {e}", exc_info=True)
+
+        st.divider()
+
+        # Recent Snapshots
+        st.markdown("#### 📸 Recent Snapshots")
+        try:
+            recent_snapshots = snapshot_manager.list_snapshots(limit=5)
+            if recent_snapshots:
+                for snap in recent_snapshots:
+                    with st.container():
+                        col1, col2, col3 = st.columns([2, 2, 1])
+                        with col1:
+                            st.caption(f"**{snap['instrument']} {snap['orb_time']}** | RR={snap['rr']}")
+                            if snap['notes']:
+                                st.caption(f"_{snap['notes']}_")
+                        with col2:
+                            delta_exp_r = snap['delta_expected_r']
+                            if delta_exp_r > 0:
+                                st.caption(f"✅ +{delta_exp_r:.3f}R improvement")
+                            else:
+                                st.caption(f"❌ {delta_exp_r:.3f}R (worse)")
+                        with col3:
+                            if not snap['promoted_to_candidate']:
+                                if st.button("→ Promote", key=f"promote_{snap['snapshot_id'][:8]}"):
+                                    # Promote snapshot to candidate
+                                    try:
+                                        trigger_def = f"What-If validated: {snap['notes'] or 'ORB breakout'}"
+                                        edge_id = snapshot_manager.promote_snapshot_to_candidate(
+                                            snapshot_id=snap['snapshot_id'],
+                                            trigger_definition=trigger_def,
+                                            notes=f"Promoted from What-If Analyzer with +{snap['delta_expected_r']:.3f}R improvement"
+                                        )
+                                        st.success(f"✅ Promoted to candidate!")
+                                        st.info(f"Edge ID: `{edge_id[:16]}...`")
+                                        st.caption("Go to VALIDATION tab to run full validation")
+                                        st.rerun()
+                                    except Exception as e:
+                                        st.error(f"❌ Promotion failed: {e}")
+                                        logger.error(f"Snapshot promotion error: {e}", exc_info=True)
+                            else:
+                                st.caption("✅ Promoted")
+            else:
+                st.caption("No snapshots yet. Run an analysis to create one!")
+        except Exception as e:
+            st.caption(f"Could not load snapshots: {e}")
+
+    st.divider()
+
     # Candidate Draft Form
     st.subheader("📝 New Candidate Draft")
 

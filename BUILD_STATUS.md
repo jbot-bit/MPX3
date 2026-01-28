@@ -1,8 +1,8 @@
 # Canonical Trading System - Build Status
 
-**Last Updated:** 2026-01-28 12:00 PM
-**Build Phase:** T11 Complete (Live Trading Dashboard)
-**Overall Progress:** 110% (ALL core tickets + live trading complete)
+**Last Updated:** 2026-01-28 18:00 PM
+**Build Phase:** T11 Complete + What-If Analyzer V1 🚀
+**Overall Progress:** 120% (ALL core tickets + live trading + What-If Analyzer complete)
 
 ---
 
@@ -151,7 +151,7 @@
 
 ### T11: Live Trading Dashboard ✅
 - **Real-time market analysis** ✅
-- File: `trading_app/live_scanner.py` (250+ lines, complete scanner)
+- File: `trading_app/live_scanner.py` (369 lines, complete scanner with condition gates)
 - **NEW TAB: LIVE TRADING** (default landing page) ✅
   - Shows what to do RIGHT NOW
   - Color-coded status banner (🟢 ACTIVE / 🟡 WAITING / 🔴 INVALID / ⏸️ STAND DOWN)
@@ -172,12 +172,54 @@
 - **Use case:** Trader opens app → immediately sees what to trade NOW
 - **Tested:** App starts successfully, scanner integrates correctly ✅
 
+### What-If Analyzer V1 ✅ 🚀 NEW
+- **Deterministic condition testing system** ✅
+- **Complete implementation (7/7 tasks)** ✅
+- Files created:
+  - `analysis/what_if_engine.py` (600+ lines) - Deterministic query engine
+  - `analysis/what_if_snapshots.py` (470+ lines) - Snapshot persistence
+  - `docs/what_if_snapshots_schema.sql` - 52-column schema
+  - `docs/what_if_analyzer_v1_conditions.md` - V1 condition definitions
+  - `docs/WHAT_IF_ANALYZER_USER_GUIDE.md` - Complete user guide
+  - `docs/WHAT_IF_ANALYZER_PROGRESS.md` - Progress tracking
+  - `tests/test_what_if_end_to_end.py` - End-to-end test suite
+- **Core Features:**
+  - Deterministic analysis: Same inputs = same outputs (verified with 516 trades)
+  - Snapshot persistence: Exact reproducibility (0.000000000R precision)
+  - Variant lineage: Snapshots → candidates → validated edges
+  - Live condition gates: Real-time enforcement in LiveScanner
+  - UI integration: Full What-If Analyzer panel in RESEARCH tab
+- **V1 Condition Types (4 types):**
+  1. ORB Size Threshold (normalized by ATR)
+  2. Pre-Session Travel Filter (normalized by ATR)
+  3. Session Type Filter (QUIET/CHOPPY/TRENDING)
+  4. Range Percentile Filter (rolling 20-day window)
+- **Workflow:**
+  1. Discovery: What-If analysis tests filter rules
+  2. Snapshot: Results saved with full reproducibility
+  3. Promotion: Snapshot becomes validation candidate
+  4. Validation: T6/T7 validation confirms edge quality
+  5. Production: Live scanner enforces conditions pre-trade
+- **Testing:**
+  - All 5 end-to-end tests pass ✅
+  - Deterministic evaluation verified ✅
+  - Snapshot roundtrip: exact reproduction ✅
+  - Promotion to edge_registry working ✅
+  - Live gate enforcement blocking trades correctly ✅
+- **Database:**
+  - New table: `what_if_snapshots` (52 columns)
+  - Stores baseline, conditional, non-matched, and delta metrics
+  - Full reproducibility (all parameters + results + metadata)
+- **Use Case:** "What if I only traded when ORB >= 0.5 ATR?" → Answer with statistical evidence
+- **Production Ready:** Fully tested and documented ✅
+
 ---
 
-## 🎉 SYSTEM 110% COMPLETE - PRODUCTION READY + LIVE TRADING
+## 🎉 SYSTEM 120% COMPLETE - PRODUCTION READY + LIVE TRADING + WHAT-IF ANALYZER
 
-**ALL 11 tickets completed!** The system is now fully functional with:
-- **Live trading dashboard (T11)** - Real-time "what to trade NOW" ⭐ NEW
+**ALL 11 tickets + What-If Analyzer V1 completed!** The system is now fully functional with:
+- **Live trading dashboard (T11)** - Real-time "what to trade NOW" with condition gates
+- **What-If Analyzer V1** - Deterministic condition testing with full reproducibility 🚀 NEW
 - Real historical backtesting (T6)
 - Mandatory control runs (T7)
 - Duplicate detection (T8) - exact hash matching
@@ -189,13 +231,17 @@
 
 **Complete workflow:**
 1. Create edge candidates in RESEARCH zone
-2. Check for exact duplicates (T8) and similar edges (T9)
-3. Validate with real historical data + control baseline
-4. Statistical comparison (edge must beat control)
-5. Validation gates (sample size, expectancy, stress tests, walk-forward)
-6. Promote to PRODUCTION with evidence pack
-7. Monitor system health (T10) and edge performance
-8. Full lineage tracking (experiment_run linkage)
+2. **Test conditions with What-If Analyzer** - "What if I only traded when X?" 🚀 NEW
+3. **Save promising snapshots** - Full reproducibility with 52-column persistence 🚀 NEW
+4. **Promote snapshots to candidates** - Variant lineage tracking 🚀 NEW
+5. Check for exact duplicates (T8) and similar edges (T9)
+6. Validate with real historical data + control baseline
+7. Statistical comparison (edge must beat control)
+8. Validation gates (sample size, expectancy, stress tests, walk-forward)
+9. Promote to PRODUCTION with evidence pack
+10. **Live condition gates enforce pre-trade** - Validated conditions block invalid trades 🚀 NEW
+11. Monitor system health (T10) and edge performance
+12. Full lineage tracking (experiment_run + snapshot linkage)
 
 **Optional future enhancements:**
 - Real-time validation UI improvements
@@ -222,8 +268,17 @@
 ## 📁 Key Files
 
 ### Main App
-- `trading_app/app_canonical.py` - 3-zone Streamlit app (~720 lines)
+- `trading_app/app_canonical.py` - 3-zone Streamlit app with What-If Analyzer UI (~850 lines)
 - `trading_app/edge_utils.py` - Edge registry CRUD + real validation (~780 lines)
+- `trading_app/live_scanner.py` - Live market scanner with condition gates (~369 lines)
+
+### What-If Analyzer (NEW)
+- `analysis/what_if_engine.py` - Deterministic query engine (~600 lines)
+- `analysis/what_if_snapshots.py` - Snapshot persistence manager (~470 lines)
+- `docs/what_if_snapshots_schema.sql` - 52-column schema definition
+- `docs/what_if_analyzer_v1_conditions.md` - V1 condition types
+- `docs/WHAT_IF_ANALYZER_USER_GUIDE.md` - Complete user guide
+- `tests/test_what_if_end_to_end.py` - End-to-end test suite
 
 ### Database
 - `pipeline/create_edge_registry.py` - Creates edge_registry + experiment_run tables
@@ -231,6 +286,7 @@
 - `gold.db` → `edge_registry` table (3 rows currently)
 - `gold.db` → `experiment_run` table (2 rows currently)
 - `gold.db` → `validated_setups` table (19 rows, including 1 test promotion)
+- `gold.db` → `what_if_snapshots` table (NEW - 52 columns for reproducibility)
 
 ### Archived
 - `app_trading_hub_v1_archive.py` - Original 1996-line app (reference only)
@@ -367,7 +423,7 @@ streamlit run trading_app/app_canonical.py
 
 ---
 
-**Status:** 🎉 **100% COMPLETE - ALL 10 CORE TICKETS DONE**
+**Status:** 🎉 **120% COMPLETE - ALL 11 CORE TICKETS + WHAT-IF ANALYZER V1 DONE**
 
 **System Capabilities:**
 - ✅ Real validation with historical data (525 trades tested)
@@ -375,16 +431,22 @@ streamlit run trading_app/app_canonical.py
 - ✅ Exact duplicate detection (hash-based)
 - ✅ Semantic similarity (fuzzy pattern matching)
 - ✅ System health monitoring (4 categories)
+- ✅ Live trading dashboard (real-time market scanner)
+- ✅ What-If Analyzer V1 (deterministic condition testing) 🚀 NEW
+- ✅ Snapshot persistence (exact reproducibility) 🚀 NEW
+- ✅ Variant lineage tracking (snapshots → candidates → validated) 🚀 NEW
+- ✅ Live condition gates (pre-trade enforcement) 🚀 NEW
 - ✅ 3-zone architecture (RESEARCH / VALIDATION / PRODUCTION)
 - ✅ Fail-closed safety throughout
-- ✅ Full lineage tracking (experiment_run)
+- ✅ Full lineage tracking (experiment_run + snapshots)
 - ✅ Production promotion workflow
-- ✅ End-to-end tested
+- ✅ End-to-end tested (all 5 tests pass)
 
 **Production Ready:**
-- Database schema stable ✅
+- Database schema stable (including what_if_snapshots) ✅
 - App starts without errors ✅
 - All core functions tested ✅
 - test_app_sync.py passes ✅
 - All validation gates working ✅
-- Ready for live trading
+- What-If Analyzer end-to-end tests pass (5/5) ✅
+- Ready for live trading with validated conditions

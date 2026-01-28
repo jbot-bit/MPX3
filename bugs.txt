@@ -1,0 +1,137 @@
+Step 1 — Assume it’s wrong until proven
+
+You don’t “trust” finished. You verify finished.
+
+Reply “yes verify” and I’ll turn this into a strict checklist you can run every time.
+
+Step 2 — How to be sure right now (minimum verification pack)
+A) Smoke tests (app boots + no hidden breakage)
+
+Run the app and click through:
+
+Research → What-If → Save snapshot → Send to validation → Promote → Live gate view
+
+Expected: no exceptions, no silent fallbacks.
+
+B) Determinism tests (kills hallucinated logic fast)
+
+Run each of these 3 times with same inputs:
+
+Same setup + same condition set + same date window
+
+Expect:
+
+identical sample size
+
+identical win rate / ExpR
+
+identical deltas
+If any drift: it’s broken (randomness, time-dependence, cache misuse, or query bug).
+
+C) Truth-table tests (condition correctness)
+
+Pick 10 random dates and manually check:
+
+Condition is True/False on those dates
+
+Engine agrees on True/False
+If any mismatch: condition evaluator is wrong.
+
+D) Invariants (sanity rules that must always hold)
+
+Baseline sample = match sample + non-match sample
+
+Win count baseline = win(match) + win(non-match)
+
+Expected R baseline is weighted average of match/non-match by sample size
+If any invariant fails: math or filtering is wrong.
+
+E) Cross-check against “old known good”
+
+Pick one previously validated setup with known stats:
+
+Recompute using new engine
+
+Must match within tolerance (tiny float differences only)
+If not: cost model or outcome mapping changed.
+
+Step 3 — How to ensure future changes don’t break core logic (this is the real solution)
+1) Lock core logic behind “contracts”
+
+Create a small set of “golden contract tests” that must always pass:
+
+Deterministic output for fixed inputs
+
+Invariants above
+
+Known setup reproduces known results
+
+Live gate produces expected ACTIVE/BLOCKED for recorded market snapshots
+
+These tests become your “core logic safety harness”.
+
+2) Add “fail-closed guards” in Production
+
+Production only loads promoted + evidence-backed items
+
+Any missing field / schema mismatch / unknown condition:
+
+BLOCK and log explicit reason
+
+never “assume” or default silently
+
+3) Add a “schema & cost model checksum”
+
+On startup:
+
+hash key tables schema
+
+hash cost model parameters
+
+show warning if changed since last validated run
+This stops silent drift.
+
+4) Enforce “no core edits without review”
+
+Workflow rule:
+
+Any change touching:
+
+outcome calculation
+
+cost model
+
+validation gates
+
+live gating
+must trigger:
+
+code-guardian checks
+
+code-review-pipeline
+
+full test suite
+
+Step 4 — The quickest way to catch skeletons
+
+Search for these red flags:
+
+“TODO”
+
+“pass”
+
+“placeholder”
+
+“stub”
+
+“random”
+
+“mock”
+
+“return {}”
+
+“print(” in core logic
+
+try/except that swallows errors
+
+If any appear in engine/validation/live: treat as unfinished.

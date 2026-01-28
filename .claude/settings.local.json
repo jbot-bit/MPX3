@@ -43,7 +43,8 @@
       "Bash(timeout 5 streamlit run:*)",
       "Bash(timeout 10 streamlit run:*)",
       "Bash(taskkill:*)",
-      "Bash(dir /s /b *edge_discovery*.md *terminal*.md)"
+      "Bash(dir /s /b *edge_discovery*.md *terminal*.md)",
+      "Bash(dir:*)"
     ]
   }
 }
