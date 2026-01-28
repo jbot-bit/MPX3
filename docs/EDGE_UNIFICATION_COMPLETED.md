@@ -159,7 +159,7 @@ pytest tests/test_edge_promotion.py -q
   "name": "Human readable name",
   "hypothesis_text": "Edge hypothesis",
   "code_version": "git_hash",
-  "data_version": "daily_features_v2",
+  "data_version": "daily_features",
   "test_window_start": "2024-01-01",
   "test_window_end": "2026-01-15",
   "promoted_from_candidate_id": 42,

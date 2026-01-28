@@ -63,17 +63,17 @@ Successfully restored system to clean state after consolidation issues, validate
 MGC (Micro Gold):
   - bars_1m: 720,227 rows
   - bars_5m: 144,386 rows
-  - daily_features_v2: 740 rows
+  - daily_features: 740 rows
 
 MPL (Micro Platinum):
   - bars_1m_mpl: 327,127 rows
   - bars_5m_mpl: 70,640 rows
-  - daily_features_v2_mpl: 730 rows
+  - daily_features_mpl: 730 rows
 
 NQ (Nasdaq E-mini):
   - bars_1m_nq: 350,499 rows
   - bars_5m_nq: 105,508 rows
-  - daily_features_v2_nq: 310 rows
+  - daily_features_nq: 310 rows
 ```
 
 ---
@@ -82,7 +82,7 @@ NQ (Nasdaq E-mini):
 
 **Changed**:
 - `trading_app/data_loader.py`: Updated to query correct table based on instrument
-- Maps instrument to correct features table (daily_features_v2, daily_features_v2_mpl, daily_features_v2_nq)
+- Maps instrument to correct features table (daily_features, daily_features_mpl, daily_features_nq)
 
 **Tested**:
 - All 3 instruments load correctly
@@ -248,7 +248,7 @@ This was the right call - always verify before destroying data.
 
 ### Option 3: Expand Instrument Coverage
 **Add ES (E-mini S&P 500) or RTY (Russell 2000):**
-1. Create new tables (`bars_1m_es`, `daily_features_v2_es`)
+1. Create new tables (`bars_1m_es`, `daily_features_es`)
 2. Backfill historical data
 3. Add strategies to validated_setups
 4. Update apps

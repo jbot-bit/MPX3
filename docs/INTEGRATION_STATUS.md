@@ -10,7 +10,7 @@
 **File:** `trading_app/market_scanner.py` (534 lines)
 
 **What it does:**
-- Scans current market conditions from `daily_features_v2`
+- Scans current market conditions from `daily_features`
 - Validates which setups are tradeable TODAY
 - Checks ORB size filters from `config.py`
 - Detects anomalies (ORB size traps, low liquidity, etc.)
@@ -37,7 +37,7 @@ if validation['recommendation'] == 'TAKE':
 **Integration points:**
 - Can be called from `app_trading_hub.py` or `unified_trading_app.py`
 - Uses existing `config.py` (MGC_ORB_SIZE_FILTERS, MGC_ORB_CONFIGS)
-- Queries existing `daily_features_v2` table
+- Queries existing `daily_features` table
 - No new database tables required
 
 ---

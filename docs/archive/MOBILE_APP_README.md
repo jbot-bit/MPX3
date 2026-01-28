@@ -704,7 +704,7 @@ tail -f trading_app/trading_app.log | grep "ML"
 python daily_update.py
 
 # Rebuild features
-python build_daily_features_v2.py 2026-01-17
+python build_daily_features.py 2026-01-17
 ```
 
 ### Restart App

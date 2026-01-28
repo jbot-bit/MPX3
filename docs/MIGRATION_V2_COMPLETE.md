@@ -1,4 +1,4 @@
-# Migration to daily_features_v2 Complete
+# Migration to daily_features Complete
 
 **Date:** 2026-01-24
 **Commit:** 6b04b49
@@ -7,7 +7,7 @@
 
 ## What We Did
 
-Successfully migrated entire codebase from dual table system (daily_features v1 + v2) to single canonical table (`daily_features_v2`).
+Successfully migrated entire codebase from dual table system (daily_features v1 + v2) to single canonical table (`daily_features`).
 
 ### Changes Made
 
@@ -15,7 +15,7 @@ Successfully migrated entire codebase from dual table system (daily_features v1 
    - `pipeline/build_daily_features.py` → `_archive/deprecated/build_daily_features_v1_deprecated.py`
 
 2. **Promoted v2 to canonical:**
-   - `pipeline/build_daily_features_v2.py` → `pipeline/build_daily_features.py` (no suffix)
+   - `pipeline/build_daily_features.py` → `pipeline/build_daily_features.py` (no suffix)
 
 3. **Updated ALL references** (15 files changed):
    - Pipeline: `wipe_mgc.py`, `check_db.py`, `validate_data.py`
@@ -31,7 +31,7 @@ Successfully migrated entire codebase from dual table system (daily_features v1 
 
 ### 1. Database as Factual Baseline
 
-**`daily_features_v2` stores FACTS, not strategy decisions:**
+**`daily_features` stores FACTS, not strategy decisions:**
 
 ```sql
 -- What it DOES store (facts):
@@ -256,9 +256,9 @@ Avg R: +0.12R - 0.2R = -0.08R per trade ❌ LOSING SYSTEM
 ### Run These Tests
 
 ```bash
-# 1. Verify all scripts use daily_features_v2
+# 1. Verify all scripts use daily_features
 grep -r "FROM daily_features\b" --include="*.py" pipeline/ trading_app/ analysis/ workflow/
-# Should return NO results (all should be daily_features_v2)
+# Should return NO results (all should be daily_features)
 
 # 2. Check database contents
 python pipeline/check_db.py
@@ -273,8 +273,8 @@ python test_app_sync.py
 ### Expected Results
 
 ✅ No references to `daily_features` (without v2 suffix)
-✅ All scripts query `daily_features_v2`
-✅ Build script writes to `daily_features_v2`
+✅ All scripts query `daily_features`
+✅ Build script writes to `daily_features`
 ✅ Database and config are synchronized
 
 ---
@@ -282,7 +282,7 @@ python test_app_sync.py
 ## Summary
 
 **What Changed:**
-- Consolidated from dual-table system to single `daily_features_v2` table
+- Consolidated from dual-table system to single `daily_features` table
 - Removed confusion between v1 and v2
 - Updated all code to use v2 as canonical source
 
@@ -305,4 +305,4 @@ python test_app_sync.py
 
 **Migration Status:** ✅ COMPLETE
 
-All code now uses `daily_features_v2` as the single source of truth for ORB feature data.
+All code now uses `daily_features` as the single source of truth for ORB feature data.

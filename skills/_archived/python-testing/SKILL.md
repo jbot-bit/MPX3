@@ -250,7 +250,7 @@ def test_db():
 
     # Create test schema
     conn.execute("""
-        CREATE TABLE daily_features_v2 (
+        CREATE TABLE daily_features (
             date_local DATE,
             instrument VARCHAR,
             orb_0900_size DOUBLE,
@@ -264,7 +264,7 @@ def test_db():
 def test_market_scanner_with_test_db(test_db):
     # Insert test data
     test_db.execute("""
-        INSERT INTO daily_features_v2 VALUES (?, ?, ?, ...)
+        INSERT INTO daily_features VALUES (?, ?, ?, ...)
     """, [...])
 
     # Test scanner

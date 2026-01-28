@@ -491,16 +491,16 @@ class LiveDataLoader:
         """
         today = datetime.now(TZ_LOCAL).date()
 
-        # Map symbol to instrument name and features table
+        # Map symbol to instrument name
         if self.symbol == "NQ" or self.symbol == "MNQ":
             instrument = "NQ"
-            features_table = "daily_features_v2_nq"
         elif self.symbol == "MPL":
             instrument = "MPL"
-            features_table = "daily_features_v2_mpl"
         else:
             instrument = "MGC"
-            features_table = "daily_features_v2"
+
+        # Use unified daily_features table with instrument column
+        features_table = "daily_features"
 
         # Try from gold.db if available (separate tables per instrument)
         try:

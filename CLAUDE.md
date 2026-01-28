@@ -297,7 +297,7 @@ grep -r "from [filename_no_py]\|import [filename_no_py]" \
 
 **Current project database:**
 - DuckDB (analytical, OLAP workload)
-- Primary tables: bars_1m, bars_5m, daily_features_v2, validated_setups
+- Primary tables: bars_1m, bars_5m, daily_features, validated_setups
 - Always test migrations with test_app_sync.py
 
 ### Code Review Pipeline (`skills/code-review-pipeline/`)
@@ -354,7 +354,7 @@ grep -r "from [filename_no_py]\|import [filename_no_py]" \
 - Statistical confidence scoring (chi-square tests, confidence intervals)
 
 **Integration:**
-- Extends daily_features_v2 with trade journal
+- Extends daily_features with trade journal
 - Feeds into edge-evolution-tracker for adaptive learning
 - Powers AI trading partner with perfect memory
 
@@ -528,7 +528,7 @@ python pipeline/build_daily_features.py YYYY-MM-DD
 - Automatically called by backfill scripts
 - Computes session stats (Asia/London/NY), ORBs, RSI
 - Safe to re-run (upserts)
-- Writes to `daily_features_v2` table (canonical table)
+- Writes to `daily_features` table (canonical table)
 
 ### Database Operations
 
@@ -537,7 +537,7 @@ python pipeline/build_daily_features.py YYYY-MM-DD
 python pipeline/init_db.py
 ```
 
-**Wipe all MGC data (bars_1m, bars_5m, daily_features_v2):**
+**Wipe all MGC data (bars_1m, bars_5m, daily_features):**
 ```bash
 python pipeline/wipe_mgc.py
 ```
@@ -657,7 +657,7 @@ Source → Normalize → Store → Aggregate → Feature Build
 - Bucket = floor(epoch(ts)/300)*300
 - Fully rebuildable at any time
 
-**daily_features_v2** (canonical table):
+**daily_features** (canonical table):
 - One row per local trading day
 - Primary key: `(date_local, instrument)` - ready for multi-instrument support
   - Currently: instrument always = 'MGC'
@@ -767,7 +767,7 @@ Required environment variables:
    - ProjectX: Optional, not used for deep history (limited historical range)
    - Raw DBN files stored in `dbn/` folder
 
-8. **Schema migration**: The database uses `daily_features_v2` (canonical table). If you have old data, you should wipe and rebuild:
+8. **Schema migration**: The database uses `daily_features` (canonical table). If you have old data, you should wipe and rebuild:
    ```bash
    python pipeline/wipe_mgc.py
    python pipeline/backfill_databento_continuous.py 2020-12-20 2026-01-10

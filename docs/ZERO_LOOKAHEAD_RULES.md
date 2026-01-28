@@ -243,10 +243,10 @@ Correct version:
 
 ### Step 1: Rebuild Features
 ```bash
-python build_daily_features_v2.py 2024-01-01 2026-01-10
+python build_daily_features.py 2024-01-01 2026-01-10
 ```
 
-Creates `daily_features_v2` table with:
+Creates `daily_features` table with:
 - PRE blocks (zero lookahead)
 - SESSION blocks (flagged as analytics)
 - All ORBs

@@ -6,7 +6,7 @@
 
 These tables contain VERIFIED backtest results that match config.py:
 
-### 1. `daily_features_v2_half` (MGC HALF SL mode)
+### 1. `daily_features_half` (MGC HALF SL mode)
 - **Purpose:** Daily ORB features with HALF stop loss mode
 - **Used by:** `v_orb_trades_half` view
 - **Verified:** YES - matches config.py performance numbers
@@ -15,8 +15,8 @@ These tables contain VERIFIED backtest results that match config.py:
 - **ORB Times:** 0900, 1000, 1100, 1800, 2300, 0030
 
 ### 2. `v_orb_trades_half` (VIEW)
-- **Purpose:** Clean view of all ORB trades from daily_features_v2_half
-- **Source:** Reads from daily_features_v2_half
+- **Purpose:** Clean view of all ORB trades from daily_features_half
+- **Source:** Reads from daily_features_half
 - **Usage:** Query this for MGC backtest results
 - **Example:**
   ```sql
@@ -28,15 +28,15 @@ These tables contain VERIFIED backtest results that match config.py:
   GROUP BY orb_time;
   ```
 
-### 3. `daily_features_v2_nq` (NQ instrument)
+### 3. `daily_features_nq` (NQ instrument)
 - **Purpose:** Daily ORB features for NQ (Micro Nasdaq)
 - **Verified:** YES
-- **Same structure as daily_features_v2_half**
+- **Same structure as daily_features_half**
 
-### 4. `daily_features_v2_mpl` (MPL instrument)
+### 4. `daily_features_mpl` (MPL instrument)
 - **Purpose:** Daily ORB features for MPL (Micro Platinum)
 - **Verified:** YES (2026-01-15)
-- **Same structure as daily_features_v2_half**
+- **Same structure as daily_features_half**
 
 ## ARCHIVED TABLES (Do Not Use)
 
@@ -63,7 +63,7 @@ These tables were from experimental parameter testing and have been archived:
 
 ## Config.py Performance Numbers
 
-The numbers in `config.py` come from `daily_features_v2_half`:
+The numbers in `config.py` come from `daily_features_half`:
 
 ```python
 MGC_ORB_CONFIGS = {
@@ -114,7 +114,7 @@ Where:
 
 ---
 
-**CRITICAL:** Only use `v_orb_trades_half` and related daily_features_v2 tables. All orb_trades_*_exec tables are ARCHIVED and outdated.
+**CRITICAL:** Only use `v_orb_trades_half` and related daily_features tables. All orb_trades_*_exec tables are ARCHIVED and outdated.
 
 ---
 
@@ -133,9 +133,9 @@ Where:
 - `bars_1m` = MGC 1-minute bars
 - `bars_1m_mpl` = MPL 1-minute bars
 - `bars_1m_nq` = NQ 1-minute bars
-- `daily_features_v2` = MGC daily features
-- `daily_features_v2_mpl` = MPL daily features
-- `daily_features_v2_nq` = NQ daily features
+- `daily_features` = MGC daily features
+- `daily_features_mpl` = MPL daily features
+- `daily_features_nq` = NQ daily features
 
 ---
 
@@ -170,9 +170,9 @@ CREATE TABLE bars_5m (
 ```
 **Note:** 5-minute bars are aggregated from 1-minute bars. Never manually edit.
 
-### daily_features_v2 (and daily_features_v2_mpl, daily_features_v2_nq)
+### daily_features (and daily_features_mpl, daily_features_nq)
 ```sql
-CREATE TABLE daily_features_v2 (
+CREATE TABLE daily_features (
     date_local DATE PRIMARY KEY,
     instrument VARCHAR,          -- 'MGC', 'MPL', 'NQ'
 
@@ -246,7 +246,7 @@ SELECT * FROM validated_setups WHERE instrument = 'MGC';
 
 ### Get daily features for MPL
 ```sql
-SELECT * FROM daily_features_v2_mpl
+SELECT * FROM daily_features_mpl
 WHERE instrument = 'MPL'
 ORDER BY date_local DESC
 LIMIT 30;
@@ -273,9 +273,9 @@ def get_bars_table(instrument: str) -> str:
 def get_feature_table(instrument: str) -> str:
     """Get daily features table for instrument"""
     if instrument == 'MGC':
-        return 'daily_features_v2'
+        return 'daily_features'
     else:
-        return f'daily_features_v2_{instrument.lower()}'
+        return f'daily_features_{instrument.lower()}'
 
 # Usage example
 instrument = 'MPL'
@@ -323,7 +323,7 @@ To add a new instrument (e.g., ES - E-mini S&P 500):
 1. **Create tables:**
    - `bars_1m_es`
    - `bars_5m_es`
-   - `daily_features_v2_es`
+   - `daily_features_es`
 
 2. **Backfill data:**
    ```bash

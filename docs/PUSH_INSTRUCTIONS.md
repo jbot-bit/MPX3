@@ -18,7 +18,7 @@ The git histories between replitx2 and MPX2 are incompatible, so direct push won
 
 3. Apply patches in order:
    ```bash
-   git am 0001-Consolidate-to-daily_features_v2-as-canonical-table.patch
+   git am 0001-Consolidate-to-daily_features-as-canonical-table.patch
    git am 0002-Fix-research-logic-to-properly-evaluate-multi-RR-str.patch
    ```
 
@@ -42,7 +42,7 @@ The git histories between replitx2 and MPX2 are incompatible, so direct push won
 **Modified files:**
 - `trading_app/research_runner.py`
 - `trading_app/strategy_discovery.py`
-- `pipeline/build_daily_features.py` (renamed from build_daily_features_v2.py)
+- `pipeline/build_daily_features.py` (renamed from build_daily_features.py)
 - `pipeline/wipe_mgc.py`
 - `pipeline/check_db.py`
 - `pipeline/validate_data.py`
@@ -55,12 +55,12 @@ The git histories between replitx2 and MPX2 are incompatible, so direct push won
 
 **Archived:**
 - Move old `pipeline/build_daily_features.py` to `_archive/deprecated/build_daily_features_v1_deprecated.py`
-- Delete `pipeline/build_daily_features_v2.py` (now renamed to build_daily_features.py)
+- Delete `pipeline/build_daily_features.py` (now renamed to build_daily_features.py)
 
 3. Commit and push:
    ```bash
    git add -A
-   git commit -m "Migrate to daily_features_v2 and fix multi-RR strategy evaluation"
+   git commit -m "Migrate to daily_features and fix multi-RR strategy evaluation"
    git push origin main
    ```
 
@@ -81,13 +81,13 @@ git merge FETCH_HEAD
 
 Located in: `C:\Users\sydne\OneDrive\Desktop\replitx2\patches\`
 
-- `0001-Consolidate-to-daily_features_v2-as-canonical-table.patch`
+- `0001-Consolidate-to-daily_features-as-canonical-table.patch`
 - `0002-Fix-research-logic-to-properly-evaluate-multi-RR-str.patch`
 
 ## What's in the Changes
 
 **Commit 1 (6b04b49):**
-- Consolidated to single daily_features_v2 table
+- Consolidated to single daily_features table
 - Updated 15 files
 - Eliminated v1/v2 confusion
 

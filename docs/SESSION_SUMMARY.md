@@ -27,7 +27,7 @@ This affected:
 Created `optimize_orb_canonical.py` that matches `build_daily_features.py` EXACTLY:
 
 1. **Database**: `gold.db` (root), not `data/db/gold.db`
-2. **Table**: `daily_features` (MGC), not `daily_features_v2` (doesn't exist)
+2. **Table**: `daily_features` (MGC), not `daily_features` (doesn't exist)
 3. **Risk**: ORB edge to stop (not entry to stop)
 4. **Target**: ORB edge +/- RR × risk (not entry +/- RR × risk)
 5. **Entry**: First CLOSE outside ORB (not touch)
@@ -138,7 +138,7 @@ python test_app_sync.py
 1. **Always match canonical source code** - build_daily_features.py is the source of truth
 2. **Test database/config sync** - Run test_app_sync.py after ANY changes
 3. **Use correct paths** - `gold.db` not `data/db/gold.db`
-4. **Use correct tables** - `daily_features` not `daily_features_v2`
+4. **Use correct tables** - `daily_features` not `daily_features`
 5. **Filters are critical** - Raw ORBs may need filters to be profitable
 6. **Don't go in circles** - Verify logic against canonical code BEFORE running tests
 

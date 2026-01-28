@@ -194,7 +194,7 @@ Switch to MONITOR view to see:
 
 The terminal connects to your local database:
 - **Database Path**: `data/db/gold.db`
-- **Tables Used**: `bars_1m`, `bars_5m`, `daily_features_v2`, `validated_setups`
+- **Tables Used**: `bars_1m`, `bars_5m`, `daily_features`, `validated_setups`
 - **Real-time**: 5-second auto-refresh
 - **Instruments**: MGC (Gold), NQ (Nasdaq), MPL (Platinum)
 

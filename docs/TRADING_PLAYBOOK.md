@@ -387,7 +387,7 @@ python analyze_edge_stability.py --orb 1000 --dir UP
 streamlit run app_edge_research.py
 
 # Export for Excel analysis
-python export_csv.py daily_features_v2 --days 90
+python export_csv.py daily_features --days 90
 
 # Database health check
 python check_db.py

@@ -294,7 +294,7 @@ SELECT
     -- Indicators
     rsi_at_0030, atr_20
 
-FROM daily_features_v2
+FROM daily_features
 WHERE instrument = 'MGC'
     AND date_local >= '2024-01-02'
     AND date_local <= '2026-01-26'

@@ -36,7 +36,7 @@
 **Data Pipeline:**
 - `gold.db` - Main DuckDB database (bars_1m, bars_5m, daily_features, validated_setups)
 - `backfill_databento_continuous.py` - Primary data source (Databento GLBX.MDP3)
-- `build_daily_features_v2.py` - Zero-lookahead feature builder (PRODUCTION)
+- `build_daily_features.py` - Zero-lookahead feature builder (PRODUCTION)
 
 **Trading Apps:**
 - `trading_app/app_mobile.py` - Mobile Streamlit app (Streamlit Cloud deployment)
@@ -65,7 +65,7 @@
 
 ⚠️ **Never Update validated_setups Without Updating config.py:** This will cause apps to use wrong RR/filters. ALWAYS run `test_app_sync.py` after changes.
 
-⚠️ **Session Tracking:** System tracks Asia/London/NY sessions with deterministic type codes (sweep/expansion/consolidation) in daily_features_v2. No advanced session tracking beyond this currently exists.
+⚠️ **Session Tracking:** System tracks Asia/London/NY sessions with deterministic type codes (sweep/expansion/consolidation) in daily_features. No advanced session tracking beyond this currently exists.
 
 ### Project Structure Compliance
 
@@ -147,11 +147,11 @@ Use the left sidebar to filter by date, ORB time, break direction, outcomes (WIN
 7. **Alerts**: Daily high-probability setup recommendations
 
 ### Zero-Lookahead (Current Objective)
-- **V2 is the trusted dataset**: `build_daily_features_v2.py` builds zero-lookahead features; `analyze_orb_v2.py` and `realtime_signals.py` consume them.
-- **Automation**: `daily_update.py` → `backfill_databento_continuous.py` now builds **both** `daily_features` (legacy) and `daily_features_v2` (preferred). Always favor V2 outputs for decisions.
+- **V2 is the trusted dataset**: `build_daily_features.py` builds zero-lookahead features; `analyze_orb_v2.py` and `realtime_signals.py` consume them.
+- **Automation**: `daily_update.py` → `backfill_databento_continuous.py` now builds **both** `daily_features` (legacy) and `daily_features` (preferred). Always favor V2 outputs for decisions.
 - **Legacy data caution**: V1 (`daily_features`, session types) is retained for comparison only and contains lookahead bias. Do not base live rules on V1 session labels.
-- **Execution backtest**: `backtest_orb_exec_1m.py` uses `daily_features_v2` levels and 1m closes for realistic entries/exits.
-- **Deterministic session codes**: `daily_features_v2` stores `asia_type_code`, `london_type_code`, and `pre_ny_type_code` (sweep/expansion/consolidation) computed strictly from each session’s own highs/lows and ATR — no subjective trend or lookahead.
+- **Execution backtest**: `backtest_orb_exec_1m.py` uses `daily_features` levels and 1m closes for realistic entries/exits.
+- **Deterministic session codes**: `daily_features` stores `asia_type_code`, `london_type_code`, and `pre_ny_type_code` (sweep/expansion/consolidation) computed strictly from each session’s own highs/lows and ATR — no subjective trend or lookahead.
 
 ### Data Coverage
 

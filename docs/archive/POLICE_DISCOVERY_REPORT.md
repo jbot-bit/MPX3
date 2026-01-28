@@ -216,7 +216,7 @@ Based on discovery, recommend this canonical structure:
   "allowed_tables": [
     "bars_1m",
     "bars_5m",
-    "daily_features_v2",
+    "daily_features",
     "validated_setups",
     "live_bars",
     "live_journal",

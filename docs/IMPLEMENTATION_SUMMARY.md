@@ -47,13 +47,13 @@ def evaluate_trade_outcome(break_dir, orb_high, orb_low, mae, mfe, rr, sl_mode):
 
 ## Changes Made
 
-### Commit 1: 6b04b49 - Consolidate to daily_features_v2
+### Commit 1: 6b04b49 - Consolidate to daily_features
 
 **Files changed: 15**
 
 - Archived: `pipeline/build_daily_features.py` (v1) → `_archive/deprecated/`
-- Renamed: `pipeline/build_daily_features_v2.py` → `pipeline/build_daily_features.py`
-- Updated ALL references from `daily_features` to `daily_features_v2`:
+- Renamed: `pipeline/build_daily_features.py` → `pipeline/build_daily_features.py`
+- Updated ALL references from `daily_features` to `daily_features`:
   - Pipeline: `wipe_mgc.py`, `check_db.py`, `validate_data.py`
   - Analysis: `export_csv.py`, `query_features.py`
   - Workflow: `journal.py`, `daily_update.py`
@@ -253,7 +253,7 @@ print(f"WR: {metrics.win_rate:.1%}, Avg R: {metrics.avg_r:+.3f}")
 ## Git Status
 
 **Local commits created:**
-- `6b04b49`: Consolidate to daily_features_v2 as canonical table
+- `6b04b49`: Consolidate to daily_features as canonical table
 - `9fc4143`: Fix research logic to properly evaluate multi-RR strategies using MAE/MFE
 
 **Push status:**
@@ -286,7 +286,7 @@ git format-patch 5a025ab..9fc4143
 ## Summary
 
 ✅ **Fixed:** Multi-RR strategy evaluation now uses MAE/MFE data
-✅ **Fixed:** Database references consolidated to daily_features_v2
+✅ **Fixed:** Database references consolidated to daily_features
 ✅ **Created:** strategy_evaluation.py (reusable evaluation engine)
 ✅ **Documented:** MIGRATION_V2_COMPLETE.md (comprehensive guide)
 

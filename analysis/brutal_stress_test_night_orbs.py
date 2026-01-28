@@ -387,7 +387,7 @@ SELECT
     date_local,
     orb_2300_high, orb_2300_low, orb_2300_break_dir, orb_2300_outcome,
     orb_0030_high, orb_0030_low, orb_0030_break_dir, orb_0030_outcome
-FROM daily_features_v2
+FROM daily_features
 WHERE instrument = 'MGC'
     AND date_local >= '2024-01-02'
     AND date_local <= '2026-01-26'

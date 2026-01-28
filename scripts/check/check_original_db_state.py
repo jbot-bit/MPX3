@@ -9,7 +9,7 @@ print("ORIGINAL DATABASE STATE (data/db/gold.db)")
 print("="*80)
 print()
 
-for table in ['daily_features', 'daily_features_v2']:
+for table in ['daily_features', 'daily_features']:
     try:
         count = conn.execute(f'SELECT COUNT(*) FROM {table}').fetchone()[0]
         date_range = conn.execute(f'SELECT MIN(date_local), MAX(date_local) FROM {table}').fetchone()
@@ -35,7 +35,7 @@ tables = [t[0] for t in conn.execute('SHOW TABLES').fetchall()]
 print(f"All tables: {', '.join([t for t in tables if 'daily_features' in t])}")
 print()
 
-for table in ['daily_features', 'daily_features_v2']:
+for table in ['daily_features', 'daily_features']:
     if table in tables:
         count = conn.execute(f'SELECT COUNT(*) FROM {table}').fetchone()[0]
         date_range = conn.execute(f'SELECT MIN(date_local), MAX(date_local) FROM {table}').fetchone()

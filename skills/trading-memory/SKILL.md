@@ -248,7 +248,7 @@ When a trade completes, store full context:
 
 **Process:**
 1. Parse trade data
-2. Query daily_features_v2 for session context (Asia travel, London stats, etc.)
+2. Query daily_features for session context (Asia travel, London stats, etc.)
 3. Calculate execution metrics (slippage, fill quality)
 4. Insert into trade_journal
 5. Update session_state with latest performance
@@ -340,7 +340,7 @@ Monitor validated_setups performance over time:
 **Process:**
 1. For each setup in validated_setups:
    - Query trade_journal for recent performance (last 30/60/90 days)
-   - Compare to historical baseline (from daily_features_v2)
+   - Compare to historical baseline (from daily_features)
    - Calculate performance drift
 2. Flag edges with >10% win rate degradation
 3. Update learned_patterns status if edge has degraded
@@ -443,7 +443,7 @@ UPCOMING ORBS:
 ## Integration with Existing System
 
 ### Uses Existing Tables:
-- `daily_features_v2` - Historical session data, ORB outcomes
+- `daily_features` - Historical session data, ORB outcomes
 - `validated_setups` - Baseline edges for comparison
 - `bars_1m`, `bars_5m` - Intraday price action analysis
 
@@ -462,6 +462,31 @@ python scripts/init_trading_memory.py
 
 ---
 
+## Integration with AI-Powered Prop Firm Manager
+
+The **Trading Memory** skill is the foundational cognitive layer for the **AI-Powered Prop Firm Manager**. It provides the data and the learned insights that allow the AI Manager to perform its core functions of risk management and performance coaching.
+
+### 1. Automated Journaling and Performance Review
+-   The AI Manager will use the `trade_journal` and `execution_metrics` tables to completely automate the journaling process.
+-   At the end of each day, the AI Manager will query this skill to generate a detailed performance report, including:
+    -   An objective analysis of the day's best and worst trades.
+    -   A score for the trader's execution quality, based on slippage and fill times.
+    -   A summary of any new lessons or patterns learned during the day.
+
+### 2. Real-Time Performance Coaching
+-   The AI Manager will continuously monitor the `execution_metrics` table to understand the human trader's current psychological state.
+-   By querying the **Procedural Memory**, the AI Manager can detect when a trader is deviating from their historical patterns of success (e.g., taking on more risk after a big win, or cutting trades early after a loss).
+-   This enables the AI Manager to provide specific, data-driven coaching in real-time, such as: *"Your last two trades were impulsive. Take a 5-minute break before the next setup."*
+
+### 3. Intelligent Capital Allocation
+-   The AI Manager will use the **Semantic Memory** (`learned_patterns` table) to inform its capital allocation decisions.
+-   When the `edge-evolution-tracker` reports that a strategy is degrading, the AI Manager can query the Trading Memory to understand *why*.
+-   For example, the memory might reveal: *"This strategy is degrading because its core pattern ('london_choppy_0900_underperform') is becoming more frequent."* This allows the AI Manager to make a much more intelligent decision than simply cutting capital. It might instead decide to only disable the strategy during specific market regimes.
+
+In essence, the Trading Memory skill provides the "long-term memory" and "experiential wisdom" that the AI Prop Firm Manager uses to make its short-term, tactical decisions.
+
+---
+
 ## Use Cases
 
 ### Use Case 1: Post-Trade Analysis
@@ -471,7 +496,7 @@ After each trade, store outcome with context to build memory:
 User: "I took 0900 ORB today, entered at 2654.4, exited at 2655.8 for +1.2R win"
 
 Claude (uses trading-memory skill):
-- Queries daily_features_v2 for session context
+- Queries daily_features for session context
 - Stores trade in trade_journal
 - Checks if this validates any patterns
 - Provides insight: "This trade validates the 'asia_high_travel' pattern (confidence now 83%)"
@@ -577,7 +602,7 @@ Claude (uses trading-memory skill):
 - trade_journal grows ~500-1000 rows/year (manageable)
 
 **Data Quality:**
-- Session context auto-populated from daily_features_v2 (no manual entry)
+- Session context auto-populated from daily_features (no manual entry)
 - Execution metrics captured from actual fills (not theoretical)
 - Patterns validated with statistical tests (chi-square, confidence intervals)
 - Regular pruning of low-confidence patterns (quarterly)
@@ -653,7 +678,7 @@ Memory updated. This experience will inform future recommendations.
 python scripts/init_trading_memory.py
 ```
 
-2. (Optional) Backfill historical trades from daily_features_v2:
+2. (Optional) Backfill historical trades from daily_features:
 ```bash
 python scripts/backfill_trade_journal.py
 ```

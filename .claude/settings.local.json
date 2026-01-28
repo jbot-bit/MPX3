@@ -35,7 +35,15 @@
       "Bash(*test_app_sync*:*)",
       "Bash(*check_db*:*)",
       "Bash(*execution_engine*:*)",
-      "Bash(git init:*)"
+      "Bash(git init:*)",
+      "Bash(npx skills:*)",
+      "Bash(git config:*)",
+      "Bash(tasklist:*)",
+      "Bash(findstr:*)",
+      "Bash(timeout 5 streamlit run:*)",
+      "Bash(timeout 10 streamlit run:*)",
+      "Bash(taskkill:*)",
+      "Bash(dir /s /b *edge_discovery*.md *terminal*.md)"
     ]
   }
 }

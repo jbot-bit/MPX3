@@ -322,7 +322,7 @@ APPROVE candidates → PROMOTE TO PRODUCTION
 - Used by trading apps
 - Immutable once promoted
 
-**daily_features_v2**
+**daily_features**
 - Historical ORB data
 - Session statistics
 - Used for backtesting
@@ -336,7 +336,7 @@ APPROVE candidates → PROMOTE TO PRODUCTION
 **Location:** `research/candidate_backtest_engine.py`
 
 **What it does:**
-1. Loads historical ORB data from daily_features_v2
+1. Loads historical ORB data from daily_features
 2. Applies entry filters (ORB size, ATR, etc.)
 3. Simulates trades with exact entry/stop/target
 4. Tracks P&L in R multiples
@@ -468,7 +468,7 @@ See: `docs/ZERO_LOOKAHEAD_RULES.md`
 
 ### "Backtest failed"
 - Check database has data for date range
-- Verify daily_features_v2 populated
+- Verify daily_features populated
 - Check error logs
 
 ### "Can't promote candidate"

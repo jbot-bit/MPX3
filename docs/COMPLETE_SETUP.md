@@ -198,7 +198,7 @@ OPEN_RESEARCH.html
 **Tables:**
 - `edge_candidates` - Research pipeline candidates
 - `validated_setups` - Production strategies
-- `daily_features_v2` - Historical ORB data
+- `daily_features` - Historical ORB data
 - `bars_1m` / `bars_5m` - Price data
 
 ### Ports

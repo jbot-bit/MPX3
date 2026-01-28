@@ -62,7 +62,7 @@ a53a7bf Initial commit
 ### Database:
 ```
 ✅ bars_1m: 720,227 rows (2024-01-02 to 2026-01-15)
-✅ daily_features_v2: 740 rows
+✅ daily_features: 740 rows
 ✅ validated_setups: 19 setups (8 MGC, 6 MPL, 5 NQ)
 ✅ All tables: 32 tables loaded
 ```

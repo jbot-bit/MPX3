@@ -41,8 +41,8 @@ See full inventory from agent a660ce8 above.
 ### 2. Schemas (ONE SOURCE)
 
 **CANONICAL**: `gold.db` physical schema
-- Tables: bars_1m, bars_5m, daily_features_v2, validated_setups
-- Variants: daily_features_v2_nq, daily_features_v2_mpl (separate instruments)
+- Tables: bars_1m, bars_5m, daily_features, validated_setups
+- Variants: daily_features_nq, daily_features_mpl (separate instruments)
 
 **DOCUMENTATION**:
 - `DATABASE_SCHEMA_SOURCE_OF_TRUTH.md` (brief canonical reference)
@@ -55,7 +55,7 @@ See full inventory from agent a660ce8 above.
 
 ### 3. Data Generation (ONE SOURCE)
 
-**CANONICAL**: `build_daily_features_v2.py`
+**CANONICAL**: `build_daily_features.py`
 - Zero-lookahead feature builder
 - Scan window fix: 2026-01-16 (extended to 09:00)
 - **Authority**: PRIMARY
@@ -73,7 +73,7 @@ See full inventory from agent a660ce8 above.
 - Same-bar TP+SL resolution
 
 **DUPLICATES** (Acceptable):
-- `build_daily_features_v2.py` - reimplements for feature building
+- `build_daily_features.py` - reimplements for feature building
 - `strategy_engine.py` - live strategy evaluation (different purpose)
 
 **Status**: Acceptable duplication (different contexts)

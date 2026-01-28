@@ -151,7 +151,7 @@ All 7 STEP documents stored for reference:
 - No duplicate timestamps
 - UTC timestamps with proper timezone handling
 
-**daily_features_v2 table**:
+**daily_features table**:
 - 740 total days in database
 - 211 weekend days (no session data - EXPECTED)
 - 7 weekday holidays (no session data - EXPECTED)

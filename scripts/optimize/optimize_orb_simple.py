@@ -119,7 +119,7 @@ query = f"""
         date_local,
         orb_{orb_time}_high as orb_high,
         orb_{orb_time}_low as orb_low
-    FROM daily_features_v2
+    FROM daily_features
     WHERE instrument = 'MGC'
       AND orb_{orb_time}_high IS NOT NULL
       AND orb_{orb_time}_low IS NOT NULL

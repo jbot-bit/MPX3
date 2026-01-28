@@ -116,7 +116,7 @@ This document describes the current production-ready file structure after compre
 - `backfill_range.py` - Alternative backfill using ProjectX API
 
 **Feature Building:**
-- `build_daily_features_v2.py` - **V2 ZERO-LOOKAHEAD** feature builder (PRODUCTION)
+- `build_daily_features.py` - **V2 ZERO-LOOKAHEAD** feature builder (PRODUCTION)
 - `build_daily_features.py` - V1 legacy feature builder (kept for comparison)
 - `build_5m.py` - 5-minute bar aggregation from 1-minute data
 
@@ -187,7 +187,7 @@ This document describes the current production-ready file structure after compre
 - `populate_validated_setups.py` - Unified script to populate validated_setups table (MGC+NQ+MPL)
 - `trading_app/setup_detector.py` - Live setup detection across all instruments
 
-**Note:** Legacy backtest execution models (1m/5m/5mhalfsl) archived on Jan 15, 2026. Strategy logic preserved in validated_strategies.py and build_daily_features_v2.py. Scan window bug fixed on Jan 16, 2026.
+**Note:** Legacy backtest execution models (1m/5m/5mhalfsl) archived on Jan 15, 2026. Strategy logic preserved in validated_strategies.py and build_daily_features.py. Scan window bug fixed on Jan 16, 2026.
 
 ### Audit System (NEW - Jan 17, 2026)
 
@@ -377,7 +377,7 @@ python journal.py add
 python backfill_databento_continuous.py 2026-01-01 2026-01-10
 
 # Rebuild features (V2 zero-lookahead)
-python build_daily_features_v2.py 2026-01-10
+python build_daily_features.py 2026-01-10
 
 # Check database
 python check_db.py

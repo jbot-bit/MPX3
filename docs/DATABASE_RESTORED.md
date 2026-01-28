@@ -48,7 +48,7 @@ Successfully restored full historical database and integrated database-design sk
 ### Tables (32 total):
 - **bars_1m**: 720,227 rows (MGC 1-minute bars)
 - **bars_5m**: Aggregated 5-minute bars
-- **daily_features_v2**: 740 rows (ORB features, session stats)
+- **daily_features**: 740 rows (ORB features, session stats)
 - **validated_setups**: 19 setups (8 MGC, 6 MPL, 5 NQ)
 - Plus: bars_1m_nq, bars_1m_mpl, ml_predictions, live_journal, etc.
 
@@ -164,7 +164,7 @@ python pipeline/backfill_databento_continuous.py 2026-01-15 2026-01-25
 ======================================================================
 
 ✓ Database: 690MB, 720K bars, 740 features
-✓ Tables: 32 tables including bars_1m, daily_features_v2
+✓ Tables: 32 tables including bars_1m, daily_features
 ✓ Validated Setups: 19 setups (8 MGC, 6 MPL, 5 NQ)
 ✓ Config Sync: config.py matches database perfectly
 ✓ SetupDetector: Loaded 8 MGC setups successfully
@@ -245,7 +245,7 @@ This validates config.py ↔ validated_setups synchronization.
 
 4. **Optional - Backfill Latest Data**:
    - Get data up to today (2026-01-25)
-   - Update daily_features_v2
+   - Update daily_features
    - Refresh backtest results
 
 ---

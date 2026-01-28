@@ -33,7 +33,7 @@
 
 4. **Backtest Engine** (`ede/backtest_engine.py`)
    - Deterministic zero-lookahead backtesting
-   - Uses bars_1m (1.4M+ bars) and daily_features_v2 (1,780 features)
+   - Uses bars_1m (1.4M+ bars) and daily_features (1,780 features)
    - Complete trade tracking (entry/exit/MAE/MFE)
    - Full metrics calculation (WR, avg R, expectancy, max DD, PF, Sharpe)
    - Slippage simulation
@@ -223,7 +223,7 @@ Expected 99% failure rate:
 ### Data Sources (Already Connected)
 
 - ✅ `bars_1m`: 1.4M bars (MGC/NQ/MPL)
-- ✅ `daily_features_v2`: 1,780 daily features
+- ✅ `daily_features`: 1,780 daily features
 - ✅ `validated_setups`: 19 existing strategies
 
 ### Sync Points (To Be Implemented)

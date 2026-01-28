@@ -323,7 +323,7 @@ python backtest_orb_exec_1m.py --rr-grid "1.5,2.0,2.5,3.0" --confirm 1
 
 **Fixes:**
 1. Check database size: `python check_db.py`
-2. Ensure daily_features_v2 has data
+2. Ensure daily_features has data
 3. Close other database connections
 4. Restart Streamlit
 

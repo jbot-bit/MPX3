@@ -66,7 +66,7 @@ SELECT
     orb_1100_high, orb_1100_low, orb_1100_size, orb_1100_break_dir, orb_1100_outcome,
     orb_1800_high, orb_1800_low, orb_1800_size, orb_1800_break_dir, orb_1800_outcome,
     rsi_at_0030
-FROM daily_features_v2
+FROM daily_features
 WHERE instrument = 'MGC'
     AND date_local >= '2024-01-02'
     AND date_local <= '2026-01-26'

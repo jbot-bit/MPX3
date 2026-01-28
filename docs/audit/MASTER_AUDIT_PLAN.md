@@ -153,9 +153,9 @@ WHERE (local_time < '09:00' OR local_time > '02:00')
 
 #### 2.2 Deterministic Rebuild Test (CRITICAL)
 ```python
-# Rebuild daily_features_v2 twice
-hash_run_1 = hash(daily_features_v2_run1)
-hash_run_2 = hash(daily_features_v2_run2)
+# Rebuild daily_features twice
+hash_run_1 = hash(daily_features_run1)
+hash_run_2 = hash(daily_features_run2)
 assert hash_run_1 == hash_run_2
 ```
 **Pass:** Identical hashes
@@ -165,7 +165,7 @@ For EACH feature:
 ```sql
 SELECT date, asia_gap,
        asia_open - prior_ny_close AS recomputed
-FROM daily_features_v2
+FROM daily_features
 WHERE ABS(asia_gap - recomputed) > 0.1;
 ```
 **Pass:** Zero rows

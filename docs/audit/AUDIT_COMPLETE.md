@@ -259,7 +259,7 @@ Run every week to catch data drift
 4. Re-run backfill for those dates:
    ```bash
    python backfill_databento_continuous.py 2025-12-01 2026-01-10
-   python build_daily_features_v2.py 2026-01-10
+   python build_daily_features.py 2026-01-10
    ```
 5. Re-run audit:
    ```bash
@@ -277,7 +277,7 @@ Run every week to catch data drift
 2. Find which feature failed
 3. Re-build features:
    ```bash
-   python build_daily_features_v2.py 2026-01-10
+   python build_daily_features.py 2026-01-10
    ```
 4. Re-run audit:
    ```bash

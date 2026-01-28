@@ -1,3 +1,50 @@
+# AI-Powered Prop Firm Manager
+## Requirements & Architecture Document V2
+
+**Created:** 2026-01-26
+**Updated:** 2026-01-28
+**Status:** AI-ENHANCED REQUIREMENTS
+
+---
+
+## 1. VISION & STRATEGIC OVERVIEW
+
+### 1.1 The AI-Powered Prop Firm Manager
+
+This document outlines the requirements for an **AI-Powered Prop Firm Manager**. This system will not be a static dashboard, but a dynamic, intelligent agent that acts as a virtual risk manager and performance coach. It will manage both the portfolio of automated trading strategies and you, the human trader, to ensure peak performance and adherence to prop firm rules.
+
+The agent's primary directive is to maximize the probability of success by enforcing discipline, optimizing risk, and providing actionable, data-driven insights in real-time.
+
+### 1.2 Core AI-Driven Capabilities
+
+Building on the original requirements, the AI Manager will incorporate the following advanced capabilities:
+
+1.  **Dynamic Capital Allocation:**
+    - The agent will leverage the `edge-evolution-tracker` skill to continuously monitor the performance of all validated strategies.
+    - It will autonomously allocate more "risk capital" to strategies that are performing well in the current market regime and reduce exposure to strategies that are degrading.
+
+2.  **Intelligent Risk Management:**
+    - The agent will use the `market-anomaly-detection` skill to assess market volatility and liquidity in real-time.
+    - It will issue and enforce dynamic directives, such as *"Market volatility has spiked. Reducing max position size by 50% for the next 30 minutes."*
+
+3.  **Real-Time Performance Coaching:**
+    - By integrating deeply with the `trading-memory` skill, the agent will provide personalized, real-time feedback on your trading execution.
+    - Example alerts:
+        - *"You have deviated from your trading plan on the last two trades. Are you entering a tilt phase?"*
+        - *"Your average slippage on NQ is 0.5 points higher than your baseline. Consider avoiding fast markets or check your connection."*
+
+4.  **Automated Journaling & Performance Review:**
+    - The agent will fully automate the trade journaling process.
+    - At the end of each trading day, it will generate a comprehensive performance review, highlighting:
+        - Best and worst trades of the day, with context.
+        - Adherence to the trading plan and prop firm rules.
+        - Key insights or new patterns learned by the `trading-memory` skill.
+        - A "score" for your execution quality.
+
+These AI capabilities will be woven into the core functionality of the Prop Firm Account Manager, transforming it from a monitoring tool into an active partner in your trading success.
+
+---
+
 # BLOOMBERG ULTRA - PROP FIRM ACCOUNT MANAGER
 ## Requirements & Architecture Document
 

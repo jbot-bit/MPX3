@@ -328,7 +328,7 @@ def analyze_all_setups():
 
     print("4. PROCEED WITH PHASE 2 (Implementation):")
     print("   - Update execution_engine.py with canonical logic")
-    print("   - Rebuild daily_features_v2 with realized RR")
+    print("   - Rebuild daily_features with realized RR")
     print("   - Update cost_model.py")
     print("   - Modify schema to store both theoretical + realized RR")
     print()

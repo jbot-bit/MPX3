@@ -1,7 +1,7 @@
 # ORB EDGE SOURCE INVESTIGATION
 **Date**: 2026-01-27
 **Analysis**: C:\Users\sydne\OneDrive\Desktop\MPX2_fresh\analysis\investigate_orb_edge_sources.py
-**Database**: data/db/gold.db (daily_features_v2, 740 days, 2024-01-02 to 2026-01-26)
+**Database**: data/db/gold.db (daily_features, 740 days, 2024-01-02 to 2026-01-26)
 **Cost Model**: $8.40 RT (commission $2.40 + spread $2.00 + slippage $4.00)
 
 ---

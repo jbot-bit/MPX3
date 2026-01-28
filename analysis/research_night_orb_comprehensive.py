@@ -88,7 +88,7 @@ SELECT
     LAG(orb_1000_outcome) OVER (ORDER BY date_local) as prev_1000_outcome,
     LAG(orb_1100_outcome) OVER (ORDER BY date_local) as prev_1100_outcome,
     LAG(orb_1800_outcome) OVER (ORDER BY date_local) as prev_1800_outcome
-FROM daily_features_v2
+FROM daily_features
 WHERE instrument = 'MGC'
     AND date_local >= '2024-01-02'
     AND date_local <= '2026-01-26'

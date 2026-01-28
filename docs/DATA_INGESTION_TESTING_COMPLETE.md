@@ -300,7 +300,7 @@ Skipped:             11 (3.4%)
 
 ### ✅ Indicators
 - RSI: Wilder's smoothing, 14-period, uses bars_5m
-- ATR: Simple average of last 20 days, uses daily_features_v2
+- ATR: Simple average of last 20 days, uses daily_features
 - Type codes: A1_TIGHT, A0_NORMAL, A2_EXPANDED
 - London codes: L1_SWEEP_HIGH, L2_SWEEP_LOW, L3_EXPANSION, L4_CONSOLIDATION
 - Pre-NY codes: N1_SWEEP_HIGH, N2_SWEEP_LOW, N3_CONSOLIDATION, N4_EXPANSION, N0_NORMAL
@@ -355,7 +355,7 @@ Skipped:             11 (3.4%)
 
 **Confidence:** HIGH - 26/26 tests passing, ZERO critical bugs found
 
-**Risk:** MINIMAL - All ORB calculation logic is correct. If your database has correct bar data, your daily_features_v2 will have correct ORB calculations.
+**Risk:** MINIMAL - All ORB calculation logic is correct. If your database has correct bar data, your daily_features will have correct ORB calculations.
 
 ---
 
@@ -449,7 +449,7 @@ You have **HIGH CONFIDENCE** in your ORB calculation logic:
 - Outcome detection is CORRECT ✅
 - Session statistics are CORRECT ✅
 - All indicators (RSI/ATR/type codes) are CORRECT ✅
-- If bar data is good, daily_features_v2 is trustworthy ✅
+- If bar data is good, daily_features is trustworthy ✅
 
 **Honesty assessment:**
 - **EXCELLENT:** ORB calculation, entry/exit logic, outcome detection

@@ -29,7 +29,7 @@
 ### 3. ✅ Invalid ORB Times in Database
 **Error:** `Binder Error: Referenced column "orb_CASCADE_outcome" not found`
 **Location:** `edge_tracker.py`
-**Problem:** validated_setups contains non-ORB entries (CASCADE, SINGLE_LIQ) which don't have corresponding columns in daily_features_v2
+**Problem:** validated_setups contains non-ORB entries (CASCADE, SINGLE_LIQ) which don't have corresponding columns in daily_features
 **Fix:** Added filter to only query valid ORB times: 0030, 0900, 1000, 1100, 1800, 2300
 
 **Files Fixed:**

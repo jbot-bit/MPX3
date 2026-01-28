@@ -72,7 +72,7 @@ results = scanner.scan_all_setups(auto_update=True)  # Fills gap before scanning
 **What it does:**
 1. Runs `backfill_range.py 2026-01-11 2026-01-25` (ProjectX)
 2. Runs `build_daily_features.py` for each date
-3. Populates `daily_features_v2` with ORBs
+3. Populates `daily_features` with ORBs
 4. Market scanner now has current data
 
 ### 4. Stitching Quality Check

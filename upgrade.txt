@@ -1,0 +1,116 @@
+You are the senior engineer. Build this COMPLETELY end-to-end. No skeletons, no “TODO later”, no mock data, no random stubs. If anything is missing, infer it from the existing codebase and wire it correctly. Keep it deterministic and reproducible.
+
+GOAL
+Add a new V1 capability called “WHAT-IF ANALYZER” that plugs directly into the existing system (Research/Validation/Production + live scanning). It must answer: “Given condition X, does it improve/worsen Setup Y?” and allow promoting validated condition-rules into the live tracker feed as real gates.
+
+V1 PRINCIPLES (NON-NEGOTIABLE)
+- Deterministic only. No semantic/NL layer yet. (We add semantic + memory later.)
+- Discovery/What-If can only create “candidate rule snapshots”. It must NOT bypass validation.
+- Only the existing validation pipeline (with mandatory control + gates + evidence) can create promoted production items.
+- Everything must be reproducible: same filters + same setup + same DB snapshot => same output.
+- Fail-closed everywhere (if data missing / ambiguous => block, show reason).
+
+FEATURES TO BUILD (END-TO-END)
+
+1) WHAT-IF ANALYZER PANEL (UI)
+Add a panel inside the existing app that lets the operator:
+- Select one existing setup (validated/promoted item).
+- Define 1–3 structured conditions (dropdown + numeric thresholds + time windows).
+Examples conditions (implement a small but real V1 set):
+- ORB size (ticks/points) > N or < N for a chosen session/time
+- “No breakout within M minutes after ORB open” (requires breakout-time field or derivation)
+- Session range / volatility bucket (use existing features if present)
+All conditions must map to concrete deterministic filters over historical days.
+
+The UI must show:
+- Baseline performance (all eligible days for setup)
+- Conditional performance (days matching condition set)
+- Non-matching performance (days not matching)
+- Delta metrics: win rate delta, expected R delta, max DD delta, sample size
+- Practical gates for “worth testing” (minimum sample size, minimum delta, etc.)
+- Clear warnings when sample size is too low or condition cannot be computed.
+
+2) WHAT-IF QUERY ENGINE (BACKEND)
+Implement a backend component that:
+- Accepts: setup_id (or setup definition), condition_set, date range (optional), instrument
+- Produces:
+  - Eligible day set for that setup
+  - Match day set for the condition
+  - Computes metrics for baseline/match/non-match deterministically from DB-backed history
+  - Uses the same honesty-first cost model used elsewhere (no duplication/contradiction)
+- Must be safe:
+  - No unsafe string-SQL concatenation. Use parameterization or a safe query builder pattern.
+- Must be fast:
+  - Cache results keyed by (setup, condition_set, date range, db fingerprint/version).
+- Return a structured result object used by UI and saved as a snapshot.
+
+3) CANDIDATE RULE SNAPSHOT (STORAGE)
+When operator clicks “Save Snapshot”:
+- Persist a record that includes:
+  - Setup reference
+  - Full condition_set (structured)
+  - Exact query definition / parameters used
+  - Summary metrics (baseline/match/non-match + deltas)
+  - Sample sizes
+  - Timestamp
+  - Code version identifier (git hash if available)
+  - Database snapshot identifier if available
+This snapshot is NOT “production”. It is an evidence trail for “why we tested this”.
+
+4) VALIDATION HANDOFF (PIPELINE INTEGRATION)
+Add a button “Send to Validation” that:
+- Creates a proper candidate edge/rule entry in the existing workflow
+- Links it back to the snapshot
+- Runs through your existing validation flow:
+  - Mandatory control baseline
+  - Gates (sample size, ExpR, stress tests, walk-forward, beats control)
+  - Evidence pack creation
+No shortcuts.
+
+Important:
+- If your current validation logic is strategy-based, extend it so it can validate “setup + additional condition rule” as a variant.
+- Keep backward compatibility: existing setups still validate as before.
+
+5) PROMOTION INTO LIVE TRACKER (PRODUCTION INTEGRATION)
+When a what-if rule variant is validated and then promoted:
+- It must appear in the live tracker feed as an additional gate for that setup.
+- Live evaluation:
+  - Compute today’s condition state deterministically from live/session features.
+  - Mark setup as ACTIVE / BLOCKED based on whether the condition gate passes today.
+- Display clearly:
+  - Which gate blocked it and why (e.g., “Asia ORB size 170 > 150 threshold”).
+
+6) TESTS (MUST HAVE)
+Add/extend tests that prove end-to-end:
+- Query engine returns consistent results for same inputs
+- Snapshot saved correctly and round-trips (load snapshot => same output)
+- “Send to Validation” creates candidate and cannot bypass validation
+- Promotion guard still blocks anything without proper status/evidence
+- Live gate evaluation works for at least one promoted rule
+
+V1 SCOPE CONTROL
+- Start with a small, real set of conditions (2–4) that you can compute from existing DB fields.
+- If “no breakout within M minutes” cannot be computed from existing schema, then:
+  - Implement the minimal deterministic derivation using existing intraday data OR
+  - Replace with an equivalent V1 condition that is computable now (but document it and make the UI only show computable conditions).
+No fake data.
+
+OUTPUT REQUIREMENTS
+- Implement fully (UI + backend + storage + validation handoff + production integration + tests).
+- Update build status/docs to reflect the new capability and how to use it.
+- Keep everything clean: UI only presents; backend/orchestrator does logic and DB writes.
+
+DELIVERABLE CHECKLIST (YOU MUST COMPLETE)
+- What-If panel works in the app with real results.
+- Conditions evaluate correctly and deterministically.
+- Snapshot persistence works.
+- Validation handoff works and produces runs/evidence as normal.
+- Promoted rules show in live tracker and actually gate today’s setups.
+- Tests pass.
+
+NOW DO IT
+Start by scanning the repo to locate:
+- where validated/promoted setups are defined/stored
+- where live tracker computes today’s market/session features
+- what DB tables/columns can support the initial condition set
+Then implement in small commits with verification after each stage.

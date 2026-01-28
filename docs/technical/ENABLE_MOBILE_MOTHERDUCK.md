@@ -12,7 +12,7 @@ Streamlit Cloud will auto-deploy in **1-2 minutes**.
 
 ✅ **Mobile app now uses MotherDuck** instead of local database
 ✅ **Works with PC off** - all data accessed from cloud
-✅ **Uses unified schema** - daily_features_v2 with MGC, MPL, NQ
+✅ **Uses unified schema** - daily_features with MGC, MPL, NQ
 
 ---
 
@@ -75,7 +75,7 @@ f. Click **Save**
 |-------|------|-------------|
 | bars_1m | 1,397,853 | 1-min bars (MGC, MPL, NQ) |
 | bars_5m | 320,534 | 5-min bars (MGC, MPL, NQ) |
-| daily_features_v2 | 1,780 | Daily ORBs, ATR, session stats |
+| daily_features | 1,780 | Daily ORBs, ATR, session stats |
 | validated_setups | 19 | Production strategies |
 
 **Date range**: 2024-01-02 to 2026-01-15

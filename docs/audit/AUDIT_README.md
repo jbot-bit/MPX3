@@ -156,7 +156,7 @@ OVERALL: 19/20 tests passed (95.0%)
 3. Common issues:
    - **Missing bars:** Re-run backfill for affected dates
    - **Duplicate timestamps:** Check data import logic
-   - **ATR zeros:** Re-run `build_daily_features_v2.py`
+   - **ATR zeros:** Re-run `build_daily_features.py`
 4. Fix issue
 5. Re-run: `python audit_master.py --step 1`
 6. Verify 100% pass rate before proceeding
@@ -168,7 +168,7 @@ OVERALL: 19/20 tests passed (95.0%)
 1. Check `audit_reports/step2_feature_verification_report.json`
 2. Identify which feature failed
 3. Common issues:
-   - **ORB size mismatch:** Re-run `build_daily_features_v2.py`
+   - **ORB size mismatch:** Re-run `build_daily_features.py`
    - **Non-deterministic rebuild:** Check for random seeds, timestamp dependencies
    - **High null percentage:** Check feature calculation logic
 4. Fix issue

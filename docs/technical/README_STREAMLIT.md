@@ -8,7 +8,7 @@
 
 ## Overview
 
-The Streamlit dashboard (`app_edge_research.py`) provides an interactive interface for exploring ORB edges with zero-lookahead guarantees. It uses the V2 dataset (`daily_features_v2`) through the `v_orb_trades` view.
+The Streamlit dashboard (`app_edge_research.py`) provides an interactive interface for exploring ORB edges with zero-lookahead guarantees. It uses the V2 dataset (`daily_features`) through the `v_orb_trades` view.
 
 **Key Features:**
 - **Strategy Builder** - Test different entry models, retest rules, and stop sizes
@@ -288,10 +288,10 @@ Then validate specific dates in the drilldown table.
 
 **`v_orb_trades` (View):**
 - Normalized view of all ORB opportunities
-- Unpivots `daily_features_v2` columns
+- Unpivots `daily_features` columns
 - 4,434 rows (6 ORBs × 739 days)
 
-**`daily_features_v2` (Table):**
+**`daily_features` (Table):**
 - Source data with zero-lookahead structure
 - 739 days (2024-01-02 to 2026-01-10)
 - ORB prices, outcomes, R-multiples
@@ -308,7 +308,7 @@ Dashboard reads from database on each interaction. To update with new data:
 
 1. **Rebuild Features:**
    ```bash
-   python build_daily_features_v2.py 2026-01-11 2026-01-11
+   python build_daily_features.py 2026-01-11 2026-01-11
    ```
 
 2. **Refresh Dashboard:**
@@ -384,7 +384,7 @@ streamlit run app_edge_research.py
 1. Check filters (especially Outcomes - include WIN, LOSS, NO_TRADE)
 2. Verify V2 data exists:
    ```bash
-   python -c "import duckdb; con = duckdb.connect('gold.db'); print(con.execute('SELECT COUNT(*) FROM daily_features_v2').fetchone())"
+   python -c "import duckdb; con = duckdb.connect('gold.db'); print(con.execute('SELECT COUNT(*) FROM daily_features').fetchone())"
    ```
 3. Check v_orb_trades view exists:
    ```bash

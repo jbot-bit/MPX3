@@ -55,7 +55,7 @@ DuckDB (gold.db)
 1. **Directional Classifier** (`directional_v1/`)
    - Predicts: P(UP), P(DOWN), P(NONE)
    - Algorithm: LightGBM
-   - Features: 50+ from daily_features_v2
+   - Features: 50+ from daily_features
    - Target: 55-60% accuracy
 
 2. **Entry Quality Scorer** (`entry_quality_v1/`) - Phase 3

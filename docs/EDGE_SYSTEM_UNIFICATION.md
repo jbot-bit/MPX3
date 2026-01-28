@@ -38,13 +38,13 @@
 | `research/ede/init_ede_schema.py` (395 lines) | Creates 6 EDE tables (edge_candidates_raw, edge_manifest, etc.) | YES | YES (CREATE TABLE) | None | NO (research setup) | **RESEARCH** |
 | `research/ede/lifecycle_manager.py` (614 lines) | EDE orchestrator - hard gate flow IDEA→SYNC | YES | YES (writes) | edge_candidates_raw, edge_manifest | NO (research) | **RESEARCH** |
 | `research/ede/generator_brute.py` (509 lines) | Brute parameter search (1.78M combinations) | YES | YES (writes) | edge_candidates_raw | NO (research) | **RESEARCH** |
-| `research/ede/backtest_engine.py` (670 lines) | Zero-lookahead backtesting engine | YES (read bars) | NO | bars_1m, daily_features_v2 | NO (research) | **RESEARCH** |
+| `research/ede/backtest_engine.py` (670 lines) | Zero-lookahead backtesting engine | YES (read bars) | NO | bars_1m, daily_features | NO (research) | **RESEARCH** |
 | `research/ede/validation_pipeline.py` (533 lines) | Cost tests + attacks + regime splits | YES | YES (writes) | edge_candidates_raw, edge_candidates_survivors | NO (research) | **RESEARCH** |
 | `research/ede/ede_cli.py` (329 lines) | CLI for EDE operations (generate/validate/approve/stats) | YES | YES (writes) | EDE tables | NO (research) | **RESEARCH** |
 | **RESEARCH (Other Scripts)** |
 | `research/scripts/research_1800_any_edges.py` | Research script for 1800 ORB analysis | YES (read) | NO | bars_1m, daily_features | NO (research) | **RESEARCH** |
 | `trading_app/strategy_discovery.py` (426 lines) | Edge discovery algorithms + StrategyDiscovery class | YES | YES (edge_candidates?) | bars_1m, edge_candidates? | NO (research tool) | **RESEARCH** |
-| `analysis/export_v2_edges.py` | Export edges to CSV/JSON | YES (read) | NO (exports) | daily_features_v2 | NO (analysis) | **RESEARCH** |
+| `analysis/export_v2_edges.py` | Export edges to CSV/JSON | YES (read) | NO (exports) | daily_features | NO (analysis) | **RESEARCH** |
 | **MIGRATIONS** |
 | `pipeline/migrate_add_edge_candidates.py` | Creates edge_candidates table (production schema) | YES | YES (CREATE TABLE) | None | NO (one-time migration) | **DEPRECATED** |
 | `pipeline/migrate_add_reproducibility_fields.py` | Adds reproducibility fields to edge_candidates | YES | YES (ALTER TABLE) | edge_candidates | NO (one-time migration) | **DEPRECATED** |

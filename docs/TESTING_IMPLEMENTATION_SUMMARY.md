@@ -71,7 +71,7 @@ addopts = -v --tb=short --strict-markers --disable-warnings
 **Comprehensive fixtures for all tests:**
 
 1. **test_db** - In-memory DuckDB with complete schema
-   - daily_features_v2 table
+   - daily_features table
    - validated_setups table
    - trade_journal table
    - learned_patterns table

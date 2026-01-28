@@ -276,7 +276,7 @@ All commands have been updated for new structure:
 ### Data Pipeline
 ```bash
 python pipeline/backfill_databento_continuous.py 2024-01-01 2026-01-10
-python pipeline/build_daily_features_v2.py 2026-01-10
+python pipeline/build_daily_features.py 2026-01-10
 python pipeline/check_db.py
 ```
 

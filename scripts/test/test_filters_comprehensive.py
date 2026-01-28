@@ -126,7 +126,7 @@ baseline_query = f"""
         london_type,
         london_atr14,
         orb_{orb_time}_rsi as rsi
-    FROM daily_features_v2
+    FROM daily_features
     WHERE instrument = 'MGC'
       AND orb_{orb_time}_high IS NOT NULL
       AND orb_{orb_time}_low IS NOT NULL

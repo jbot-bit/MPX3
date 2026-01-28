@@ -59,7 +59,7 @@ pipeline/
 4. Take trades with confidence
 
 **Behind the scenes:**
-- Queries `daily_features_v2` for today's session data
+- Queries `daily_features` for today's session data
 - Compares ORB sizes against `validated_setups` filters
 - Enriches with Asia travel, London reversals
 - Auto-updates data if behind
@@ -159,7 +159,7 @@ pipeline/
 - Monitor progress
 
 **Behind the scenes:**
-- Queries `daily_features_v2` for last date
+- Queries `daily_features` for last date
 - Calculates gap to current date
 - Runs backfill scripts (Databento or ProjectX)
 - Builds features (ORBs, session stats)
@@ -171,7 +171,7 @@ pipeline/
 ### Existing Tables (already in gold.db)
 - `bars_1m` - Raw 1-minute bars
 - `bars_5m` - Aggregated 5-minute bars
-- `daily_features_v2` - ORBs, session stats, indicators
+- `daily_features` - ORBs, session stats, indicators
 - `validated_setups` - Your proven edges
 
 ### New Tables (added by init_memory_tables.py)
@@ -304,7 +304,7 @@ learned_patterns (semantic memory)
     ↓
 AI Assistant (contextual intelligence)
 
-daily_features_v2 (historical data)
+daily_features (historical data)
     ↓
 Market Scanner (real-time validation)
     ↓
@@ -319,7 +319,7 @@ Edge Tracker (performance monitoring)
 
 2. **Tradovate → Memory**
    - Auto-imports fills
-   - Enriches with session context from daily_features_v2
+   - Enriches with session context from daily_features
    - Stores in trade_journal
 
 3. **Memory → AI Assistant**

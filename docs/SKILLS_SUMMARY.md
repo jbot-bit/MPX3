@@ -52,7 +52,7 @@ Three custom trading skills have been created for the MPX2 Gold trading system. 
 
 ### Integration
 
-- **Uses existing:** `daily_features_v2`, `validated_setups`, `bars_1m`, `bars_5m`
+- **Uses existing:** `daily_features`, `validated_setups`, `bars_1m`, `bars_5m`
 - **Adds new tables:** `trade_journal`, `learned_patterns`, `session_state`, `execution_metrics`
 - **Powers:** AI trading partner that remembers everything and learns continuously
 
@@ -294,7 +294,7 @@ python scripts/init_trading_memory.py
 **Phase 2: Backfill Historical Trades (Optional)**
 
 ```bash
-# Populate trade_journal from daily_features_v2
+# Populate trade_journal from daily_features
 python scripts/backfill_trade_journal.py
 
 # This converts historical ORB outcomes into trade_journal entries

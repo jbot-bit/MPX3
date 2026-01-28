@@ -33,7 +33,7 @@ Completely different targets and R-multiples!
 ## Critical Fixes Applied
 
 1. ✅ **Database path**: Changed from `data/db/gold.db` to `gold.db` (canonical path)
-2. ✅ **Table name**: Changed from `daily_features_v2` (doesn't exist for MGC) to `daily_features` (canonical table)
+2. ✅ **Table name**: Changed from `daily_features` (doesn't exist for MGC) to `daily_features` (canonical table)
 3. ✅ **Risk calculation**: ORB EDGE to stop (not entry to stop)
 4. ✅ **Target calculation**: From ORB EDGE (not entry)
 5. ✅ **Stop fractions**: 1.00 = FULL (opposite edge), 0.50 = HALF (midpoint), 0.25 = QUARTER
@@ -93,7 +93,7 @@ Currently testing all 6 ORBs (0900, 1000, 1100, 1800, 2300, 0030) with:
 1. **Always match canonical logic**: build_daily_features.py is the source of truth
 2. **Test synchronization**: Run `python test_app_sync.py` after ANY database/config changes
 3. **Database path**: `gold.db` (root), NOT `data/db/gold.db`
-4. **Table name**: `daily_features` (MGC FULL mode), NOT `daily_features_v2`
+4. **Table name**: `daily_features` (MGC FULL mode), NOT `daily_features`
 5. **Filters required**: Most edges are unprofitable without filters (session type, ORB size, RSI)
 
 ## Architecture Notes

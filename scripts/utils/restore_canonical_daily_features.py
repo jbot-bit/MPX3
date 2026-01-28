@@ -40,9 +40,9 @@ print()
 
 # Delete any remaining v2 tables (except _half, _mpl, _nq variants which are legitimate)
 tables = [t[0] for t in dst.execute('SHOW TABLES').fetchall()]
-if 'daily_features_v2' in tables:
-    dst.execute('DROP TABLE daily_features_v2')
-    print("Deleted daily_features_v2 (was outdated)")
+if 'daily_features' in tables:
+    dst.execute('DROP TABLE daily_features')
+    print("Deleted daily_features (was outdated)")
 
 dst.close()
 
