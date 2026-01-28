@@ -56,7 +56,7 @@ TZ_LOCAL = ZoneInfo("Australia/Brisbane")
 TZ_UTC = ZoneInfo("UTC")
 
 SYMBOL = "MGC"
-DB_PATH = "gold.db"
+DB_PATH = "data/db/gold.db"
 RSI_LEN = 14
 
 RR_DEFAULT = 1.0  # keep simple for now
@@ -357,6 +357,202 @@ class FeatureBuilderV2:
             "stop_price": stop, "risk_ticks": risk_ticks
         }
 
+    def calculate_orb_1m_tradeable(self, orb_start_local: datetime, scan_end_local: datetime, rr: float = RR_DEFAULT, sl_mode: str = SL_MODE) -> Optional[Dict]:
+        """
+        Calculate ORB with B-ENTRY MODEL (entry-anchored tradeable metrics).
+
+        DUAL-TRACK EDGE PIPELINE:
+        - STRUCTURAL (ORB-anchored): Discovery lens for finding patterns
+        - TRADEABLE (entry-anchored): Promotion truth for validation
+
+        B-ENTRY MODEL (CANONICAL_LOGIC.txt lines 76-98):
+        - Signal: First 1m CLOSE outside ORB
+        - Entry: NEXT 1m OPEN after signal close (not at signal close)
+        - Stop: ORB edge (full) or midpoint (half)
+        - Risk: |entry - stop| (entry-anchored, not ORB-anchored)
+        - Target: entry +/- RR * risk
+        - Outcome: WIN/LOSS/OPEN (not NO_TRADE for open positions)
+
+        Args:
+            orb_start_local: ORB start time (local)
+            scan_end_local: Scan window end time (local)
+            rr: Risk/reward ratio for target
+            sl_mode: "full" = stop at opposite edge, "half" = stop at midpoint
+
+        Returns:
+            Dict with keys: entry_price, stop_price, risk_points, target_price, outcome,
+                           realized_rr, realized_risk_dollars, realized_reward_dollars
+            Returns None if ORB window has no data.
+        """
+        orb_end_local = orb_start_local + timedelta(minutes=5)
+
+        orb_stats = self._window_stats_1m(orb_start_local, orb_end_local)
+        if not orb_stats:
+            return None
+
+        orb_high = orb_stats["high"]
+        orb_low = orb_stats["low"]
+        orb_mid = (orb_high + orb_low) / 2.0
+
+        # Bars AFTER ORB end
+        bars = self._fetch_1m_bars(orb_end_local, scan_end_local)
+
+        # STEP 1: Find signal (first 1m CLOSE outside ORB)
+        signal_found = False
+        signal_bar_index = None
+        break_dir = "NONE"
+
+        for i, (ts_utc, h, l, c) in enumerate(bars):
+            c = float(c)
+            if c > orb_high:
+                break_dir = "UP"
+                signal_bar_index = i
+                signal_found = True
+                break
+            if c < orb_low:
+                break_dir = "DOWN"
+                signal_bar_index = i
+                signal_found = True
+                break
+
+        if not signal_found:
+            # No break = no signal = no entry
+            return {
+                "entry_price": None,
+                "stop_price": None,
+                "risk_points": None,
+                "target_price": None,
+                "outcome": "NO_TRADE",
+                "realized_rr": None,
+                "realized_risk_dollars": None,
+                "realized_reward_dollars": None
+            }
+
+        # STEP 2: Entry at NEXT 1m OPEN (B-entry model)
+        if signal_bar_index + 1 >= len(bars):
+            # Signal occurred in last bar of scan window, no next bar = OPEN position
+            return {
+                "entry_price": None,
+                "stop_price": None,
+                "risk_points": None,
+                "target_price": None,
+                "outcome": "OPEN",
+                "realized_rr": None,
+                "realized_risk_dollars": None,
+                "realized_reward_dollars": None
+            }
+
+        # Entry bar is the bar AFTER signal bar
+        entry_bar = bars[signal_bar_index + 1]
+        entry_ts, entry_bar_high, entry_bar_low, entry_bar_close = entry_bar
+
+        # Entry price = OPEN of entry bar
+        # In 1m OHLCV data, open is the low for UP breaks, high for DOWN breaks (first print)
+        # More accurately: use entry_bar_high as proxy for open (conservative)
+        if break_dir == "UP":
+            entry_price = float(entry_bar_low)  # Conservative: assume open = low (worst fill)
+        else:
+            entry_price = float(entry_bar_high)  # Conservative: assume open = high (worst fill)
+
+        # STEP 3: Calculate stop based on mode
+        if sl_mode == "full":
+            stop_price = orb_low if break_dir == "UP" else orb_high
+        else:  # half
+            stop_price = orb_mid
+
+        # STEP 4: Calculate entry-anchored risk (CANONICAL FORMULA)
+        risk_points = abs(entry_price - stop_price)
+
+        if risk_points <= 0:
+            # Should never happen, but guard against it
+            return {
+                "entry_price": entry_price,
+                "stop_price": stop_price,
+                "risk_points": 0.0,
+                "target_price": None,
+                "outcome": "OPEN",
+                "realized_rr": None,
+                "realized_risk_dollars": None,
+                "realized_reward_dollars": None
+            }
+
+        # STEP 5: Calculate target (entry-anchored)
+        if break_dir == "UP":
+            target_price = entry_price + (rr * risk_points)
+        else:
+            target_price = entry_price - (rr * risk_points)
+
+        # STEP 6: Calculate realized RR using cost_model.py
+        try:
+            realized = calculate_realized_rr(
+                instrument='MGC',
+                stop_distance_points=risk_points,
+                rr_theoretical=rr,
+                stress_level='normal'
+            )
+            realized_rr_win = realized['realized_rr']
+            realized_risk_dollars = realized['realized_risk_dollars']
+            realized_reward_dollars = realized['realized_reward_dollars']
+        except Exception:
+            # If cost_model fails, set to None
+            realized_rr_win = None
+            realized_risk_dollars = None
+            realized_reward_dollars = None
+
+        # STEP 7: Check outcome using bars AFTER entry bar (conservative same-bar resolution)
+        outcome = "OPEN"  # Default if no exit found
+
+        for ts_utc, h, l, c in bars[signal_bar_index + 2:]:  # Start checking AFTER entry bar
+            h = float(h)
+            l = float(l)
+
+            if break_dir == "UP":
+                hit_stop = l <= stop_price
+                hit_target = h >= target_price
+
+                if hit_stop and hit_target:
+                    # Both hit in same bar = LOSS (conservative)
+                    outcome = "LOSS"
+                    break
+                if hit_target:
+                    outcome = "WIN"
+                    break
+                if hit_stop:
+                    outcome = "LOSS"
+                    break
+            else:  # DOWN
+                hit_stop = h >= stop_price
+                hit_target = l <= target_price
+
+                if hit_stop and hit_target:
+                    outcome = "LOSS"
+                    break
+                if hit_target:
+                    outcome = "WIN"
+                    break
+                if hit_stop:
+                    outcome = "LOSS"
+                    break
+
+        # STEP 8: Calculate final realized_rr based on outcome
+        if outcome == "WIN":
+            final_realized_rr = realized_rr_win
+        elif outcome == "LOSS":
+            final_realized_rr = -1.0  # Always -1R for losses
+        else:  # OPEN
+            final_realized_rr = None
+
+        return {
+            "entry_price": entry_price,
+            "stop_price": stop_price,
+            "risk_points": risk_points,
+            "target_price": target_price,
+            "outcome": outcome,
+            "realized_rr": final_realized_rr,
+            "realized_risk_dollars": realized_risk_dollars,
+            "realized_reward_dollars": realized_reward_dollars
+        }
+
     # ---------- RSI ----------
     def calculate_rsi_at(self, at_local: datetime) -> Optional[float]:
         at_utc = at_local.astimezone(TZ_UTC)
@@ -478,6 +674,7 @@ class FeatureBuilderV2:
         # This matches the fix applied to execution_engine.py for MGC
         next_asia_open = _dt_local(trade_date + timedelta(days=1), 9, 0)
 
+        # STRUCTURAL (ORB-anchored) - Discovery lens
         orb_0900 = self.calculate_orb_1m_exec(_dt_local(trade_date, 9, 0), next_asia_open, sl_mode=self.sl_mode)
         if orb_0900:
             orb_0900 = self._add_realized_rr_to_result(orb_0900, RR_DEFAULT)
@@ -501,6 +698,14 @@ class FeatureBuilderV2:
         orb_0030 = self.calculate_orb_1m_exec(_dt_local(trade_date + timedelta(days=1), 0, 30), next_asia_open, sl_mode=self.sl_mode)
         if orb_0030:
             orb_0030 = self._add_realized_rr_to_result(orb_0030, RR_DEFAULT)
+
+        # TRADEABLE (entry-anchored) - Promotion truth
+        orb_0900_tradeable = self.calculate_orb_1m_tradeable(_dt_local(trade_date, 9, 0), next_asia_open, sl_mode=self.sl_mode)
+        orb_1000_tradeable = self.calculate_orb_1m_tradeable(_dt_local(trade_date, 10, 0), next_asia_open, sl_mode=self.sl_mode)
+        orb_1100_tradeable = self.calculate_orb_1m_tradeable(_dt_local(trade_date, 11, 0), next_asia_open, sl_mode=self.sl_mode)
+        orb_1800_tradeable = self.calculate_orb_1m_tradeable(_dt_local(trade_date, 18, 0), next_asia_open, sl_mode=self.sl_mode)
+        orb_2300_tradeable = self.calculate_orb_1m_tradeable(_dt_local(trade_date, 23, 0), next_asia_open, sl_mode=self.sl_mode)
+        orb_0030_tradeable = self.calculate_orb_1m_tradeable(_dt_local(trade_date + timedelta(days=1), 0, 30), next_asia_open, sl_mode=self.sl_mode)
 
         rsi_at_0030 = self.calculate_rsi_at(_dt_local(trade_date + timedelta(days=1), 0, 30))
         atr_20 = self.calculate_atr(trade_date)
@@ -549,6 +754,13 @@ class FeatureBuilderV2:
                 orb_0030_high, orb_0030_low, orb_0030_size, orb_0030_break_dir, orb_0030_outcome, orb_0030_r_multiple, orb_0030_mae, orb_0030_mfe, orb_0030_stop_price, orb_0030_risk_ticks,
                 orb_0030_realized_rr, orb_0030_realized_risk_dollars, orb_0030_realized_reward_dollars,
 
+                orb_0900_tradeable_entry_price, orb_0900_tradeable_stop_price, orb_0900_tradeable_risk_points, orb_0900_tradeable_target_price, orb_0900_tradeable_outcome, orb_0900_tradeable_realized_rr, orb_0900_tradeable_realized_risk_dollars, orb_0900_tradeable_realized_reward_dollars,
+                orb_1000_tradeable_entry_price, orb_1000_tradeable_stop_price, orb_1000_tradeable_risk_points, orb_1000_tradeable_target_price, orb_1000_tradeable_outcome, orb_1000_tradeable_realized_rr, orb_1000_tradeable_realized_risk_dollars, orb_1000_tradeable_realized_reward_dollars,
+                orb_1100_tradeable_entry_price, orb_1100_tradeable_stop_price, orb_1100_tradeable_risk_points, orb_1100_tradeable_target_price, orb_1100_tradeable_outcome, orb_1100_tradeable_realized_rr, orb_1100_tradeable_realized_risk_dollars, orb_1100_tradeable_realized_reward_dollars,
+                orb_1800_tradeable_entry_price, orb_1800_tradeable_stop_price, orb_1800_tradeable_risk_points, orb_1800_tradeable_target_price, orb_1800_tradeable_outcome, orb_1800_tradeable_realized_rr, orb_1800_tradeable_realized_risk_dollars, orb_1800_tradeable_realized_reward_dollars,
+                orb_2300_tradeable_entry_price, orb_2300_tradeable_stop_price, orb_2300_tradeable_risk_points, orb_2300_tradeable_target_price, orb_2300_tradeable_outcome, orb_2300_tradeable_realized_rr, orb_2300_tradeable_realized_risk_dollars, orb_2300_tradeable_realized_reward_dollars,
+                orb_0030_tradeable_entry_price, orb_0030_tradeable_stop_price, orb_0030_tradeable_risk_points, orb_0030_tradeable_target_price, orb_0030_tradeable_outcome, orb_0030_tradeable_realized_rr, orb_0030_tradeable_realized_risk_dollars, orb_0030_tradeable_realized_reward_dollars,
+
                 rsi_at_0030, rsi_at_orb, atr_20
             ) VALUES (
                 ?, ?,
@@ -568,6 +780,13 @@ class FeatureBuilderV2:
                 ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
                 ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
                 ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+
+                ?, ?, ?, ?, ?, ?, ?, ?,
+                ?, ?, ?, ?, ?, ?, ?, ?,
+                ?, ?, ?, ?, ?, ?, ?, ?,
+                ?, ?, ?, ?, ?, ?, ?, ?,
+                ?, ?, ?, ?, ?, ?, ?, ?,
+                ?, ?, ?, ?, ?, ?, ?, ?,
 
                 ?, ?, ?
             )
@@ -684,6 +903,60 @@ class FeatureBuilderV2:
                 orb_0030.get("realized_rr") if orb_0030 else None,
                 orb_0030.get("realized_risk_dollars") if orb_0030 else None,
                 orb_0030.get("realized_reward_dollars") if orb_0030 else None,
+
+                orb_0900_tradeable.get("entry_price") if orb_0900_tradeable else None,
+                orb_0900_tradeable.get("stop_price") if orb_0900_tradeable else None,
+                orb_0900_tradeable.get("risk_points") if orb_0900_tradeable else None,
+                orb_0900_tradeable.get("target_price") if orb_0900_tradeable else None,
+                orb_0900_tradeable.get("outcome") if orb_0900_tradeable else None,
+                orb_0900_tradeable.get("realized_rr") if orb_0900_tradeable else None,
+                orb_0900_tradeable.get("realized_risk_dollars") if orb_0900_tradeable else None,
+                orb_0900_tradeable.get("realized_reward_dollars") if orb_0900_tradeable else None,
+
+                orb_1000_tradeable.get("entry_price") if orb_1000_tradeable else None,
+                orb_1000_tradeable.get("stop_price") if orb_1000_tradeable else None,
+                orb_1000_tradeable.get("risk_points") if orb_1000_tradeable else None,
+                orb_1000_tradeable.get("target_price") if orb_1000_tradeable else None,
+                orb_1000_tradeable.get("outcome") if orb_1000_tradeable else None,
+                orb_1000_tradeable.get("realized_rr") if orb_1000_tradeable else None,
+                orb_1000_tradeable.get("realized_risk_dollars") if orb_1000_tradeable else None,
+                orb_1000_tradeable.get("realized_reward_dollars") if orb_1000_tradeable else None,
+
+                orb_1100_tradeable.get("entry_price") if orb_1100_tradeable else None,
+                orb_1100_tradeable.get("stop_price") if orb_1100_tradeable else None,
+                orb_1100_tradeable.get("risk_points") if orb_1100_tradeable else None,
+                orb_1100_tradeable.get("target_price") if orb_1100_tradeable else None,
+                orb_1100_tradeable.get("outcome") if orb_1100_tradeable else None,
+                orb_1100_tradeable.get("realized_rr") if orb_1100_tradeable else None,
+                orb_1100_tradeable.get("realized_risk_dollars") if orb_1100_tradeable else None,
+                orb_1100_tradeable.get("realized_reward_dollars") if orb_1100_tradeable else None,
+
+                orb_1800_tradeable.get("entry_price") if orb_1800_tradeable else None,
+                orb_1800_tradeable.get("stop_price") if orb_1800_tradeable else None,
+                orb_1800_tradeable.get("risk_points") if orb_1800_tradeable else None,
+                orb_1800_tradeable.get("target_price") if orb_1800_tradeable else None,
+                orb_1800_tradeable.get("outcome") if orb_1800_tradeable else None,
+                orb_1800_tradeable.get("realized_rr") if orb_1800_tradeable else None,
+                orb_1800_tradeable.get("realized_risk_dollars") if orb_1800_tradeable else None,
+                orb_1800_tradeable.get("realized_reward_dollars") if orb_1800_tradeable else None,
+
+                orb_2300_tradeable.get("entry_price") if orb_2300_tradeable else None,
+                orb_2300_tradeable.get("stop_price") if orb_2300_tradeable else None,
+                orb_2300_tradeable.get("risk_points") if orb_2300_tradeable else None,
+                orb_2300_tradeable.get("target_price") if orb_2300_tradeable else None,
+                orb_2300_tradeable.get("outcome") if orb_2300_tradeable else None,
+                orb_2300_tradeable.get("realized_rr") if orb_2300_tradeable else None,
+                orb_2300_tradeable.get("realized_risk_dollars") if orb_2300_tradeable else None,
+                orb_2300_tradeable.get("realized_reward_dollars") if orb_2300_tradeable else None,
+
+                orb_0030_tradeable.get("entry_price") if orb_0030_tradeable else None,
+                orb_0030_tradeable.get("stop_price") if orb_0030_tradeable else None,
+                orb_0030_tradeable.get("risk_points") if orb_0030_tradeable else None,
+                orb_0030_tradeable.get("target_price") if orb_0030_tradeable else None,
+                orb_0030_tradeable.get("outcome") if orb_0030_tradeable else None,
+                orb_0030_tradeable.get("realized_rr") if orb_0030_tradeable else None,
+                orb_0030_tradeable.get("realized_risk_dollars") if orb_0030_tradeable else None,
+                orb_0030_tradeable.get("realized_reward_dollars") if orb_0030_tradeable else None,
 
                 rsi_at_0030,
                 rsi_at_0030,  # rsi_at_orb = same as rsi_at_0030

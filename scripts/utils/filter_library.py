@@ -25,14 +25,14 @@ FILTER_QUERIES = {
     # Asia session filters
     'asia_trending': 'asia_travel > 2.0',
     'asia_quiet': 'asia_travel < 1.0',
-    'asia_expanded': "asia_type_code == 'A2_EXPANDED'",
-    'asia_tight': "asia_type_code == 'A1_TIGHT'",
+    'asia_expanded': "asia_type == 'EXPANDED'",
+    'asia_tight': "asia_type == 'TIGHT'",
 
     # London session filters
-    'london_sweep_high': "london_type_code == 'L1_SWEEP_HIGH'",
-    'london_sweep_low': "london_type_code == 'L2_SWEEP_LOW'",
-    'london_expansion': "london_type_code == 'L3_EXPANSION'",
-    'london_consolidation': "london_type_code == 'L4_CONSOLIDATION'",
+    'london_sweep_high': "london_type == 'SWEEP_HIGH'",
+    'london_sweep_low': "london_type == 'SWEEP_LOW'",
+    'london_expansion': "london_type == 'EXPANSION'",
+    'london_consolidation': "london_type == 'CONSOLIDATION'",
 
     # Momentum filters
     'rsi_oversold': 'rsi < 30',
