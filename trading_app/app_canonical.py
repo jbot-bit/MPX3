@@ -1254,7 +1254,7 @@ with tab_research:
                         st.markdown(f"""
 **Spec Configuration**:
 - **Bar timeframe**: 1m (from bars_1m)
-- **ORB time**: {', '.join(map(str, orb_times_selected))}
+- **ORB time**: {', '.join(map(str, orb_times))}
 - **ORB duration**: 5 minutes
 - **Entry rule**: 1st_close_outside (first 1m close outside ORB)
 - **Confirmation timeframe**: 1m
