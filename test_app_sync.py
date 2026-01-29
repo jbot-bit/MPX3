@@ -21,6 +21,7 @@ This test ensures that rule is followed.
 import sys
 from pathlib import Path
 import duckdb
+import subprocess
 
 # Add trading_app to path (from root folder, go directly into trading_app)
 sys.path.insert(0, str(Path(__file__).parent / "trading_app"))
@@ -228,6 +229,63 @@ def test_strategy_engine_loads():
         return False
 
 
+def test_execution_spec():
+    """Verify ExecutionSpec system (UPDATE14)
+
+    SYNC GUARD (fail-closed):
+    If execution spec files exist but check script is missing, FAIL.
+    This prevents silent drift.
+    """
+
+    # Check if execution spec files exist
+    project_root = Path(__file__).parent
+    spec_files = [
+        project_root / "trading_app" / "execution_spec.py",
+        project_root / "trading_app" / "execution_contract.py",
+        project_root / "trading_app" / "entry_rules.py",
+    ]
+
+    spec_files_exist = any(f.exists() for f in spec_files)
+    check_script = project_root / "scripts" / "check" / "check_execution_spec.py"
+
+    # SYNC GUARD: If spec files exist, check script MUST exist
+    if spec_files_exist and not check_script.exists():
+        print(f"[FAIL] CRITICAL: Sync guard triggered!")
+        print(f"   ExecutionSpec files exist but check script is missing:")
+        for f in spec_files:
+            if f.exists():
+                print(f"     - {f.relative_to(project_root)}")
+        print(f"   Expected check script: {check_script.relative_to(project_root)}")
+        print(f"   This prevents silent drift - check script is MANDATORY")
+        return False
+
+    # If spec files don't exist yet, skip check (not required)
+    if not spec_files_exist:
+        print("[SKIP] ExecutionSpec files not found (UPDATE14 not yet implemented)")
+        return True
+
+    # Run check_execution_spec.py
+    result = subprocess.run(
+        [sys.executable, str(check_script)],
+        capture_output=True,
+        text=True
+    )
+
+    # Show output
+    if result.stdout:
+        print(result.stdout)
+    if result.stderr:
+        print(result.stderr, file=sys.stderr)
+
+    if result.returncode == 0:
+        print("[PASS] ExecutionSpec checks passed")
+        return True
+    else:
+        print("[FAIL] FAILED: ExecutionSpec checks failed")
+        print("   Fix execution spec issues and run again")
+        return False
+
+
 def main():
     """Run all synchronization tests"""
     print("=" * 70)
@@ -259,9 +317,15 @@ def main():
     test4_pass = test_strategy_engine_loads()
     print()
 
+    # Test 5: ExecutionSpec system (UPDATE14)
+    print("TEST 5: ExecutionSpec system (UPDATE14)")
+    print("-" * 70)
+    test5_pass = test_execution_spec()
+    print()
+
     # Summary
     print("=" * 70)
-    if test1_pass and test2_pass and test3_pass and test4_pass:
+    if test1_pass and test2_pass and test3_pass and test4_pass and test5_pass:
         print("[PASS] ALL TESTS PASSED!")
         print()
         print("Your apps are now synchronized:")
@@ -269,6 +333,7 @@ def main():
         print("  - setup_detector.py works with all instruments")
         print("  - data_loader.py filter checking works")
         print("  - strategy_engine.py loads configs")
+        print("  - ExecutionSpec system verified (UPDATE14)")
         print("  - All components load without errors")
         print()
         print("[PASS] Your apps are SAFE TO USE!")

@@ -496,6 +496,39 @@ See full details in section: "CRITICAL: Database and Config Synchronization"
 
 ---
 
+### UPDATE14 ExecutionSpec Checks (MANDATORY)
+
+**After ANY changes to execution spec system, ALWAYS run:**
+
+```bash
+python scripts/check/check_execution_spec.py
+python test_app_sync.py
+python scripts/check/app_preflight.py
+```
+
+**What these check:**
+- ExecutionSpec system integrity (spec creation, validation, serialization)
+- Contract validation (required columns, tables, fields)
+- Entry rule implementations (limit_at_orb, 1st_close_outside, 5m_close_outside)
+- Universal invariants (no lookahead, entry after ORB, structural consistency)
+- All 6 test categories must PASS
+
+**When to run:**
+- After modifying trading_app/execution_spec.py
+- After modifying trading_app/execution_contract.py
+- After modifying trading_app/entry_rules.py
+- After updating ExecutionSpec presets
+- After changing entry rule logic or validation
+
+**Sync guard (fail-closed):**
+- If execution spec files exist, check_execution_spec.py MUST exist and pass
+- This prevents silent drift
+- test_app_sync.py will FAIL if guard is triggered
+
+See UPDATE14_COMPLETE.md for full ExecutionSpec documentation.
+
+---
+
 ## Key Commands
 
 ### Backfilling Data
@@ -884,3 +917,29 @@ On 2026-01-16, a critical error was discovered:
 - **System now has test_app_sync.py to prevent this from ever happening again**
 
 **Lesson learned:** ALWAYS run `python test_app_sync.py` after ANY changes to strategies, filters, or configs.
+
+### Experimental Strategies Validation (Added 2026-01-29)
+
+The `experimental_strategies` table is a parallel strategy source that bypasses config.py entirely. To prevent bad data from entering production:
+
+**MANDATORY: When updating experimental_strategies table:**
+
+1. **Run validation script:**
+   ```bash
+   python scripts/check/check_experimental_strategies.py
+   ```
+   Checks for:
+   - Expected R within bounds (-1.0 to +2.0R) - catches typos
+   - Win rates within bounds (20% to 90%)
+   - Minimum sample size (>= 15 trades)
+   - Valid filter types and day_of_week values
+
+2. **Test scanner:**
+   ```bash
+   python trading_app/experimental_scanner.py
+   ```
+
+3. **ONLY PROCEED if validation passes**
+
+**DO NOT add experimental strategies without validation!** Bad data (e.g., expected_r = 2.5R instead of 0.25R typo) will mislead users in production.
+
