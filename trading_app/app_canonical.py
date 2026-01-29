@@ -1248,6 +1248,45 @@ with tab_research:
 
                     st.dataframe(candidates_df, use_container_width=True)
 
+                    # Execution Spec Panel (UPDATE14 Step 4)
+                    with st.expander("⚙️ Execution Spec Used"):
+                        # Show the spec used for this search
+                        st.markdown(f"""
+**Spec Configuration**:
+- **Bar timeframe**: 1m (from bars_1m)
+- **ORB time**: {', '.join(map(str, orb_times_selected))}
+- **ORB duration**: 5 minutes
+- **Entry rule**: 1st_close_outside (first 1m close outside ORB)
+- **Confirmation timeframe**: 1m
+- **RR target**: Proxy mode (stored model, not RR-specific)
+- **Stop loss mode**: orb_opposite (opposite edge of ORB)
+- **Cost model**: mgc_tradovate ($8.40 RT friction)
+- **Session timezone**: Australia/Brisbane
+
+**Contract Status**: [PASS] All requirements met
+
+**Data Inputs**:
+- Source table: `daily_features`
+- Columns: `orb_{{time}}_tradeable_outcome`, `orb_{{time}}_tradeable_realized_rr`
+
+**Computation Details**:
+- ORB window: {{orb_time}} to {{orb_time}}+5min (exactly 5 bars at 1m)
+- Entry detection: First bar where close > orb_high OR close < orb_low
+- Entry execution: Open of next bar after confirmation
+- Risk/Reward: Realized R calculated with embedded costs
+
+**Invariants Verified**:
+- Entry timestamp > ORB end timestamp ✓
+- No lookahead (entry uses only post-ORB bars) ✓
+- ORB window complete (5 bars for 5-minute ORB) ✓
+                        """)
+
+                        st.caption("""
+**Note**: This spec represents the current Quick Search configuration.
+For reproducible backtests with different entry rules (limit orders, 5m confirmation),
+use the ExecutionSpec API in `trading_app/execution_spec.py`.
+                        """)
+
                     # Truth Panel: What's being measured?
                     with st.expander("📋 What exactly is being measured?"):
                         st.markdown("""
