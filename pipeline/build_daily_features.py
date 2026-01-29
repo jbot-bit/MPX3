@@ -667,8 +667,14 @@ class FeatureBuilder:
                     break
 
         # STEP 8: Calculate final realized_rr based on outcome
+        # CRITICAL FIX: If costs exceed profit, downgrade WIN to LOSS
         if outcome == "WIN":
-            final_realized_rr = realized_rr_win
+            if realized_rr_win is not None and realized_rr_win <= 0:
+                # Price hit target but costs ate all profit → not a real win
+                outcome = "LOSS"  # Downgrade to LOSS
+                final_realized_rr = realized_rr_win  # Keep actual RR (0.0 or negative)
+            else:
+                final_realized_rr = realized_rr_win
         elif outcome == "LOSS":
             final_realized_rr = -1.0  # Always -1R for losses
         else:  # OPEN
