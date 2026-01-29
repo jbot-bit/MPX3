@@ -453,30 +453,36 @@ class AutoSearchEngine:
 
     def _add_to_memory(self, candidate: SearchCandidate):
         """Add candidate to search_memory (deduplication registry)"""
+        from datetime import datetime
+
         # Generate memory_id from hash (for determinism)
         memory_id = int(candidate.param_hash[:8], 16) % (2**31 - 1)
+        now = datetime.now()
 
         self.conn.execute("""
             INSERT INTO search_memory (
                 memory_id, param_hash, instrument, setup_family, filters_json,
                 first_seen_at, last_seen_at, test_count, best_score, notes
-            ) VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1, ?, '')
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, '')
             ON CONFLICT (param_hash) DO UPDATE SET
-                last_seen_at = CURRENT_TIMESTAMP,
+                last_seen_at = ?,
                 test_count = search_memory.test_count + 1,
                 best_score = CASE
                     WHEN ? > search_memory.best_score THEN ?
                     ELSE search_memory.best_score
                 END
         """, [
-            memory_id,
-            candidate.param_hash,
-            candidate.instrument,
-            candidate.setup_family,
-            json.dumps(candidate.filters),
-            candidate.score_proxy,
-            candidate.score_proxy,
-            candidate.score_proxy
+            memory_id,                          # ? for memory_id
+            candidate.param_hash,               # ? for param_hash
+            candidate.instrument,               # ? for instrument
+            candidate.setup_family,             # ? for setup_family
+            json.dumps(candidate.filters),      # ? for filters_json
+            now,                                # ? for first_seen_at
+            now,                                # ? for last_seen_at
+            candidate.score_proxy,              # ? for best_score
+            now,                                # ? for last_seen_at UPDATE
+            candidate.score_proxy,              # ? for CASE WHEN comparison
+            candidate.score_proxy               # ? for CASE WHEN THEN value
         ])
 
     def get_recent_candidates(self, run_id: str, limit: int = 20) -> List[Dict]:
