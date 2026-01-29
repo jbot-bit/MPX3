@@ -65,7 +65,16 @@ def compute_orb_range(
 
     Returns:
         dict: orb_high, orb_low, orb_start, orb_end
+        None: if bars empty or missing required columns
     """
+    # CRITICAL: Validate input before accessing columns
+    if bars is None or bars.empty:
+        return None
+
+    required_cols = {'timestamp', 'high', 'low'}
+    if not required_cols.issubset(bars.columns):
+        return None
+
     orb_end = orb_start + timedelta(minutes=orb_minutes)
 
     # Filter to ORB window
