@@ -1390,8 +1390,8 @@ with tab_research:
 
                                         <!-- Stats -->
                                         <div style="font-size: 18px; color: #333; margin: 12px 0;">
-                                            <strong>Target Hit:</strong> {c.target_hit_rate*100:.1f if c.target_hit_rate else 0:.1f}%<br>
-                                            <strong>Profit Rate:</strong> {c.profitable_trade_rate*100:.1f if c.profitable_trade_rate else 0:.1f}%<br>
+                                            <strong>Target Hit:</strong> {(c.target_hit_rate*100 if c.target_hit_rate else 0):.1f}%<br>
+                                            <strong>Profit Rate:</strong> {(c.profitable_trade_rate*100 if c.profitable_trade_rate else 0):.1f}%<br>
                                             <strong>Sample:</strong> {c.sample_size}N
                                         </div>
                                     </div>
