@@ -1091,9 +1091,10 @@ with tab_research:
         else:
             entry_rule_value = "LIMIT_ORDER"
 
-        # RR Targets (fixed to 1.0 - only baseline data available)
-        rr_targets = [1.0]
-        st.text("RR Target: 1.0 (baseline data only)")
+        # RR Targets (proxy mode - no RR-specific data)
+        rr_targets = [None]  # NULL = proxy mode
+        st.info("📊 **Stored Model Proxy** (from daily_features tradeable columns)")
+        st.caption("⚠️ These metrics use a single stored model per ORB time. Entry: 1st close outside ORB. For RR-specific results, use validated_setups.")
 
         # Filters
 
@@ -1246,6 +1247,94 @@ with tab_research:
                         })
 
                     st.dataframe(candidates_df, use_container_width=True)
+
+                    # Truth Panel: What's being measured?
+                    with st.expander("📋 What exactly is being measured?"):
+                        st.markdown("""
+**Data Source**: `daily_features` table
+
+**Entry Rule**: 1st close outside ORB range (NOT limit order at edge)
+
+**Stop Loss**: Opposite edge of ORB
+
+**Profit Target**: Stored model (NOT RR-specific)
+
+**Columns Used**:
+- `orb_{time}_tradeable_outcome` → WIN = hit profit target
+- `orb_{time}_tradeable_realized_rr` → Realized R after $8.40 costs
+
+**Metric Definitions**:
+- **Target Hit Rate**: % trades that hit profit target (outcome == 'WIN')
+- **Profitable Rate**: % trades with positive realized R (realized_rr > 0)
+- **Expected R**: Average realized R across all trades
+
+**Important**: These metrics use a single stored model per ORB time.
+For RR-specific win rates, use `validated_setups` or run a full backtest.
+                        """)
+
+                    # Sanity Checks
+                    if results['candidates']:
+                        with st.expander("🔍 Sanity Checks"):
+                            # Get first candidate's data for sanity check
+                            first_cand = results['candidates'][0]
+
+                            # Query raw data for this ORB time
+                            orb_time = first_cand.orb_time
+                            realized_rr_col = f"orb_{orb_time}_tradeable_realized_rr"
+                            outcome_col = f"orb_{orb_time}_tradeable_outcome"
+
+                            sanity_query = f"""
+                            SELECT
+                                COUNT(*) as n_total,
+                                SUM(CASE WHEN {outcome_col} = 'WIN' THEN 1 ELSE 0 END) as n_win,
+                                SUM(CASE WHEN {realized_rr_col} > 0 THEN 1 ELSE 0 END) as n_profit,
+                                SUM(CASE WHEN {realized_rr_col} < 0 THEN 1 ELSE 0 END) as n_loss,
+                                SUM(CASE WHEN {outcome_col} = 'WIN' AND {realized_rr_col} <= 0 THEN 1 ELSE 0 END) as n_win_negative,
+                                AVG({realized_rr_col}) as mean_rr
+                            FROM daily_features
+                            WHERE instrument = '{search_instrument}'
+                              AND {realized_rr_col} IS NOT NULL
+                              AND {outcome_col} IS NOT NULL
+                            """
+
+                            sanity_result = results['conn'].execute(sanity_query).fetchone()
+
+                            n_total = sanity_result[0]
+                            n_win = sanity_result[1]
+                            n_profit = sanity_result[2]
+                            n_loss = sanity_result[3]
+                            n_win_negative = sanity_result[4]
+                            mean_rr = sanity_result[5]
+
+                            st.markdown(f"""
+**Counts for {orb_time} ORB**:
+- Total Trades: {n_total}
+- WIN outcomes: {n_win} ({n_win/n_total*100:.1f}%)
+- Profitable (RR > 0): {n_profit} ({n_profit/n_total*100:.1f}%)
+- Losses (RR < 0): {n_loss} ({n_loss/n_total*100:.1f}%)
+
+**Invariant Checks**:
+                            """)
+
+                            # Check 1: WIN <= Profitable
+                            if n_win <= n_profit:
+                                st.success(f"✅ WIN count <= Profitable count ({n_win} <= {n_profit})")
+                            else:
+                                st.error(f"❌ WIN count > Profitable count ({n_win} > {n_profit}) - LOGIC ERROR!")
+
+                            # Check 2: No WIN with RR <= 0
+                            if n_win_negative == 0:
+                                st.success(f"✅ No WIN with RR <= 0 (found {n_win_negative} violations)")
+                            else:
+                                st.error(f"❌ Found {n_win_negative} trades with WIN but RR <= 0 - DATA CORRUPTION!")
+
+                            # Check 3: Expected R matches mean
+                            exp_r_reported = first_cand.expected_r_proxy if first_cand.expected_r_proxy else first_cand.score_proxy
+                            if abs(exp_r_reported - mean_rr) < 0.001:
+                                st.success(f"✅ Expected R matches mean(realized_rr) ({exp_r_reported:.3f} ≈ {mean_rr:.3f})")
+                            else:
+                                st.warning(f"⚠️ Expected R mismatch: reported {exp_r_reported:.3f}, actual {mean_rr:.3f}")
+
                 else:
                     st.info("No candidates found")
 

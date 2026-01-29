@@ -308,19 +308,19 @@ class AutoSearchEngine:
         combinations = []
 
         # Simple baseline: ORB × RR (no filters)
-        # CRITICAL: Only RR=1.0 supported (database only has baseline data)
+        # PROXY MODE: No RR-specific data, use stored model from daily_features
         for orb_time in settings.orb_times:
             for rr_target in settings.rr_targets:
-                # HONESTY FIX: Skip RR != 1.0 (no actual data, projections are unreliable)
-                if rr_target != 1.0:
-                    logger.warning(f"Skipping RR={rr_target} for {orb_time} (only RR=1.0 baseline data available)")
+                # Accept None (proxy mode) or skip non-None values
+                if rr_target is not None and rr_target != 1.0:
+                    logger.warning(f"Skipping RR={rr_target} for {orb_time} (proxy mode only, no RR-specific data)")
                     continue
 
                 combinations.append({
                     'instrument': settings.instrument,
                     'setup_family': settings.setup_family,
                     'orb_time': orb_time,
-                    'rr_target': rr_target,
+                    'rr_target': rr_target,  # None = proxy mode
                     'filters': {}
                 })
 
@@ -355,9 +355,9 @@ class AutoSearchEngine:
         instrument = settings.instrument
 
         try:
-            # FIXED: Use correct column names (no 'tradeable' prefix)
-            realized_rr_col = f"orb_{orb_time}_r_multiple"
-            outcome_col = f"orb_{orb_time}_outcome"
+            # CRITICAL: Use tradeable_* columns (1st close outside ORB, not limit order)
+            realized_rr_col = f"orb_{orb_time}_tradeable_realized_rr"
+            outcome_col = f"orb_{orb_time}_tradeable_outcome"
 
             query = f"""
                 SELECT
@@ -379,8 +379,8 @@ class AutoSearchEngine:
                 target_hit_rate = result[2]
                 avg_realized_rr = result[3]
 
-                # Only RR=1.0 supported (baseline data only)
-                # Use actual average realized RR (no projections)
+                # Stored Model Proxy (single RR target per ORB in daily_features)
+                # No RR-specific data available - use average realized RR as proxy
                 expected_r = avg_realized_rr
 
                 return {
