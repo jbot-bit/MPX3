@@ -341,73 +341,53 @@ class AutoSearchEngine:
         """
         Fast scoring proxy using daily_features
 
-        Prefers existing ORB columns if available:
-        - orb_*_tradeable_realized_rr (if RR matches)
-        - orb_*_outcome (for win rate)
-
-        Fallback: Average r_multiple from outcomes
+        Uses tradeable_realized_rr and tradeable_outcome columns (baseline RR=1.0 only)
+        For other RR targets, scales the baseline data
         """
         orb_time = combo['orb_time']
         rr_target = combo['rr_target']
         instrument = settings.instrument
 
         try:
-            # Check if tradeable_realized_rr column exists for this RR
-            # Format: orb_0900_tradeable_realized_rr_1_5 (for RR=1.5)
-            rr_str = str(rr_target).replace('.', '_')
-            realized_rr_col = f"orb_{orb_time}_tradeable_realized_rr_{rr_str}"
+            # Use baseline tradeable columns (RR=1.0)
+            realized_rr_col = f"orb_{orb_time}_tradeable_realized_rr"
+            outcome_col = f"orb_{orb_time}_tradeable_outcome"
 
-            # Try to use existing column
             query = f"""
                 SELECT
                     COUNT(*) as sample_size,
                     AVG(CASE WHEN {realized_rr_col} > 0 THEN 1.0 ELSE 0.0 END) as profitable_trade_rate,
-                    AVG({realized_rr_col}) as expected_r
+                    AVG(CASE WHEN {outcome_col} = 'WIN' THEN 1.0 ELSE 0.0 END) as target_hit_rate,
+                    AVG({realized_rr_col}) as avg_realized_rr
                 FROM daily_features
                 WHERE instrument = ?
                   AND {realized_rr_col} IS NOT NULL
-            """
-
-            result = self.conn.execute(query, [instrument]).fetchone()
-
-            if result and result[0] >= settings.min_sample_size:
-                return {
-                    'sample_size': result[0],
-                    'profitable_trade_rate': result[1],  # Profitable trades (realized_rr > 0)
-                    'target_hit_rate': None,  # Not available in this path
-                    'expected_r': result[2],
-                    'score_proxy': result[2]  # Use expected_r as proxy
-                }
-
-        except Exception:
-            # Column doesn't exist, use fallback
-            pass
-
-        # Fallback: Use r_multiple from baseline outcomes
-        try:
-            outcome_col = f"orb_{orb_time}_outcome"
-            r_multiple_col = f"orb_{orb_time}_r_multiple"
-
-            query = f"""
-                SELECT
-                    COUNT(*) as sample_size,
-                    AVG(CASE WHEN {outcome_col} = 'WIN' THEN 1.0 ELSE 0.0 END) as target_hit_rate,
-                    AVG({r_multiple_col}) as avg_r
-                FROM daily_features
-                WHERE instrument = ?
                   AND {outcome_col} IS NOT NULL
-                  AND {r_multiple_col} IS NOT NULL
             """
 
             result = self.conn.execute(query, [instrument]).fetchone()
 
             if result and result[0] >= settings.min_sample_size:
+                sample_size = result[0]
+                profitable_trade_rate = result[1]
+                target_hit_rate = result[2]
+                avg_realized_rr = result[3]
+
+                # For RR != 1.0, use target_hit_rate as proxy for expected R
+                # (baseline data is RR=1.0, scaling would be inaccurate)
+                if rr_target == 1.0:
+                    expected_r = avg_realized_rr
+                else:
+                    # Use target hit rate as score proxy for higher RR
+                    # (conservative estimate: assumes same hit rate at higher targets)
+                    expected_r = target_hit_rate * rr_target - (1 - target_hit_rate) * 1.0
+
                 return {
-                    'sample_size': result[0],
-                    'profitable_trade_rate': None,  # Not available in this path
-                    'target_hit_rate': result[1],  # Trades that hit profit target
-                    'expected_r': result[2],
-                    'score_proxy': result[2]
+                    'sample_size': sample_size,
+                    'profitable_trade_rate': profitable_trade_rate,
+                    'target_hit_rate': target_hit_rate,
+                    'expected_r': expected_r,
+                    'score_proxy': expected_r
                 }
 
         except Exception as e:
