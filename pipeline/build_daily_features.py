@@ -33,7 +33,7 @@ Execution Model (1-minute):
 
 GUARDRAIL: Entry must NOT be at ORB edge (assertions at LINE 192+)
 
-NOTE: Writes to daily_features table (v2 is the canonical table name)
+NOTE: Writes to daily_features table (canonical table)
 
 Usage:
   python build_daily_features.py 2026-01-10
@@ -67,11 +67,112 @@ def _dt_local(d: date, hh: int, mm: int) -> datetime:
     return datetime(d.year, d.month, d.day, hh, mm, tzinfo=TZ_LOCAL)
 
 
-class FeatureBuilderV2:
+class FeatureBuilder:
     def __init__(self, db_path: str = DB_PATH, sl_mode: str = "full", table_name: str = "daily_features"):
         self.con = duckdb.connect(db_path)
         self.sl_mode = sl_mode
         self.table_name = table_name
+
+    def _ensure_schema_columns(self, auto_migrate: bool = True):
+        """
+        Guardrail preflight check: Ensure all required columns exist in daily_features table.
+
+        Extracts column names from INSERT statement and checks against actual database schema.
+        If columns are missing:
+        - auto_migrate=True: Automatically add missing columns with ALTER TABLE
+        - auto_migrate=False: Raise error with list of missing columns
+
+        This prevents schema mismatch errors when build_daily_features runs.
+        """
+        # Expected columns (matching INSERT statement at line 728+)
+        expected_columns = [
+            "date_local", "instrument",
+
+            # Pre-session windows
+            "pre_asia_high", "pre_asia_low", "pre_asia_range",
+            "pre_london_high", "pre_london_low", "pre_london_range",
+            "pre_ny_high", "pre_ny_low", "pre_ny_range",
+
+            # Main sessions
+            "asia_high", "asia_low", "asia_range",
+            "london_high", "london_low", "london_range",
+            "ny_high", "ny_low", "ny_range",
+            "asia_type_code", "london_type_code", "pre_ny_type_code",
+
+            # All 6 ORBs (8 columns each)
+            "orb_0900_high", "orb_0900_low", "orb_0900_size", "orb_0900_break_dir", "orb_0900_outcome", "orb_0900_r_multiple", "orb_0900_mae", "orb_0900_mfe", "orb_0900_stop_price", "orb_0900_risk_ticks",
+            "orb_0900_realized_rr", "orb_0900_realized_risk_dollars", "orb_0900_realized_reward_dollars",
+            "orb_1000_high", "orb_1000_low", "orb_1000_size", "orb_1000_break_dir", "orb_1000_outcome", "orb_1000_r_multiple", "orb_1000_mae", "orb_1000_mfe", "orb_1000_stop_price", "orb_1000_risk_ticks",
+            "orb_1000_realized_rr", "orb_1000_realized_risk_dollars", "orb_1000_realized_reward_dollars",
+            "orb_1100_high", "orb_1100_low", "orb_1100_size", "orb_1100_break_dir", "orb_1100_outcome", "orb_1100_r_multiple", "orb_1100_mae", "orb_1100_mfe", "orb_1100_stop_price", "orb_1100_risk_ticks",
+            "orb_1100_realized_rr", "orb_1100_realized_risk_dollars", "orb_1100_realized_reward_dollars",
+            "orb_1800_high", "orb_1800_low", "orb_1800_size", "orb_1800_break_dir", "orb_1800_outcome", "orb_1800_r_multiple", "orb_1800_mae", "orb_1800_mfe", "orb_1800_stop_price", "orb_1800_risk_ticks",
+            "orb_1800_realized_rr", "orb_1800_realized_risk_dollars", "orb_1800_realized_reward_dollars",
+            "orb_2300_high", "orb_2300_low", "orb_2300_size", "orb_2300_break_dir", "orb_2300_outcome", "orb_2300_r_multiple", "orb_2300_mae", "orb_2300_mfe", "orb_2300_stop_price", "orb_2300_risk_ticks",
+            "orb_2300_realized_rr", "orb_2300_realized_risk_dollars", "orb_2300_realized_reward_dollars",
+            "orb_0030_high", "orb_0030_low", "orb_0030_size", "orb_0030_break_dir", "orb_0030_outcome", "orb_0030_r_multiple", "orb_0030_mae", "orb_0030_mfe", "orb_0030_stop_price", "orb_0030_risk_ticks",
+            "orb_0030_realized_rr", "orb_0030_realized_risk_dollars", "orb_0030_realized_reward_dollars",
+
+            # Tradeable metrics (6 ORBs x 8 columns each)
+            "orb_0900_tradeable_entry_price", "orb_0900_tradeable_stop_price", "orb_0900_tradeable_risk_points", "orb_0900_tradeable_target_price", "orb_0900_tradeable_outcome", "orb_0900_tradeable_realized_rr", "orb_0900_tradeable_realized_risk_dollars", "orb_0900_tradeable_realized_reward_dollars",
+            "orb_1000_tradeable_entry_price", "orb_1000_tradeable_stop_price", "orb_1000_tradeable_risk_points", "orb_1000_tradeable_target_price", "orb_1000_tradeable_outcome", "orb_1000_tradeable_realized_rr", "orb_1000_tradeable_realized_risk_dollars", "orb_1000_tradeable_realized_reward_dollars",
+            "orb_1100_tradeable_entry_price", "orb_1100_tradeable_stop_price", "orb_1100_tradeable_risk_points", "orb_1100_tradeable_target_price", "orb_1100_tradeable_outcome", "orb_1100_tradeable_realized_rr", "orb_1100_tradeable_realized_risk_dollars", "orb_1100_tradeable_realized_reward_dollars",
+            "orb_1800_tradeable_entry_price", "orb_1800_tradeable_stop_price", "orb_1800_tradeable_risk_points", "orb_1800_tradeable_target_price", "orb_1800_tradeable_outcome", "orb_1800_tradeable_realized_rr", "orb_1800_tradeable_realized_risk_dollars", "orb_1800_tradeable_realized_reward_dollars",
+            "orb_2300_tradeable_entry_price", "orb_2300_tradeable_stop_price", "orb_2300_tradeable_risk_points", "orb_2300_tradeable_target_price", "orb_2300_tradeable_outcome", "orb_2300_tradeable_realized_rr", "orb_2300_tradeable_realized_risk_dollars", "orb_2300_tradeable_realized_reward_dollars",
+            "orb_0030_tradeable_entry_price", "orb_0030_tradeable_stop_price", "orb_0030_tradeable_risk_points", "orb_0030_tradeable_target_price", "orb_0030_tradeable_outcome", "orb_0030_tradeable_realized_rr", "orb_0030_tradeable_realized_risk_dollars", "orb_0030_tradeable_realized_reward_dollars",
+
+            # RSI and ATR
+            "rsi_at_0030", "rsi_at_orb", "atr_20"
+        ]
+
+        # Query actual columns from database
+        schema = self.con.execute(f"PRAGMA table_info('{self.table_name}')").fetchall()
+        existing_columns = {row[1] for row in schema}  # row[1] is column name
+
+        # Find missing columns
+        missing_columns = [col for col in expected_columns if col not in existing_columns]
+
+        if not missing_columns:
+            print(f"Schema check PASSED: All {len(expected_columns)} columns exist in {self.table_name}")
+            return
+
+        print(f"\nSchema check: Found {len(missing_columns)} missing columns in {self.table_name}")
+
+        if not auto_migrate:
+            # Fail with clear error
+            print("\nMISSING COLUMNS:")
+            for col in missing_columns:
+                print(f"  - {col}")
+            raise RuntimeError(
+                f"Schema mismatch: {len(missing_columns)} columns missing from {self.table_name}. "
+                f"Run with auto_migrate=True to automatically add them."
+            )
+
+        # Auto-migrate: Add missing columns
+        print(f"Auto-migrating: Adding {len(missing_columns)} missing columns...")
+        print("="*60)
+
+        for col in missing_columns:
+            # Determine column type (most are DOUBLE, some are VARCHAR)
+            if col in ["date_local"]:
+                col_type = "DATE"
+            elif col in ["instrument", "asia_type_code", "london_type_code", "pre_ny_type_code",
+                        "orb_0900_break_dir", "orb_1000_break_dir", "orb_1100_break_dir",
+                        "orb_1800_break_dir", "orb_2300_break_dir", "orb_0030_break_dir",
+                        "orb_0900_outcome", "orb_1000_outcome", "orb_1100_outcome",
+                        "orb_1800_outcome", "orb_2300_outcome", "orb_0030_outcome",
+                        "orb_0900_tradeable_outcome", "orb_1000_tradeable_outcome", "orb_1100_tradeable_outcome",
+                        "orb_1800_tradeable_outcome", "orb_2300_tradeable_outcome", "orb_0030_tradeable_outcome"]:
+                col_type = "VARCHAR"
+            else:
+                col_type = "DOUBLE"
+
+            print(f"  Adding: {col:50} {col_type}")
+            self.con.execute(f"ALTER TABLE {self.table_name} ADD COLUMN {col} {col_type}")
+
+        print("="*60)
+        print(f"Auto-migration complete: Added {len(missing_columns)} columns")
+        print()
 
     # ---------- core time-window fetchers (FIX midnight safely) ----------
     def _window_stats_1m(self, start_local: datetime, end_local: datetime) -> Optional[Dict]:
@@ -964,7 +1065,7 @@ class FeatureBuilderV2:
         print("  [OK] Features saved")
         return True
 
-    def init_schema_v2(self):
+    def init_schema(self):
         self.con.execute(
             f"""
             CREATE TABLE IF NOT EXISTS {self.table_name} (
@@ -1146,8 +1247,11 @@ def main():
     print(f"Target table: {table_name}")
     print()
 
-    builder = FeatureBuilderV2(sl_mode=sl_mode, table_name=table_name)
-    builder.init_schema_v2()
+    builder = FeatureBuilder(sl_mode=sl_mode, table_name=table_name)
+    builder.init_schema()
+
+    # Guardrail: Ensure all required columns exist (auto-migrate if needed)
+    builder._ensure_schema_columns(auto_migrate=True)
 
     cur = start_date
     while cur <= end_date:
