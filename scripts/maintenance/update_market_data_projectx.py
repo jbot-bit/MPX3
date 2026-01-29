@@ -4,6 +4,9 @@
 Automated Daily Market Data Update Pipeline (ProjectX API Version)
 Keeps bars_1m and daily_features current using ProjectX API
 
+PHASE 2: Auto-update daily_features with honesty rule (REBUILD_TAIL_DAYS=3)
+PHASE 3: Data verification (duplicates, price sanity, gaps, drift fingerprint)
+
 Usage:
     python scripts/maintenance/update_market_data_projectx.py
 
@@ -216,6 +219,224 @@ def run_feature_builder(start_date, end_date):
     return True
 
 
+# PHASE 3: Data verification functions
+
+def verify_no_duplicates(db_path: str, symbol: str = 'MGC'):
+    """Check for duplicate timestamps (PHASE 3 verification)."""
+    conn = None
+    try:
+        conn = duckdb.connect(db_path, read_only=True)
+        dupes = conn.execute("""
+            SELECT ts_utc, COUNT(*) as cnt
+            FROM bars_1m
+            WHERE symbol = ?
+            GROUP BY ts_utc
+            HAVING COUNT(*) > 1
+            LIMIT 20
+        """, [symbol]).fetchall()
+
+        if dupes:
+            print(f"  ❌ FAIL: Found {len(dupes)} duplicate timestamps")
+            for ts, cnt in dupes[:5]:
+                print(f"     - {ts}: {cnt} rows")
+            return False
+        else:
+            print("  ✅ PASS: No duplicate timestamps")
+            return True
+
+    finally:
+        if conn:
+            conn.close()
+
+
+def verify_price_sanity(db_path: str, symbol: str = 'MGC', days: int = 3):
+    """Check OHLC relationships (PHASE 3 verification)."""
+    conn = None
+    try:
+        conn = duckdb.connect(db_path, read_only=True)
+
+        # Check for violations in last N days
+        from zoneinfo import ZoneInfo
+        tz_brisbane = ZoneInfo("Australia/Brisbane")
+        cutoff = datetime.now(tz_brisbane).date() - timedelta(days=days)
+
+        violations = conn.execute("""
+            SELECT COUNT(*) as cnt
+            FROM bars_1m
+            WHERE symbol = ?
+            AND DATE_TRUNC('day', ts_utc AT TIME ZONE 'Australia/Brisbane') >= ?
+            AND (
+                high < GREATEST(open, close)
+                OR low > LEAST(open, close)
+                OR high < low
+            )
+        """, [symbol, cutoff]).fetchone()[0]
+
+        if violations > 0:
+            print(f"  ❌ FAIL: Found {violations} OHLC violations in last {days} days")
+            return False
+        else:
+            print(f"  ✅ PASS: No OHLC violations in last {days} days")
+            return True
+
+    finally:
+        if conn:
+            conn.close()
+
+
+def verify_gap_check(db_path: str, symbol: str = 'MGC', days: int = 7):
+    """Check for missing minutes within trading sessions (PHASE 3 verification)."""
+    conn = None
+    try:
+        conn = duckdb.connect(db_path, read_only=True)
+
+        from zoneinfo import ZoneInfo
+        tz_brisbane = ZoneInfo("Australia/Brisbane")
+        cutoff = datetime.now(tz_brisbane).date() - timedelta(days=days)
+
+        # Count bars per day for last N days
+        daily_counts = conn.execute("""
+            SELECT
+                DATE_TRUNC('day', ts_utc AT TIME ZONE 'Australia/Brisbane') as day,
+                COUNT(*) as bar_count
+            FROM bars_1m
+            WHERE symbol = ?
+            AND DATE_TRUNC('day', ts_utc AT TIME ZONE 'Australia/Brisbane') >= ?
+            GROUP BY day
+            ORDER BY day DESC
+        """, [symbol, cutoff]).fetchall()
+
+        anomalies = []
+        for day, count in daily_counts:
+            # Expected: ~1440 bars per weekday (full trading day)
+            # Weekends: 0-100 bars acceptable (limited trading or closed)
+            # Partial days: 100-1300 bars
+            if count == 0:
+                anomalies.append(f"{day}: 0 bars (closed/weekend)")
+            elif count < 100 and day.weekday() < 5:  # Weekday with very few bars
+                anomalies.append(f"{day}: {count} bars (partial data?)")
+
+        if anomalies:
+            print(f"  ⚠️  WARNING: {len(anomalies)} days with low bar counts (last {days} days)")
+            for anom in anomalies[:3]:
+                print(f"     - {anom}")
+            # Don't fail on this - weekends/holidays are normal
+            return True
+        else:
+            print(f"  ✅ PASS: All {len(daily_counts)} days have reasonable bar counts")
+            return True
+
+    finally:
+        if conn:
+            conn.close()
+
+
+def compute_drift_fingerprint(db_path: str, symbol: str = 'MGC', days: int = 7):
+    """Compute daily fingerprint to detect data changes (PHASE 3 verification)."""
+    conn = None
+    try:
+        conn = duckdb.connect(db_path, read_only=True)
+
+        from zoneinfo import ZoneInfo
+        tz_brisbane = ZoneInfo("Australia/Brisbane")
+        cutoff = datetime.now(tz_brisbane).date() - timedelta(days=days)
+
+        fingerprints = conn.execute("""
+            SELECT
+                DATE_TRUNC('day', ts_utc AT TIME ZONE 'Australia/Brisbane') as day,
+                COUNT(*) as bars,
+                ROUND(SUM(close), 2) as sum_close,
+                SUM(volume) as sum_volume,
+                ROUND(MIN(low), 2) as min_low,
+                ROUND(MAX(high), 2) as max_high
+            FROM bars_1m
+            WHERE symbol = ?
+            AND DATE_TRUNC('day', ts_utc AT TIME ZONE 'Australia/Brisbane') >= ?
+            GROUP BY day
+            ORDER BY day DESC
+        """, [symbol, cutoff]).fetchall()
+
+        print(f"  📊 Drift fingerprints (last {min(len(fingerprints), days)} days):")
+        for day, bars, sum_c, sum_v, min_l, max_h in fingerprints[:5]:
+            print(f"     {day}: bars={bars}, Σclose={sum_c}, Σvol={sum_v}, range={min_l}-{max_h}")
+
+        return True  # Informational only, always pass
+
+    finally:
+        if conn:
+            conn.close()
+
+
+def verify_provenance(db_path: str, symbol: str = 'MGC'):
+    """Check that source_symbol is populated (PHASE 3 verification)."""
+    conn = None
+    try:
+        conn = duckdb.connect(db_path, read_only=True)
+
+        missing = conn.execute("""
+            SELECT COUNT(*) as cnt
+            FROM bars_1m
+            WHERE symbol = ?
+            AND source_symbol IS NULL
+        """, [symbol]).fetchone()[0]
+
+        total = conn.execute("""
+            SELECT COUNT(*) FROM bars_1m WHERE symbol = ?
+        """, [symbol]).fetchone()[0]
+
+        if missing > 0:
+            pct = (missing / total * 100) if total > 0 else 0
+            print(f"  ⚠️  WARNING: {missing}/{total} bars ({pct:.1f}%) missing source_symbol")
+            # Don't fail - this is informational
+            return True
+        else:
+            print(f"  ✅ PASS: All {total} bars have source_symbol")
+            return True
+
+    finally:
+        if conn:
+            conn.close()
+
+
+def run_data_verification(db_path: str, symbol: str = 'MGC'):
+    """
+    Run all PHASE 3 data verification checks.
+    Returns True if all checks pass, False otherwise.
+    """
+    print("\n" + "="*60)
+    print("PHASE 3: DATA VERIFICATION")
+    print("="*60)
+
+    all_pass = True
+
+    print("\n1. Duplicate Check:")
+    if not verify_no_duplicates(db_path, symbol):
+        all_pass = False
+
+    print("\n2. Price Sanity Check:")
+    if not verify_price_sanity(db_path, symbol):
+        all_pass = False
+
+    print("\n3. Gap Check:")
+    if not verify_gap_check(db_path, symbol):
+        all_pass = False
+
+    print("\n4. Drift Fingerprint:")
+    compute_drift_fingerprint(db_path, symbol)
+
+    print("\n5. Provenance Check:")
+    verify_provenance(db_path, symbol)
+
+    print("\n" + "="*60)
+    if all_pass:
+        print("✅ ALL VERIFICATION CHECKS PASSED")
+    else:
+        print("❌ VERIFICATION FAILED - Data integrity issues detected")
+    print("="*60 + "\n")
+
+    return all_pass
+
+
 def print_status(db_path: str, symbol: str = 'MGC'):
     """Print current data status (latest timestamps in bars_1m and daily_features)."""
     conn = None
@@ -272,6 +493,7 @@ def main():
         print("="*60)
         print("AUTOMATED MARKET DATA UPDATE (ProjectX API)")
         print(f"PHASE 2: REBUILD_TAIL_DAYS={REBUILD_TAIL_DAYS}")
+        print("PHASE 3: Data verification (duplicates, OHLC, gaps)")
         print("="*60)
         print(f"Timestamp: {datetime.now().isoformat()}")
         print(f"Working directory: {os.getcwd()}")
@@ -318,6 +540,12 @@ def main():
             print(f"Updated latest bars_1m: {latest_ts}")
         else:
             print("\nStep 3: Bars already current, skipping backfill")
+
+        # Step 3.5: Run data verification (PHASE 3)
+        print("\nStep 3.5: Running data verification checks...")
+        if not run_data_verification(db_path, symbol):
+            print("\nFAILURE: Data verification failed", file=sys.stderr)
+            return 1
 
         # Step 4: Calculate feature build range (PHASE 2)
         print("\nStep 4: Calculating feature build range...")
