@@ -110,7 +110,7 @@ class FeatureBuilderV2:
 
         return self.con.execute(
             """
-            SELECT ts_utc, high, low, close
+            SELECT ts_utc, open, high, low, close
             FROM bars_1m
             WHERE symbol = ?
               AND ts_utc >= ? AND ts_utc < ?
@@ -220,7 +220,7 @@ class FeatureBuilderV2:
         entry_price = None
 
         # entry = first 1m close outside ORB
-        for ts_utc, h, l, c in bars:
+        for ts_utc, o, h, l, c in bars:  # Fixed: added 'o' for open
             c = float(c)
             if c > orb_high:
                 break_dir = "UP"
@@ -279,12 +279,12 @@ class FeatureBuilderV2:
 
         # start checking AFTER entry bar
         start_i = 0
-        for i, (ts_utc, _, _, _) in enumerate(bars):
+        for i, (ts_utc, _, _, _, _) in enumerate(bars):  # Fixed: 5 columns (o,h,l,c)
             if ts_utc == entry_ts:
                 start_i = i + 1
                 break
 
-        for ts_utc, h, l, c in bars[start_i:]:
+        for ts_utc, o, h, l, c in bars[start_i:]:  # Fixed: 5 columns
             h = float(h)
             l = float(l)
 
@@ -402,7 +402,7 @@ class FeatureBuilderV2:
         signal_bar_index = None
         break_dir = "NONE"
 
-        for i, (ts_utc, h, l, c) in enumerate(bars):
+        for i, (ts_utc, o, h, l, c) in enumerate(bars):  # Fixed: 5 columns
             c = float(c)
             if c > orb_high:
                 break_dir = "UP"
@@ -444,15 +444,11 @@ class FeatureBuilderV2:
 
         # Entry bar is the bar AFTER signal bar
         entry_bar = bars[signal_bar_index + 1]
-        entry_ts, entry_bar_high, entry_bar_low, entry_bar_close = entry_bar
+        entry_ts, entry_bar_open, entry_bar_high, entry_bar_low, entry_bar_close = entry_bar
 
-        # Entry price = OPEN of entry bar
-        # In 1m OHLCV data, open is the low for UP breaks, high for DOWN breaks (first print)
-        # More accurately: use entry_bar_high as proxy for open (conservative)
-        if break_dir == "UP":
-            entry_price = float(entry_bar_low)  # Conservative: assume open = low (worst fill)
-        else:
-            entry_price = float(entry_bar_high)  # Conservative: assume open = high (worst fill)
+        # B-ENTRY MODEL: Entry price = OPEN of entry bar (NEXT 1m OPEN after signal close)
+        # Slippage is handled separately in cost model ($4.00 per RT)
+        entry_price = float(entry_bar_open)
 
         # STEP 3: Calculate stop based on mode
         if sl_mode == "full":
@@ -470,7 +466,7 @@ class FeatureBuilderV2:
                 "stop_price": stop_price,
                 "risk_points": 0.0,
                 "target_price": None,
-                "outcome": "OPEN",
+                "outcome": "NO_TRADE",  # BUG #6 FIX: Zero risk = invalid setup, not open position
                 "realized_rr": None,
                 "realized_risk_dollars": None,
                 "realized_reward_dollars": None
@@ -502,7 +498,7 @@ class FeatureBuilderV2:
         # STEP 7: Check outcome using bars AFTER entry bar (conservative same-bar resolution)
         outcome = "OPEN"  # Default if no exit found
 
-        for ts_utc, h, l, c in bars[signal_bar_index + 2:]:  # Start checking AFTER entry bar
+        for ts_utc, o, h, l, c in bars[signal_bar_index + 2:]:  # Fixed: 5 columns
             h = float(h)
             l = float(l)
 
@@ -1008,6 +1004,14 @@ class FeatureBuilderV2:
                 orb_0900_mfe DOUBLE,
                 orb_0900_stop_price DOUBLE,
                 orb_0900_risk_ticks DOUBLE,
+                orb_0900_tradeable_entry_price DOUBLE,
+                orb_0900_tradeable_stop_price DOUBLE,
+                orb_0900_tradeable_risk_points DOUBLE,
+                orb_0900_tradeable_target_price DOUBLE,
+                orb_0900_tradeable_outcome VARCHAR,
+                orb_0900_tradeable_realized_rr DOUBLE,
+                orb_0900_tradeable_realized_risk_dollars DOUBLE,
+                orb_0900_tradeable_realized_reward_dollars DOUBLE,
 
                 orb_1000_high DOUBLE,
                 orb_1000_low DOUBLE,
@@ -1019,6 +1023,14 @@ class FeatureBuilderV2:
                 orb_1000_mfe DOUBLE,
                 orb_1000_stop_price DOUBLE,
                 orb_1000_risk_ticks DOUBLE,
+                orb_1000_tradeable_entry_price DOUBLE,
+                orb_1000_tradeable_stop_price DOUBLE,
+                orb_1000_tradeable_risk_points DOUBLE,
+                orb_1000_tradeable_target_price DOUBLE,
+                orb_1000_tradeable_outcome VARCHAR,
+                orb_1000_tradeable_realized_rr DOUBLE,
+                orb_1000_tradeable_realized_risk_dollars DOUBLE,
+                orb_1000_tradeable_realized_reward_dollars DOUBLE,
 
                 orb_1100_high DOUBLE,
                 orb_1100_low DOUBLE,
@@ -1030,6 +1042,14 @@ class FeatureBuilderV2:
                 orb_1100_mfe DOUBLE,
                 orb_1100_stop_price DOUBLE,
                 orb_1100_risk_ticks DOUBLE,
+                orb_1100_tradeable_entry_price DOUBLE,
+                orb_1100_tradeable_stop_price DOUBLE,
+                orb_1100_tradeable_risk_points DOUBLE,
+                orb_1100_tradeable_target_price DOUBLE,
+                orb_1100_tradeable_outcome VARCHAR,
+                orb_1100_tradeable_realized_rr DOUBLE,
+                orb_1100_tradeable_realized_risk_dollars DOUBLE,
+                orb_1100_tradeable_realized_reward_dollars DOUBLE,
 
                 orb_1800_high DOUBLE,
                 orb_1800_low DOUBLE,
@@ -1041,6 +1061,14 @@ class FeatureBuilderV2:
                 orb_1800_mfe DOUBLE,
                 orb_1800_stop_price DOUBLE,
                 orb_1800_risk_ticks DOUBLE,
+                orb_1800_tradeable_entry_price DOUBLE,
+                orb_1800_tradeable_stop_price DOUBLE,
+                orb_1800_tradeable_risk_points DOUBLE,
+                orb_1800_tradeable_target_price DOUBLE,
+                orb_1800_tradeable_outcome VARCHAR,
+                orb_1800_tradeable_realized_rr DOUBLE,
+                orb_1800_tradeable_realized_risk_dollars DOUBLE,
+                orb_1800_tradeable_realized_reward_dollars DOUBLE,
 
                 orb_2300_high DOUBLE,
                 orb_2300_low DOUBLE,
@@ -1052,6 +1080,14 @@ class FeatureBuilderV2:
                 orb_2300_mfe DOUBLE,
                 orb_2300_stop_price DOUBLE,
                 orb_2300_risk_ticks DOUBLE,
+                orb_2300_tradeable_entry_price DOUBLE,
+                orb_2300_tradeable_stop_price DOUBLE,
+                orb_2300_tradeable_risk_points DOUBLE,
+                orb_2300_tradeable_target_price DOUBLE,
+                orb_2300_tradeable_outcome VARCHAR,
+                orb_2300_tradeable_realized_rr DOUBLE,
+                orb_2300_tradeable_realized_risk_dollars DOUBLE,
+                orb_2300_tradeable_realized_reward_dollars DOUBLE,
 
                 orb_0030_high DOUBLE,
                 orb_0030_low DOUBLE,
@@ -1063,6 +1099,14 @@ class FeatureBuilderV2:
                 orb_0030_mfe DOUBLE,
                 orb_0030_stop_price DOUBLE,
                 orb_0030_risk_ticks DOUBLE,
+                orb_0030_tradeable_entry_price DOUBLE,
+                orb_0030_tradeable_stop_price DOUBLE,
+                orb_0030_tradeable_risk_points DOUBLE,
+                orb_0030_tradeable_target_price DOUBLE,
+                orb_0030_tradeable_outcome VARCHAR,
+                orb_0030_tradeable_realized_rr DOUBLE,
+                orb_0030_tradeable_realized_risk_dollars DOUBLE,
+                orb_0030_tradeable_realized_reward_dollars DOUBLE,
 
                 rsi_at_0030 DOUBLE,
                 rsi_at_orb DOUBLE,

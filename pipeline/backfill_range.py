@@ -362,17 +362,9 @@ def main():
     con.close()
     print(f"OK: bars_1m upsert total = {total}")
 
-    # Build daily_features (calls your existing script)
-    for d in daterange_inclusive(start_day, end_day):
-        cmd = [sys.executable, "build_daily_features.py", d.isoformat()]
-        r = subprocess.run(cmd, capture_output=True, text=True)
-        if r.returncode != 0:
-            print(f"FAIL daily_features {d}:")
-            print(r.stdout)
-            print(r.stderr)
-            sys.exit(r.returncode)
-        else:
-            print(f"OK: daily_features built for {d}")
+    # NOTE: Feature building is now handled by update_market_data_projectx.py
+    # with proper PHASE 2 logic (stops at yesterday, rebuilds tail days)
+    # Disabled here to avoid building features for incomplete days
 
     print("DONE")
 

@@ -27,6 +27,9 @@ import subprocess
 if sys.stdout.encoding != 'utf-8':
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
+# PHASE 2: Honesty rule - always rebuild trailing days to catch late-arriving bars
+REBUILD_TAIL_DAYS = 3
+
 
 def get_latest_bar_timestamp(db_path: str, symbol: str = 'MGC'):
     """Query MAX timestamp from bars_1m to determine where data ends."""
@@ -49,6 +52,41 @@ def get_latest_bar_timestamp(db_path: str, symbol: str = 'MGC'):
 
     except Exception as e:
         raise Exception(f"Failed to query latest bar timestamp: {e}")
+    finally:
+        if conn:
+            conn.close()
+
+
+def get_latest_feature_date(db_path: str, instrument: str = 'MGC'):
+    """Query MAX date_local from daily_features (PHASE 2)."""
+    conn = None
+    try:
+        conn = duckdb.connect(db_path, read_only=True)
+        result = conn.execute("""
+            SELECT MAX(date_local) FROM daily_features WHERE instrument = ?
+        """, [instrument]).fetchone()
+
+        if not result or result[0] is None:
+            return None
+        return result[0]
+    finally:
+        if conn:
+            conn.close()
+
+
+def get_min_bar_date(db_path: str, symbol: str = 'MGC'):
+    """Get MIN date from bars_1m if daily_features is empty."""
+    conn = None
+    try:
+        conn = duckdb.connect(db_path, read_only=True)
+        result = conn.execute("""
+            SELECT MIN(DATE_TRUNC('day', ts_utc AT TIME ZONE 'Australia/Brisbane'))
+            FROM bars_1m WHERE symbol = ?
+        """, [symbol]).fetchone()
+
+        if not result or result[0] is None:
+            return None
+        return result[0].date() if hasattr(result[0], 'date') else result[0]
     finally:
         if conn:
             conn.close()
@@ -114,18 +152,55 @@ def run_backfill(start_date, end_date):
     return True
 
 
+def calculate_feature_build_range(db_path: str, symbol: str = 'MGC'):
+    """
+    Calculate feature build range with PHASE 2 honesty rule.
+
+    Logic:
+    - End = YESTERDAY (today is incomplete, don't build features for it)
+    - Start = last_feat_date + 1 (or MIN bar date if empty)
+    - Apply REBUILD_TAIL_DAYS to catch late-arriving bars
+    """
+    from zoneinfo import ZoneInfo
+
+    tz_brisbane = ZoneInfo("Australia/Brisbane")
+    last_feat_date = get_latest_feature_date(db_path, instrument=symbol)
+
+    # End = YESTERDAY (today's trading day incomplete)
+    today_local = datetime.now(tz_brisbane).date()
+    end_date_local = today_local - timedelta(days=1)
+
+    # Determine start
+    if last_feat_date is None:
+        min_bar_date = get_min_bar_date(db_path, symbol)
+        if min_bar_date is None:
+            return None, None
+        start_date_local = min_bar_date
+    else:
+        start_date_local = last_feat_date + timedelta(days=1)
+
+    # Apply REBUILD_TAIL_DAYS honesty rule
+    rebuild_from = end_date_local - timedelta(days=REBUILD_TAIL_DAYS)
+    if start_date_local > rebuild_from:
+        start_date_local = rebuild_from
+
+    # Clamp
+    if start_date_local > end_date_local:
+        return None, None
+
+    return start_date_local, end_date_local
+
+
 def run_feature_builder(start_date, end_date):
     """
-    Run feature builder for new dates.
-
-    Note: backfill_range.py does NOT auto-call build_daily_features.py
-    so we need to call it explicitly.
+    Run feature builder (PHASE 2: uses correct CLI args).
     """
     cmd = [
         sys.executable,
         "pipeline/build_daily_features.py",
         start_date.strftime("%Y-%m-%d"),
-        end_date.strftime("%Y-%m-%d")
+        end_date.strftime("%Y-%m-%d"),
+        "--sl-mode", "full"
     ]
 
     print(f"\nRunning: {' '.join(cmd)}\n")
@@ -196,6 +271,7 @@ def main():
 
         print("="*60)
         print("AUTOMATED MARKET DATA UPDATE (ProjectX API)")
+        print(f"PHASE 2: REBUILD_TAIL_DAYS={REBUILD_TAIL_DAYS}")
         print("="*60)
         print(f"Timestamp: {datetime.now().isoformat()}")
         print(f"Working directory: {os.getcwd()}")
@@ -230,20 +306,38 @@ def main():
             print_status(db_path, symbol)
             return 0
 
-        # Step 3: Run backfill (ProjectX)
-        print("\nStep 3: Running incremental backfill (ProjectX API)...")
-        if not run_backfill(start_date, end_date):
-            print("\nFAILURE: Backfill failed", file=sys.stderr)
-            return 1  # Exit non-zero on failure
+        # Step 3: Run backfill if needed
+        if start_date <= end_date:
+            print("\nStep 3: Running incremental backfill (ProjectX API)...")
+            if not run_backfill(start_date, end_date):
+                print("\nFAILURE: Backfill failed", file=sys.stderr)
+                return 1
 
-        # Step 4: Run feature builder
-        print("\nStep 4: Building daily features...")
-        if not run_feature_builder(start_date, end_date):
-            print("\nFAILURE: Feature build failed", file=sys.stderr)
-            return 1
+            # Re-query latest bar after backfill
+            latest_ts = get_latest_bar_timestamp(db_path, symbol)
+            print(f"Updated latest bars_1m: {latest_ts}")
+        else:
+            print("\nStep 3: Bars already current, skipping backfill")
 
-        # Step 5: Print status
-        print("\nStep 5: Verifying update...")
+        # Step 4: Calculate feature build range (PHASE 2)
+        print("\nStep 4: Calculating feature build range...")
+        feat_start, feat_end = calculate_feature_build_range(db_path, symbol)
+
+        if feat_start is None:
+            print("Features already current, no rebuild needed")
+        else:
+            print(f"Feature build range: {feat_start} to {feat_end}")
+            if REBUILD_TAIL_DAYS > 0 and feat_start < feat_end - timedelta(days=1):
+                print(f"(includes REBUILD_TAIL_DAYS={REBUILD_TAIL_DAYS} for honesty)")
+
+            # Step 5: Run feature builder
+            print("\nStep 5: Building daily features...")
+            if not run_feature_builder(feat_start, feat_end):
+                print("\nFAILURE: Feature build failed", file=sys.stderr)
+                return 1
+
+        # Step 6: Print status
+        print("\nStep 6: Verifying update...")
         print_status(db_path, symbol)
 
         print("SUCCESS: Market data updated")
