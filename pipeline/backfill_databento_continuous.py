@@ -188,9 +188,8 @@ def main():
     start_day = parse_date(sys.argv[1])
     end_day = parse_date(sys.argv[2])
 
-    # IMPORTANT: clamp for Databento availability end to prevent 422.
-    # You can update this when Databento extends the dataset.
-    AVAILABLE_END_UTC = dt.datetime(2026, 1, 10, 0, 0, 0, tzinfo=dt.timezone.utc)
+    # Note: No artificial end date cap. If Databento returns 422 (data not available),
+    # it will be caught and handled gracefully below.
 
     client = db.Historical(api_key)
     con = duckdb.connect(cfg.db_path)
@@ -202,14 +201,6 @@ def main():
 
         for d in days:
             start_utc, end_utc = local_day_to_utc_window(d, cfg.tz_local)
-
-            # clamp end to available end
-            if end_utc > AVAILABLE_END_UTC:
-                end_utc = AVAILABLE_END_UTC
-
-            if start_utc >= end_utc:
-                print(f"{d} (local) [{start_utc.isoformat()} -> {end_utc.isoformat()}] -> inserted/replaced 0 rows (no data; past available_end)")
-                continue
 
             store = safe_get_range_with_retries(
                 client,
