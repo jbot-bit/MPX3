@@ -425,11 +425,17 @@ Testing with known cases (invariants) catches bugs early.
 
 ---
 
-**Status**: ✅ ALL STEPS COMPLETE (1-5)
+**Status**: ✅ ALL STEPS COMPLETE (1-5) + ✅ SYNC SUITE INTEGRATION (ADDON)
 
 **All Tests**: PASS (6/6 tests)
 
-**Ready for**: Production use, integration with existing code
+**Integration**: ✅ COMPLETE - ExecutionSpec checks now integrated into project sync suite
+- Wired into test_app_sync.py (Test 5 with fail-closed guard)
+- Wired into app_preflight.py (first check, fails fast)
+- Documented in CLAUDE.md (mandatory checks section)
+- See ADDON_COMPLETE.md for integration details
+
+**Ready for**: Production use - ExecutionSpec system is now "unskippable"
 
 **Launch Quick Search**: `streamlit run trading_app/app_canonical.py`
 - See new "Execution Spec Used" expander in results

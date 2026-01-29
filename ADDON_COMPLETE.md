@@ -69,6 +69,8 @@ return result.returncode == 0
 ### 2. scripts/check/app_preflight.py
 **Lines Modified**: 16
 
+**Note**: This file existed in the working directory but was NOT tracked in git until now. First commit to repository as part of ADDON work. The file was functional but uncommitted - now formalized as part of project verification suite.
+
 **Changes**:
 - Added execution_spec check to CHECKS list (line 16)
 - Pattern: `("execution_spec", ["python", "scripts/check/check_execution_spec.py"])`

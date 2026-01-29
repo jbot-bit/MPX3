@@ -1,7 +1,11 @@
 """
 TEST APP SYNCHRONIZATION
 
-CRITICAL: Validates that validated_setups database matches config.py
+CRITICAL: Validates project synchronization across multiple systems:
+1. validated_setups database matches config.py
+2. All trading components load correctly
+3. ExecutionSpec system integrity (UPDATE14)
+
 Prevents dangerous mismatches that could cause wrong trades in live trading.
 
 Run this AFTER:
@@ -10,12 +14,13 @@ Run this AFTER:
 - Running populate_validated_setups.py
 - Adding new MGC/NQ/MPL setups
 - Changing ORB filters or RR values
+- Modifying execution spec files (execution_spec.py, execution_contract.py, entry_rules.py)
 
 From CLAUDE.md:
 "MANDATORY RULE: NEVER update validated_setups database without IMMEDIATELY
 updating config.py in the same operation."
 
-This test ensures that rule is followed.
+This test ensures that rule is followed and ExecutionSpec checks are not bypassed.
 """
 
 import sys
@@ -322,6 +327,32 @@ def main():
     print("-" * 70)
     test5_pass = test_execution_spec()
     print()
+
+    # SYNC GUARD ENFORCEMENT: Verify Test 5 was executed if spec files exist
+    # This prevents silent drift if someone comments out the test5_pass line above
+    project_root = Path(__file__).parent
+    spec_files_for_guard = [
+        project_root / "trading_app" / "execution_spec.py",
+        project_root / "trading_app" / "execution_contract.py",
+        project_root / "trading_app" / "entry_rules.py",
+    ]
+    spec_files_exist_guard = any(f.exists() for f in spec_files_for_guard)
+
+    if spec_files_exist_guard:
+        # Verify test5_pass was set (test was actually executed)
+        try:
+            # Check if test5_pass is defined and is boolean
+            if not isinstance(test5_pass, bool):
+                print("[FAIL] CRITICAL: Sync guard violation!")
+                print("   ExecutionSpec files exist but Test 5 returned invalid type")
+                print("   Expected: bool, Got: " + str(type(test5_pass)))
+                return 1
+        except NameError:
+            print("[FAIL] CRITICAL: Sync guard violation!")
+            print("   ExecutionSpec files exist but Test 5 was never executed")
+            print("   test_execution_spec() call is missing or commented out in main()")
+            print("   This violates the fail-closed requirement from addon.txt")
+            return 1
 
     # Summary
     print("=" * 70)
