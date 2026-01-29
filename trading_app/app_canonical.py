@@ -1056,21 +1056,48 @@ with tab_research:
         # BLOCK 2: ORB Scope (Session Times)
         # ========================================
         st.markdown("#### 2️⃣ ORB Scope")
-        st.caption("Select which ORB times to search")
+        st.caption("Click to add/remove ORB times to search")
 
-        orb_time_options = ['0900', '1000', '1100', '1800', '2300', '0030']
-        orb_times = st.multiselect(
-            "ORB times",
-            options=orb_time_options,
-            default=['1000', '1100'],  # Default: current + next ORB
-            key="quick_search_orb_times",
-            label_visibility="collapsed"
-        )
+        # Initialize selected ORBs (empty by default)
+        if 'quick_search_selected_orbs' not in st.session_state:
+            st.session_state.quick_search_selected_orbs = []
+
+        # Create 6 toggle buttons for ORB times
+        col1, col2, col3, col4, col5, col6 = st.columns(6)
+
+        orb_buttons = [
+            (col1, '0900'),
+            (col2, '1000'),
+            (col3, '1100'),
+            (col4, '1800'),
+            (col5, '2300'),
+            (col6, '0030')
+        ]
+
+        for col, orb_time in orb_buttons:
+            with col:
+                is_selected = orb_time in st.session_state.quick_search_selected_orbs
+                button_type = "primary" if is_selected else "secondary"
+
+                if st.button(
+                    orb_time,
+                    key=f"orb_btn_{orb_time}",
+                    type=button_type,
+                    use_container_width=True
+                ):
+                    # Toggle: add if not selected, remove if selected
+                    if is_selected:
+                        st.session_state.quick_search_selected_orbs.remove(orb_time)
+                    else:
+                        st.session_state.quick_search_selected_orbs.append(orb_time)
+                    st.rerun()
+
+        orb_times = st.session_state.quick_search_selected_orbs
 
         if not orb_times:
-            st.warning("⚠️ No ORB times selected. Please select at least one.")
+            st.warning("⚠️ No ORB times selected. Click buttons above to add.")
         else:
-            st.caption(f"✅ Will search: {', '.join(orb_times)}")
+            st.caption(f"✅ Will search: {', '.join(sorted(orb_times))}")
 
         st.divider()
 
