@@ -1018,43 +1018,20 @@ with tab_research:
     # ========================================================================
     # AUTO SEARCH - Deterministic Edge Discovery (update11.txt - Zero-Typing UI)
     # ========================================================================
-    st.markdown("# ⚡ Quick Search")
-    st.caption("Find edges fast. Pick options → Run → Review → Send to queue.")
+    st.subheader("Quick Search")
 
-    with st.expander("▶ How it works", expanded=False):
-        st.markdown("""
-        1. Pick instrument, ORBs, RR targets
-        2. Click Run (takes ≤5 min)
-        3. See top candidates
-        4. Send best one to validation
+    with st.expander("Run Quick Search", expanded=True):
 
-        **Simple. Fast. No typing.**
-        """)
-
-        st.markdown("")
-        st.markdown("")
-
-        # ========================================
-        # BLOCK 1: Instrument
-        # ========================================
-        st.markdown("### 1. Instrument")
+        # Instrument
         search_instrument = st.radio(
-            "Select instrument",
+            "Instrument",
             options=["MGC", "NQ", "MPL"],
             index=0,
             horizontal=True,
-            key="quick_search_instrument",
-            label_visibility="collapsed"
+            key="quick_search_instrument"
         )
 
-        st.markdown("")
-        st.markdown("")
-
-        # ========================================
-        # BLOCK 2: ORB Scope (Session Times)
-        # ========================================
-        st.markdown("### 2. ORB Times")
-        st.caption("Click to select")
+        # ORB Times
 
         # Initialize selected ORBs (empty by default)
         if 'quick_search_selected_orbs' not in st.session_state:
@@ -1093,31 +1070,20 @@ with tab_research:
         orb_times = st.session_state.quick_search_selected_orbs
 
         if not orb_times:
-            st.warning("⚠️ Pick at least one")
-        else:
-            st.caption(f"✓ Selected: {', '.join(sorted(orb_times))}")
+            st.warning("Select at least one ORB time")
 
-        st.markdown("")
-        st.markdown("")
-
-        # ========================================
-        # BLOCK 3: Entry Rule
-        # ========================================
-        st.markdown("### 3. Entry Rule")
+        # Entry Rule
         entry_rule = st.radio(
-            "Entry rule",
+            "Entry Rule",
             options=[
                 "1st close outside ORB",
                 "2nd close outside ORB",
                 "Limit at ORB edge"
             ],
             index=0,
-            key="quick_search_entry_rule",
-            label_visibility="collapsed"
+            key="quick_search_entry_rule"
         )
 
-        # Map to engine setting (store as filter or setting key)
-        # For now, store in search_settings as entry_rule key
         if entry_rule == "1st close outside ORB":
             entry_rule_value = "FIRST_CLOSE"
         elif entry_rule == "2nd close outside ORB":
@@ -1125,14 +1091,7 @@ with tab_research:
         else:
             entry_rule_value = "LIMIT_ORDER"
 
-        st.markdown("")
-        st.markdown("")
-
-        # ========================================
-        # BLOCK 4: RR Targets (Explicit, NON-cumulative)
-        # ========================================
-        st.markdown("### 4. RR Targets")
-        st.caption("Pick which RR values to test")
+        # RR Targets
 
         # Initialize defaults
         if 'quick_search_rr_targets' not in st.session_state:
@@ -1160,17 +1119,9 @@ with tab_research:
         st.session_state.quick_search_rr_targets = rr_targets
 
         if not rr_targets:
-            st.warning("⚠️ Pick at least one")
-        else:
-            st.caption(f"✓ Selected: {', '.join(str(r) for r in sorted(rr_targets))}")
+            st.warning("Select at least one RR target")
 
-        st.markdown("")
-        st.markdown("")
-
-        # ========================================
-        # BLOCK 5: Optional Filters
-        # ========================================
-        st.markdown("### 5. Filters (Optional)")
+        # Filters
 
         # ORB Size Filter
         orb_filter_enabled = st.toggle(
@@ -1187,10 +1138,8 @@ with tab_research:
                 max_value=20,
                 value=10,
                 step=1,
-                key="quick_orb_filter_threshold",
-                help="Exclude ORBs larger than this threshold"
+                key="quick_orb_filter_threshold"
             )
-            st.caption(f"✓ Filter: ORBs ≤ {orb_filter_threshold}% ATR")
             filter_settings = {
                 'filter_types': ['orb_size'],
                 'filter_ranges': {'orb_size': (0.0, orb_filter_threshold / 100.0)}
@@ -1198,62 +1147,42 @@ with tab_research:
         else:
             filter_settings = {}
 
-        # Direction Bias
-        col_dir, col_sample = st.columns(2)
-        with col_dir:
-            direction_bias = st.radio(
-                "Direction",
-                options=["BOTH", "LONG", "SHORT"],
-                index=0,
-                horizontal=True,
-                key="quick_direction_bias"
-            )
-        with col_sample:
-            min_sample_size = st.selectbox(
-                "Min sample",
-                options=[30, 50, 100],
-                index=0,
-                key="quick_min_sample_size"
-            )
+        direction_bias = st.radio(
+            "Direction",
+            options=["BOTH", "LONG", "SHORT"],
+            index=0,
+            horizontal=True,
+            key="quick_direction_bias"
+        )
 
-        st.markdown("")
-        st.markdown("")
+        min_sample_size = st.selectbox(
+            "Min sample size",
+            options=[30, 50, 100],
+            index=0,
+            key="quick_min_sample_size"
+        )
 
-        # ========================================
-        # ADVANCED MODE (Optional)
-        # ========================================
-        with st.expander("⚙️ Advanced Settings", expanded=False):
-            st.caption("Power user controls")
-
-            # Custom timeout
+        # Advanced
+        with st.expander("Advanced", expanded=False):
             search_max_seconds_custom = st.number_input(
-                "Custom timeout (seconds)",
+                "Timeout (seconds)",
                 min_value=30,
                 max_value=300,
                 value=300,
                 step=30,
-                key="advanced_timeout",
-                help="Override default 300s timeout (not recommended)"
+                key="advanced_timeout"
             )
 
-            # Setup family selection (hidden but available)
             setup_family_advanced = st.selectbox(
-                "Setup Family (advanced)",
+                "Setup Family",
                 options=["ORB_BASELINE", "ORB_L4", "ORB_RSI", "ORB_BOTH_LOST"],
                 index=0,
-                key="advanced_setup_family",
-                help="Normally always ORB_BASELINE. Change only for research."
+                key="advanced_setup_family"
             )
 
-            st.caption("⚠️ Only change if you know what you're doing")
-
-        st.markdown("")
-
-        # ========================================
-        # RUN BUTTON (Large Primary)
-        # ========================================
+        # Run
         run_search_button = st.button(
-            "▶ Run Search",
+            "Run Search",
             type="primary",
             disabled=(not rr_targets or not orb_times),
             use_container_width=True,
@@ -1327,94 +1256,24 @@ with tab_research:
 
                 # Show candidates
                 if results['candidates']:
-                    st.markdown("## Top Candidates")
-                    st.markdown("")
+                    st.success(f"Found {len(results['candidates'])} candidates")
 
-                    # Top 3 candidates as SIMPLE CARDS
-                    top_3 = results['candidates'][:3]
+                    # Show all results in a table
+                    candidates_df = []
+                    for c in results['candidates']:
+                        exp_r = c.expected_r_proxy if c.expected_r_proxy else c.score_proxy
+                        candidates_df.append({
+                            'ORB': c.orb_time,
+                            'RR': c.rr_target,
+                            'Expected R': f"+{exp_r:.3f}R",
+                            'N': c.sample_size,
+                            'Target Hit%': f"{c.target_hit_rate*100:.0f}%" if c.target_hit_rate else 'N/A',
+                            'Profit%': f"{c.profitable_trade_rate*100:.0f}%" if c.profitable_trade_rate else 'N/A',
+                        })
 
-                    if len(top_3) > 0:
-                        cols = st.columns(len(top_3))
-
-                        for idx, c in enumerate(top_3):
-                            # Expected R color and emoji
-                            exp_r = c.expected_r_proxy if c.expected_r_proxy else c.score_proxy
-                            if exp_r > 0.30:
-                                rank_emoji = "🥇"
-                            elif exp_r >= 0.15:
-                                rank_emoji = "💎"
-                            else:
-                                rank_emoji = "📊"
-
-                            with cols[idx]:
-                                # Simple card with clean info
-                                with st.container(border=True):
-                                    # Rank
-                                    st.markdown(f"**{rank_emoji} #{idx + 1}**")
-                                    st.markdown("")
-
-                                    # Main info - big and clear
-                                    st.markdown(f"# {c.orb_time}")
-                                    st.markdown(f"## RR {c.rr_target:.1f}")
-                                    st.markdown("")
-
-                                    # Expected R - hero metric
-                                    st.metric(
-                                        label="Expected R",
-                                        value=f"+{exp_r:.3f}R"
-                                    )
-                                    st.markdown("")
-
-                                    # Quick stats
-                                    target_hit = (c.target_hit_rate*100 if c.target_hit_rate else 0)
-                                    profit_rate = (c.profitable_trade_rate*100 if c.profitable_trade_rate else 0)
-
-                                    st.caption(f"✓ Target Hit: {target_hit:.0f}%")
-                                    st.caption(f"✓ Profit Rate: {profit_rate:.0f}%")
-                                    st.caption(f"✓ Sample: {c.sample_size}N")
-                                    st.markdown("")
-
-                                    # Action button
-                                    if st.button(
-                                        "Send to Queue →",
-                                        key=f"send_top_{idx}",
-                                        use_container_width=True,
-                                        type="primary" if idx == 0 else "secondary"
-                                    ):
-                                        # Store selected candidate in session state
-                                        st.session_state['selected_candidate_for_queue'] = {
-                                            'orb_time': c.orb_time,
-                                            'rr_target': c.rr_target,
-                                            'score_proxy': c.score_proxy,
-                                            'sample_size': c.sample_size,
-                                            'param_hash': c.param_hash,
-                                            'expected_r_proxy': c.expected_r_proxy,
-                                            'profitable_trade_rate': c.profitable_trade_rate,
-                                            'target_hit_rate': c.target_hit_rate
-                                        }
-                                        st.success(f"✓ Selected {c.orb_time} RR={c.rr_target:.1f}")
-                                        st.info("Scroll down to confirm")
-
-                    # Raw results table (all candidates)
-                    st.markdown("")
-                    with st.expander("📊 All Results", expanded=False):
-                        candidates_df = []
-                        for c in results['candidates']:
-                            candidates_df.append({
-                                '#': results['candidates'].index(c) + 1,
-                                'ORB': c.orb_time,
-                                'RR': c.rr_target,
-                                'Exp. R': f"{c.expected_r_proxy:.3f}R" if c.expected_r_proxy else f"{c.score_proxy:.3f}R",
-                                'N': c.sample_size,
-                                'Target Hit': f"{c.target_hit_rate*100:.0f}%" if c.target_hit_rate else 'N/A',
-                                'Profit Rate': f"{c.profitable_trade_rate*100:.0f}%" if c.profitable_trade_rate else 'N/A',
-                            })
-
-                        st.dataframe(candidates_df, use_container_width=True, height=300)
-
-                    st.caption(f"💾 {len(results['candidates'])} candidates saved · Run ID: {results['run_id'][:8]}...")
+                    st.dataframe(candidates_df, use_container_width=True)
                 else:
-                    st.info("No candidates found. Try different parameters.")
+                    st.info("No candidates found")
 
             except TimeoutError as e:
                 st.warning(f"⏱️ Search timeout: {e}")
@@ -1425,14 +1284,8 @@ with tab_research:
 
         # Show recent candidates from last run
         if 'last_search_run_id' in st.session_state:
-            st.markdown("")
-            st.markdown("")
-            st.markdown("## Send to Queue")
-
-            # Check if candidate was selected from card
-            if 'selected_candidate_for_queue' in st.session_state:
-                selected_card = st.session_state['selected_candidate_for_queue']
-                st.info(f"✓ Selected: **{selected_card['orb_time']} RR={selected_card['rr_target']:.1f}** (+{selected_card['score_proxy']:.3f}R)")
+            st.divider()
+            st.subheader("Send to Validation Queue")
 
             try:
                 from auto_search_engine import AutoSearchEngine
@@ -1470,10 +1323,9 @@ with tab_research:
                     selected = recent_candidates[selected_idx]
 
                     # Confirm
-                    st.markdown("")
-                    confirm = st.checkbox("✓ Confirm")
+                    confirm = st.checkbox("Confirm")
 
-                    if st.button("Send to Validation Queue", type="primary", disabled=not confirm, use_container_width=True):
+                    if st.button("Send to Queue", type="primary", disabled=not confirm, use_container_width=True):
                         try:
                             # Insert into validation_queue
                             app_state.db_connection.execute("""
@@ -1495,8 +1347,7 @@ with tab_research:
                                 selected.get('notes', '')
                             ])
 
-                            st.success(f"✓ Sent to queue!")
-                            st.caption("Check Validation Gate tab")
+                            st.success("Sent to queue")
 
                             # Clear selected candidate from session state
                             if 'selected_candidate_for_queue' in st.session_state:
