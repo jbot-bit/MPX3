@@ -91,6 +91,16 @@ class CSVChartAnalyzer:
 
     def _analyze_data_summary(self, df: pd.DataFrame) -> Dict:
         """Analyze basic data summary."""
+        # Defensive check: prevent crash on empty DataFrame
+        if df.empty:
+            return {
+                "total_bars": 0,
+                "start_time": None,
+                "end_time": None,
+                "duration_hours": 0,
+                "price_range": {"high": None, "low": None, "range": None}
+            }
+
         return {
             "total_bars": len(df),
             "start_time": df['time'].iloc[0],
@@ -105,6 +115,17 @@ class CSVChartAnalyzer:
 
     def _analyze_current_state(self, df: pd.DataFrame) -> Dict:
         """Analyze current price state."""
+        # Defensive check: prevent crash on empty DataFrame
+        if df.empty:
+            return {
+                "current_price": None,
+                "current_time": None,
+                "open": None,
+                "high": None,
+                "low": None,
+                "volume": None
+            }
+
         latest = df.iloc[-1]
 
         return {
@@ -130,6 +151,10 @@ class CSVChartAnalyzer:
         Once BROKEN, state is IMMUTABLE - never reverts.
         """
         orb_results = {}
+
+        # Defensive check: prevent crash on empty DataFrame
+        if df.empty:
+            return orb_results
 
         # Get latest timestamp in data
         latest_time = df['time'].iloc[-1]
@@ -215,13 +240,17 @@ class CSVChartAnalyzer:
             potential_direction = "WAIT"
 
             # Get current price position for display (not for state decision)
-            current_price = df['close'].iloc[-1]
-            if current_price > orb_high:
-                current_position = "ABOVE"
-            elif current_price < orb_low:
-                current_position = "BELOW"
+            # Defensive check: df should not be empty (checked at method start), but be safe
+            if df.empty:
+                current_position = "UNKNOWN"
             else:
-                current_position = "INSIDE"
+                current_price = df['close'].iloc[-1]
+                if current_price > orb_high:
+                    current_position = "ABOVE"
+                elif current_price < orb_low:
+                    current_position = "BELOW"
+                else:
+                    current_position = "INSIDE"
 
             # Search for FIRST break
             if not bars_after_orb.empty:
@@ -406,6 +435,14 @@ class CSVChartAnalyzer:
 
     def _determine_session(self, df: pd.DataFrame) -> Dict:
         """Determine current trading session."""
+        # Defensive check: prevent crash on empty DataFrame
+        if df.empty:
+            return {
+                "session": "UNKNOWN",
+                "local_time": None,
+                "hour": None
+            }
+
         latest_time = df['time'].iloc[-1]
 
         # Assume UTC timestamps, convert to Brisbane time

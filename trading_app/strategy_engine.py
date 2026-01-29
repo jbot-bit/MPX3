@@ -667,21 +667,27 @@ class StrategyEngine:
         return self.loader.get_session_high_low(london_start, london_end)
 
     def _get_today_ny_levels(self) -> Optional[Dict]:
-        """Get today's NY session high/low (23:00-02:00 next day)."""
+        """Get today's NY session high/low (23:00-02:00 next day).
+
+        TIMEZONE FIX: NY session spans midnight (23:00 -> 02:00 next day).
+        Must correctly handle all three time windows:
+        - 00:00-02:00: Tail of YESTERDAY'S NY session
+        - 02:00-23:00: Between sessions (no data)
+        - 23:00-24:00: Start of TODAY'S NY session
+        """
         now = datetime.now(TZ_LOCAL)
-        ny_start = now.replace(hour=23, minute=0, second=0, microsecond=0)
 
-        # NY session goes until 02:00 next day
-        if now.hour < 23:
-            # Before NY open, no data yet
-            return None
-
-        ny_end = (now + timedelta(days=1)).replace(hour=2, minute=0, second=0, microsecond=0)
-
-        # If we're past 02:00, use yesterday's NY session
-        if now.hour >= 2 and now.hour < 23:
+        if 0 <= now.hour < 2:
+            # We're in the TAIL of yesterday's NY session (23:00 yesterday -> 02:00 today)
             ny_start = (now - timedelta(days=1)).replace(hour=23, minute=0, second=0, microsecond=0)
             ny_end = now.replace(hour=2, minute=0, second=0, microsecond=0)
+        elif 2 <= now.hour < 23:
+            # Between sessions - no NY data available yet
+            return None
+        else:  # 23 <= now.hour < 24
+            # We're in the START of today's NY session (23:00 today -> 02:00 tomorrow)
+            ny_start = now.replace(hour=23, minute=0, second=0, microsecond=0)
+            ny_end = (now + timedelta(days=1)).replace(hour=2, minute=0, second=0, microsecond=0)
 
         return self.loader.get_session_high_low(ny_start, ny_end)
 

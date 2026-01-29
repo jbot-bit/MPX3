@@ -24,35 +24,37 @@ logger = logging.getLogger(__name__)
 class SetupDetector:
     """Detects validated high-probability trading setups."""
 
-    def __init__(self, db_path: Optional[str] = None):
-        # Cloud-aware: db_path parameter is ignored in cloud mode
-        # Connections handled by get_database_connection()
+    def __init__(self, db_path: Optional[str] = None, db_connection=None):
+        # Accept existing connection to avoid "different configuration" errors
+        # CRITICAL: Never close this connection - it's shared with parent app
         self.db_path = db_path  # Legacy parameter, kept for compatibility
-
-        # Lazy connection - only connect when needed
-        self._con = None
+        self._con = db_connection  # Use provided connection if available
 
     def _get_connection(self):
         """Get database connection, creating it if needed (cloud-aware)"""
-        if self._con is None:
-            try:
-                # Use cloud-aware connection
-                from cloud_mode import get_database_connection
-                self._con = get_database_connection()
+        # If connection was provided at init, reuse it (NEVER close)
+        if self._con is not None:
+            return self._con
 
-                if self._con is None:
-                    logger.warning("Database connection unavailable. Setup detection disabled.")
-                    return None
+        # Otherwise create new connection (fallback for standalone usage)
+        try:
+            from cloud_mode import get_database_connection
+            self._con = get_database_connection()
 
-                logger.info("Connected to database for setup detection")
-            except Exception as e:
-                logger.error(f"Error connecting to database: {e}")
+            if self._con is None:
+                logger.warning("Database connection unavailable. Setup detection disabled.")
                 return None
+
+            logger.info("Connected to database for setup detection")
+        except Exception as e:
+            logger.error(f"Error connecting to database: {e}")
+            self._con = None
+            return None
 
         return self._con
 
     def get_all_validated_setups(self, instrument: str = "MGC") -> List[Dict]:
-        """Get all validated setups for an instrument."""
+        """Get all validated setups for an instrument (ACTIVE only, filters REJECTED)."""
         try:
             con = self._get_connection()
             if con is None:
@@ -80,12 +82,123 @@ class SetupDetector:
                     notes
                 FROM validated_setups
                 WHERE instrument = ?
-                ORDER BY expected_r DESC
+                  AND (status IS NULL OR status != 'REJECTED')
+                ORDER BY realized_expectancy DESC
             """, [instrument]).df()
 
             return result.to_dict('records')
         except Exception as e:
             logger.error(f"Error getting validated setups: {e}")
+            return []
+
+    def get_grouped_setups(self, instrument: str = "MGC") -> List[Dict]:
+        """
+        Get setups grouped by ORB time with variants collapsed.
+
+        text.txt requirements:
+        - Group by orb_time
+        - Show ONE collapsed row per ORB with:
+          - orb_time, variant count, best expectancy, sample size, win rate, friction gate pass rate
+        - Each group contains all RR variants (1.5/2.0/2.5/3.0)
+
+        Returns:
+            List of dicts with keys: orb_time, variant_count, best_expectancy,
+            sample_size, win_rate, friction_pass_rate, variants (list of individual setups)
+        """
+        try:
+            con = self._get_connection()
+            if con is None:
+                return []
+
+            # Get all setups with TCA-adjusted stats from validated_trades (ACTIVE only)
+            result = con.execute("""
+                WITH tca_stats AS (
+                    SELECT
+                        vs.id as setup_id,
+                        vs.orb_time,
+                        vs.rr,
+                        vs.sl_mode,
+                        vs.orb_size_filter,
+                        vs.notes,
+                        COUNT(*) as total_signals,
+                        SUM(CASE WHEN vt.outcome NOT IN ('NO_TRADE', 'RISK_TOO_SMALL')
+                                 AND (vt.friction_ratio IS NULL OR vt.friction_ratio <= 0.20)
+                            THEN 1 ELSE 0 END) as tca_trades,
+                        SUM(CASE WHEN vt.outcome = 'WIN'
+                                 AND (vt.friction_ratio IS NULL OR vt.friction_ratio <= 0.20)
+                            THEN 1 ELSE 0 END) as tca_wins,
+                        SUM(CASE WHEN vt.outcome = 'LOSS'
+                                 AND (vt.friction_ratio IS NULL OR vt.friction_ratio <= 0.20)
+                            THEN 1 ELSE 0 END) as tca_losses,
+                        AVG(CASE WHEN vt.outcome IN ('WIN', 'LOSS')
+                                 AND (vt.friction_ratio IS NULL OR vt.friction_ratio <= 0.20)
+                            THEN vt.realized_rr ELSE NULL END) as tca_expectancy
+                    FROM validated_setups vs
+                    LEFT JOIN validated_trades vt ON vs.id = vt.setup_id
+                    WHERE vs.instrument = ?
+                      AND (vs.status IS NULL OR vs.status != 'REJECTED')
+                    GROUP BY vs.id, vs.orb_time, vs.rr, vs.sl_mode, vs.orb_size_filter, vs.notes
+                )
+                SELECT * FROM tca_stats
+                ORDER BY orb_time, rr
+            """, [instrument]).df()
+
+            if result.empty:
+                return []
+
+            # Group by ORB time
+            grouped = {}
+            for _, row in result.iterrows():
+                orb_time = row['orb_time']
+
+                if orb_time not in grouped:
+                    grouped[orb_time] = {
+                        'orb_time': orb_time,
+                        'variants': [],
+                        'variant_count': 0,
+                        'best_expectancy': float('-inf'),
+                        'total_sample_size': 0,
+                        'avg_win_rate': 0,
+                        'friction_pass_rate': 0
+                    }
+
+                # Calculate variant stats
+                tca_resolved = (row['tca_wins'] or 0) + (row['tca_losses'] or 0)
+                tca_win_rate = (row['tca_wins'] / tca_resolved) if tca_resolved > 0 else 0
+                friction_pass = (row['tca_trades'] / row['total_signals']) if row['total_signals'] > 0 else 0
+
+                variant = {
+                    'setup_id': int(row['setup_id']),
+                    'rr': float(row['rr']),
+                    'sl_mode': row['sl_mode'],
+                    'filter': float(row['orb_size_filter']) if row['orb_size_filter'] else None,
+                    'expectancy': float(row['tca_expectancy']) if row['tca_expectancy'] else 0,
+                    'sample_size': int(tca_resolved),
+                    'win_rate': float(tca_win_rate),
+                    'friction_pass_rate': float(friction_pass),
+                    'notes': row['notes']
+                }
+
+                grouped[orb_time]['variants'].append(variant)
+                grouped[orb_time]['variant_count'] += 1
+
+                # Track best expectancy for this ORB
+                if variant['expectancy'] > grouped[orb_time]['best_expectancy']:
+                    grouped[orb_time]['best_expectancy'] = variant['expectancy']
+
+            # Calculate aggregate stats per ORB
+            for orb_time in grouped:
+                variants = grouped[orb_time]['variants']
+                grouped[orb_time]['total_sample_size'] = sum(v['sample_size'] for v in variants)
+                grouped[orb_time]['avg_win_rate'] = sum(v['win_rate'] for v in variants) / len(variants) if variants else 0
+                grouped[orb_time]['friction_pass_rate'] = sum(v['friction_pass_rate'] for v in variants) / len(variants) if variants else 0
+
+            # Convert to list and sort by ORB time
+            result = sorted(grouped.values(), key=lambda x: x['orb_time'])
+
+            return result
+        except Exception as e:
+            logger.error(f"Error getting grouped setups: {e}")
             return []
 
     def check_orb_setup(
@@ -112,31 +225,62 @@ class SetupDetector:
             else:
                 orb_size_pct = None
 
-            # Find matching setups
-            query = """
-                SELECT
-                    id as setup_id,
-                    orb_time,
-                    rr,
-                    sl_mode,
-                    1 as close_confirmations,
-                    0.0 as buffer_ticks,
-                    orb_size_filter,
-                    win_rate,
-                    expected_r as avg_r,
-                    realized_expectancy,
-                    avg_win_r,
-                    avg_loss_r,
-                    'A' as tier,
-                    notes
-                FROM validated_setups
-                WHERE instrument = ?
-                  AND orb_time = ?
-                  AND (orb_size_filter IS NULL OR ? <= orb_size_filter)
-                ORDER BY expected_r DESC
-            """
-
-            result = con.execute(query, [instrument, orb_time, orb_size_pct]).df()
+            # NULL PARAMETER FIX: Split query based on ATR availability
+            # When ATR missing, can't apply size filter - return setups WITHOUT size filter requirement
+            if orb_size_pct is not None:
+                # ATR available - apply size filter
+                query = """
+                    SELECT
+                        id as setup_id,
+                        orb_time,
+                        rr,
+                        sl_mode,
+                        1 as close_confirmations,
+                        0.0 as buffer_ticks,
+                        orb_size_filter,
+                        win_rate,
+                        expected_r as avg_r,
+                        realized_expectancy,
+                        avg_win_r,
+                        avg_loss_r,
+                        'A' as tier,
+                        notes
+                    FROM validated_setups
+                    WHERE instrument = ?
+                      AND orb_time = ?
+                      AND (orb_size_filter IS NULL OR ? <= orb_size_filter)
+                      AND (status IS NULL OR status != 'REJECTED')
+                    ORDER BY realized_expectancy DESC
+                """
+                result = con.execute(query, [instrument, orb_time, orb_size_pct]).df()
+            else:
+                # ATR missing - return only setups WITHOUT size filter
+                # (Setups with size filters require ATR for validation)
+                query = """
+                    SELECT
+                        id as setup_id,
+                        orb_time,
+                        rr,
+                        sl_mode,
+                        1 as close_confirmations,
+                        0.0 as buffer_ticks,
+                        orb_size_filter,
+                        win_rate,
+                        expected_r as avg_r,
+                        realized_expectancy,
+                        avg_win_r,
+                        avg_loss_r,
+                        'A' as tier,
+                        notes
+                    FROM validated_setups
+                    WHERE instrument = ?
+                      AND orb_time = ?
+                      AND orb_size_filter IS NULL
+                      AND (status IS NULL OR status != 'REJECTED')
+                    ORDER BY realized_expectancy DESC
+                """
+                result = con.execute(query, [instrument, orb_time]).df()
+                logger.info(f"ATR unavailable - returning setups without size filter for {instrument} {orb_time}")
 
             matches = result.to_dict('records')
 
@@ -151,7 +295,7 @@ class SetupDetector:
             return []
 
     def get_elite_setups(self, instrument: str = "MGC") -> List[Dict]:
-        """Get only S+ and S tier setups (elite performers)."""
+        """Get only S+ and S tier setups (elite performers, ACTIVE only)."""
         try:
             con = self._get_connection()
             if con is None:
@@ -173,7 +317,9 @@ class SetupDetector:
                     notes
                 FROM validated_setups
                 WHERE instrument = ?
-                ORDER BY expected_r DESC
+                  AND (status IS NULL OR status != 'REJECTED')
+                  AND realized_expectancy >= 0.15
+                ORDER BY realized_expectancy DESC
             """, [instrument]).df()
 
             return result.to_dict('records')

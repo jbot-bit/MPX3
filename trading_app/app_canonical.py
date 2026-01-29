@@ -174,7 +174,8 @@ class AppState:
         try:
             result = self.db_connection.execute("SELECT 1").fetchone()
             return "OK" if result else "FAIL"
-        except:
+        except Exception as e:
+            logger.warning(f"Database health check failed: {e}")
             return "DISCONNECTED"
 
 # Initialize state
@@ -194,7 +195,8 @@ def get_health_text(db_connection) -> str:
     """Get system health status text"""
     try:
         return get_system_health_summary(db_connection)
-    except:
+    except Exception as e:
+        logger.error(f"Failed to get health summary: {e}")
         return "ERROR"
 
 def get_health_color(db_connection) -> str:
@@ -207,7 +209,8 @@ def get_health_color(db_connection) -> str:
             return '#ffc107'
         else:
             return '#dc3545'
-    except:
+    except Exception as e:
+        logger.error(f"Failed to get health color: {e}")
         return '#dc3545'
 
 def render_zone_banner(zone: str):
@@ -1504,7 +1507,12 @@ For RR-specific win rates, use `validated_setups` or run a full backtest.
         col1, col2 = st.columns(2)
 
         with col1:
-            candidate_instrument = st.selectbox("Instrument", ["MGC", "NQ", "MPL"])
+            # SCOPE LOCK: Only MGC validated (NQ/MPL blocked - wrong multipliers!)
+            candidate_instrument = st.selectbox(
+                "Instrument",
+                ["MGC"],
+                help="⚠️ NQ and MPL blocked (unvalidated contract specs - wrong multipliers = fake R)"
+            )
             candidate_orb = st.selectbox("ORB Time", ["0900", "1000", "1100", "1800", "2300", "0030"])
             candidate_direction = st.selectbox("Direction", ["LONG", "SHORT", "BOTH"])
 
@@ -2841,7 +2849,12 @@ with tab_production:
                     """, unsafe_allow_html=True)
 
                     for orb_time, setup_id in sorted(st.session_state.selected_variants.items()):
-                        variant = result[result['id'] == setup_id].iloc[0]
+                        # Defensive check: prevent crash if setup_id not found
+                        variant_match = result[result['id'] == setup_id]
+                        if variant_match.empty:
+                            continue  # Skip if variant no longer exists
+
+                        variant = variant_match.iloc[0]
                         st.markdown(f"""
                         <div class="selection-item">
                             <strong>{orb_time}:</strong> RR={variant['rr']:.1f} ({variant['sl_mode']}) -

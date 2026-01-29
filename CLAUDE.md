@@ -11,6 +11,38 @@ Gold (MGC) Data Pipeline for building a clean, replayable local dataset of Micro
 
 ---
 
+## 🚨 CRITICAL: LIVE TRADING TEST REQUIREMENTS
+
+**MANDATORY STANDING RULE**: Any code that runs in LIVE mode must pass a "boundary + state" test suite.
+
+This rule is **NON-NEGOTIABLE** and applies to:
+- Entry/exit logic
+- Position sizing calculations
+- Risk management code
+- Data validation
+- State management
+- API integrations
+- Database queries
+- Price/P&L calculations
+
+### What This Means:
+1. **Boundary Tests**: Test empty data, null values, edge cases, extreme inputs
+2. **State Tests**: Test symbol changes, connection loss, race conditions, state corruption
+3. **Coverage Requirement**: 80%+ test coverage for live trading code
+4. **Enforcement**: All PRs must include tests; CI/CD blocks merges without tests
+
+### Quick Reference:
+- See: `LIVE_TRADING_TEST_REQUIREMENTS.md` (complete specification)
+- Test Templates: `tests/templates/boundary_test_template.py`, `tests/templates/state_test_template.py`
+- Run Tests: `python -m pytest tests/boundary/ tests/state/ -v`
+
+### Why This Exists:
+Ghost audit found 53 bugs, 40% were boundary/state issues. Live trading requires zero tolerance for crashes. Real money at risk.
+
+**Before writing ANY live trading code, read `LIVE_TRADING_TEST_REQUIREMENTS.md`.**
+
+---
+
 ## 🛡️ CRITICAL RULE: Strategy Family Isolation
 
 **All analysis, validation, and conclusions apply ONLY to the active STRATEGY_FAMILY.**

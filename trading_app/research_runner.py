@@ -544,7 +544,8 @@ class ResearchRunner:
                     stderr=subprocess.DEVNULL
                 ).decode().strip()
                 code_version = git_hash
-            except:
+            except (subprocess.CalledProcessError, FileNotFoundError, UnicodeDecodeError) as e:
+                # Git not available or command failed
                 code_version = f"manual-{datetime.now().strftime('%Y%m%d')}"
 
         if data_version is None:

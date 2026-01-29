@@ -98,7 +98,8 @@ def _parse_metrics(metrics_json: Any) -> Dict:
         return metrics_json
     try:
         return json.loads(metrics_json)
-    except:
+    except (json.JSONDecodeError, TypeError) as e:
+        logger.warning(f"Failed to parse metrics JSON: {e}")
         return {}
 
 

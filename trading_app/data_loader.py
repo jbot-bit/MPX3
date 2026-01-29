@@ -172,8 +172,9 @@ class LiveDataLoader:
                 WHERE symbol = ? AND ts_utc >= ?
                 ORDER BY ts_utc
             """, [self.symbol, cutoff]).fetchdf()
-        except:
+        except Exception as e:
             # live_bars doesn't exist (cloud mode), use historical bars_1m
+            logger.debug(f"live_bars query failed: {e}")
             result = pd.DataFrame()
 
         if len(result) == 0:

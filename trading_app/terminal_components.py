@@ -158,7 +158,8 @@ def render_data_grid(
                     return 'color: var(--profit-green); font-weight: 600;'
                 elif num_val < 0:
                     return 'color: var(--loss-red); font-weight: 600;'
-            except:
+            except (ValueError, TypeError):
+                # Value not numeric, skip coloring
                 pass
             return ''
 

@@ -75,12 +75,17 @@ def compute_orb_range(
     if not required_cols.issubset(bars.columns):
         return None
 
+    # TOCTOU FIX: Make defensive copy to prevent race condition
+    # In Streamlit's multi-threaded environment, bars can be modified
+    # between the check above and use below, causing crash.
+    bars_safe = bars.copy()
+
     orb_end = orb_start + timedelta(minutes=orb_minutes)
 
     # Filter to ORB window
-    orb_bars = bars[
-        (bars['timestamp'] >= orb_start) &
-        (bars['timestamp'] < orb_end)
+    orb_bars = bars_safe[
+        (bars_safe['timestamp'] >= orb_start) &
+        (bars_safe['timestamp'] < orb_end)
     ]
 
     if len(orb_bars) == 0:

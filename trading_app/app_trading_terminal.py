@@ -49,10 +49,14 @@ from position_tracker import PositionTracker
 # Import terminal theme and components
 from terminal_theme import inject_terminal_theme
 from terminal_components import *
+from error_logger import initialize_error_log, log_error
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Initialize error logging (clears file on startup)
+initialize_error_log()
 
 # ============================================================================
 # PAGE CONFIG
@@ -83,9 +87,35 @@ def init_session_state():
         st.session_state.account_size = 10000.0
     if "risk_per_trade" not in st.session_state:
         st.session_state.risk_per_trade = 1.0
-    if "data_loader" not in st.session_state:
+
+    # STATE CORRUPTION FIX: Track last initialized symbol to detect changes
+    if "last_initialized_symbol" not in st.session_state:
+        st.session_state.last_initialized_symbol = None
+
+    # Detect symbol change and clean up dependent state
+    if st.session_state.last_initialized_symbol != st.session_state.current_symbol:
+        logger.info(f"Symbol changed: {st.session_state.last_initialized_symbol} -> {st.session_state.current_symbol}")
+
+        # Close old data loader connection
+        if hasattr(st.session_state, 'data_loader') and st.session_state.data_loader is not None:
+            try:
+                st.session_state.data_loader.close()
+                logger.info("Closed old data_loader connection")
+            except Exception as e:
+                logger.warning(f"Error closing data_loader: {e}")
+
+        # Clear dependent state
         st.session_state.data_loader = None
-    if "strategy_engine" not in st.session_state:
+        st.session_state.strategy_engine = None
+        st.session_state.last_evaluation = None
+
+        # Update tracking
+        st.session_state.last_initialized_symbol = st.session_state.current_symbol
+
+    # Initialize data_loader and strategy_engine if needed
+    if "data_loader" not in st.session_state or st.session_state.data_loader is None:
+        st.session_state.data_loader = None
+    if "strategy_engine" not in st.session_state or st.session_state.strategy_engine is None:
         st.session_state.strategy_engine = None
     if "last_evaluation" not in st.session_state:
         st.session_state.last_evaluation = None
@@ -124,7 +154,13 @@ def init_session_state():
     if "view_mode" not in st.session_state:
         st.session_state.view_mode = "COMMAND"  # COMMAND, MONITOR, ANALYSIS, INTELLIGENCE
 
-init_session_state()
+try:
+    init_session_state()
+except Exception as e:
+    log_error(e, context="Terminal initialization")
+    st.error(f"❌ Initialization failed: {e}")
+    st.info("Check app_errors.txt for details")
+    st.stop()
 
 # ============================================================================
 # AUTO-REFRESH (Real-time terminal updates)
@@ -492,8 +528,16 @@ def render_monitor_view():
 
     if active_positions:
         for pos in active_positions:
-            # Get current price (mock for now)
-            current_price = pos['entry_price'] + 5.0  # TODO: Get real current price
+            # Get current price from data loader
+            current_price = pos['entry_price']  # Default fallback
+
+            if st.session_state.data_loader:
+                try:
+                    latest_data = st.session_state.data_loader.get_latest_data()
+                    if latest_data is not None and not latest_data.empty:
+                        current_price = float(latest_data['close'].iloc[-1])
+                except Exception as e:
+                    logger.warning(f"Failed to get current price: {e}, using entry price")
 
             # Update P&L
             st.session_state.risk_manager.update_position_pnl(pos['id'], current_price)
@@ -556,23 +600,27 @@ def render_analysis_view():
             # Statistics panel
             render_section_divider("STATISTICS")
 
-            stat_col1, stat_col2, stat_col3, stat_col4, stat_col5 = st.columns(5)
+            # Defensive check: prevent crash if chart_df becomes empty
+            if not chart_df.empty:
+                stat_col1, stat_col2, stat_col3, stat_col4, stat_col5 = st.columns(5)
 
-            with stat_col1:
-                render_metric_card("HIGH", f"${chart_df['high'].max():.2f}", change=None, sentiment="neutral")
-            with stat_col2:
-                render_metric_card("LOW", f"${chart_df['low'].min():.2f}", change=None, sentiment="neutral")
-            with stat_col3:
-                range_val = chart_df['high'].max() - chart_df['low'].min()
-                render_metric_card("RANGE", f"${range_val:.2f}", change=None, sentiment="neutral")
-            with stat_col4:
-                avg_vol = chart_df['volume'].mean() if 'volume' in chart_df.columns else 0
-                render_metric_card("AVG VOLUME", f"{avg_vol:.0f}", change=None, sentiment="neutral")
-            with stat_col5:
-                current = chart_df['close'].iloc[-1]
-                prev = chart_df['close'].iloc[0]
-                change_pct = ((current - prev) / prev) * 100
-                render_metric_card("CHANGE", f"{change_pct:+.2f}%", change=None, sentiment="positive" if change_pct > 0 else "negative")
+                with stat_col1:
+                    render_metric_card("HIGH", f"${chart_df['high'].max():.2f}", change=None, sentiment="neutral")
+                with stat_col2:
+                    render_metric_card("LOW", f"${chart_df['low'].min():.2f}", change=None, sentiment="neutral")
+                with stat_col3:
+                    range_val = chart_df['high'].max() - chart_df['low'].min()
+                    render_metric_card("RANGE", f"${range_val:.2f}", change=None, sentiment="neutral")
+                with stat_col4:
+                    avg_vol = chart_df['volume'].mean() if 'volume' in chart_df.columns else 0
+                    render_metric_card("AVG VOLUME", f"{avg_vol:.0f}", change=None, sentiment="neutral")
+                with stat_col5:
+                    current = chart_df['close'].iloc[-1]
+                    prev = chart_df['close'].iloc[0]
+                    change_pct = ((current - prev) / prev) * 100
+                    render_metric_card("CHANGE", f"{change_pct:+.2f}%", change=None, sentiment="positive" if change_pct > 0 else "negative")
+            else:
+                st.info("⚡ Insufficient data for statistics", icon="ℹ️")
         else:
             st.info("⚡ No data available", icon="ℹ️")
     except Exception as e:

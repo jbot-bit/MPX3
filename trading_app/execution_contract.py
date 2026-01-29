@@ -195,6 +195,10 @@ def contract_1st_close_outside() -> ExecutionContract:
         if 'entry_timestamp' not in data.columns or 'orb_end_timestamp' not in data.columns:
             return True
 
+        # Defensive check: prevent crash on empty DataFrame
+        if data.empty:
+            return True
+
         entry_ts = data['entry_timestamp'].iloc[0]
         orb_end = data['orb_end_timestamp'].iloc[0]
         return entry_ts > orb_end
@@ -202,6 +206,10 @@ def contract_1st_close_outside() -> ExecutionContract:
     def check_no_lookahead(spec: ExecutionSpec, data: pd.DataFrame) -> bool:
         """Entry uses only bars after ORB end"""
         if 'entry_timestamp' not in data.columns or 'orb_end_timestamp' not in data.columns:
+            return True
+
+        # Defensive check: prevent crash on empty DataFrame
+        if data.empty:
             return True
 
         entry_ts = data['entry_timestamp'].iloc[0]
@@ -245,6 +253,10 @@ def contract_5m_close_outside() -> ExecutionContract:
         if 'entry_timestamp' not in data.columns or 'orb_end_timestamp' not in data.columns:
             return True
 
+        # Defensive check: prevent crash on empty DataFrame
+        if data.empty:
+            return True
+
         entry_ts = data['entry_timestamp'].iloc[0]
         orb_end = data['orb_end_timestamp'].iloc[0]
         return entry_ts > orb_end
@@ -254,6 +266,10 @@ def contract_5m_close_outside() -> ExecutionContract:
         if 'entry_timestamp' not in data.columns or 'confirm_timestamp' not in data.columns:
             return True
 
+        # Defensive check: prevent crash on empty DataFrame
+        if data.empty:
+            return True
+
         entry_ts = data['entry_timestamp'].iloc[0]
         confirm_ts = data['confirm_timestamp'].iloc[0]
         return entry_ts >= confirm_ts
@@ -261,6 +277,10 @@ def contract_5m_close_outside() -> ExecutionContract:
     def check_5m_alignment(spec: ExecutionSpec, data: pd.DataFrame) -> bool:
         """Confirmation timestamp aligns to 5-min boundaries"""
         if 'confirm_timestamp' not in data.columns:
+            return True
+
+        # Defensive check: prevent crash on empty DataFrame
+        if data.empty:
             return True
 
         confirm_ts = data['confirm_timestamp'].iloc[0]

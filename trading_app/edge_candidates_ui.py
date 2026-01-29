@@ -35,7 +35,8 @@ def _format_json_field(json_str: Any) -> str:
         try:
             data = json.loads(json_str)
             return json.dumps(data, indent=2)
-        except:
+        except (json.JSONDecodeError, TypeError):
+            # Invalid JSON, return as-is
             return json_str
 
     return str(json_str)
@@ -210,7 +211,13 @@ def render_edge_candidates_panel():
 
     if selected_id:
         # Get candidate row
-        candidate = df[df['candidate_id'] == selected_id].iloc[0]
+        # Defensive check: prevent crash if candidate_id not found
+        candidate_match = df[df['candidate_id'] == selected_id]
+        if candidate_match.empty:
+            st.error(f"Candidate ID {selected_id} not found in database")
+            return
+
+        candidate = candidate_match.iloc[0]
 
         # Show details in expandable sections
         with st.expander("📄 Hypothesis", expanded=True):
