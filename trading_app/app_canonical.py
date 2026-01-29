@@ -1331,93 +1331,75 @@ with tab_research:
                 if results['candidates']:
                     st.markdown("### 🏆 Top Candidates")
 
-                    # Top 3 candidates as GIANT CARDS
+                    # Top 3 candidates as CLEAN CARDS
                     top_3 = results['candidates'][:3]
 
                     if len(top_3) > 0:
                         cols = st.columns(len(top_3))
 
                         for idx, c in enumerate(top_3):
-                            # Expected R color
+                            # Expected R color and emoji
                             exp_r = c.expected_r_proxy if c.expected_r_proxy else c.score_proxy
                             if exp_r > 0.30:
-                                exp_r_color = "#198754"  # Green
+                                rank_emoji = "🥇" if idx == 0 else "🏆"
+                                border_color = "green"
                             elif exp_r >= 0.15:
-                                exp_r_color = "#0d6efd"  # Blue
+                                rank_emoji = "💎" if idx == 0 else "⭐"
+                                border_color = "blue"
                             else:
-                                exp_r_color = "#6c757d"  # Gray
+                                rank_emoji = "📊"
+                                border_color = "gray"
 
                             with cols[idx]:
-                                st.markdown(f"""
-                                <div style="
-                                    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-                                    border-left: 6px solid {exp_r_color};
-                                    border-radius: 8px;
-                                    padding: 24px 16px;
-                                    margin-bottom: 16px;
-                                    min-height: 280px;
-                                ">
-                                    <div style="text-align: center;">
-                                        <!-- Rank Badge -->
-                                        <div style="
-                                            background: {exp_r_color};
-                                            color: white;
-                                            border-radius: 50%;
-                                            width: 40px;
-                                            height: 40px;
-                                            line-height: 40px;
-                                            margin: 0 auto 16px;
-                                            font-size: 20px;
-                                            font-weight: 700;
-                                        ">
-                                            #{idx + 1}
-                                        </div>
+                                # Card container with border
+                                with st.container(border=True):
+                                    st.markdown(f"### {rank_emoji} Rank #{idx + 1}")
 
-                                        <!-- ORB Time -->
-                                        <div style="font-size: 48px; font-weight: 700; color: #1a1a1a; margin: 12px 0;">
-                                            {c.orb_time}
-                                        </div>
+                                    # Main metrics
+                                    st.markdown(f"## {c.orb_time} ORB")
+                                    st.markdown(f"### RR {c.rr_target:.1f}")
 
-                                        <!-- RR Target -->
-                                        <div style="font-size: 32px; color: #666; margin-bottom: 16px;">
-                                            RR {c.rr_target:.1f}
-                                        </div>
+                                    # Expected R (big and bold)
+                                    st.metric(
+                                        label="Expected R",
+                                        value=f"+{exp_r:.3f}R",
+                                        delta=None
+                                    )
 
-                                        <!-- Expected R (HUGE) -->
-                                        <div style="font-size: 96px; font-weight: 700; color: {exp_r_color}; line-height: 1; margin: 16px 0;">
-                                            +{exp_r:.3f}R
-                                        </div>
+                                    st.divider()
 
-                                        <!-- Stats -->
-                                        <div style="font-size: 18px; color: #333; margin: 12px 0;">
-                                            <strong>Target Hit:</strong> {(c.target_hit_rate*100 if c.target_hit_rate else 0):.1f}%<br>
-                                            <strong>Profit Rate:</strong> {(c.profitable_trade_rate*100 if c.profitable_trade_rate else 0):.1f}%<br>
-                                            <strong>Sample:</strong> {c.sample_size}N
-                                        </div>
-                                    </div>
-                                </div>
-                                """, unsafe_allow_html=True)
+                                    # Stats in clean layout
+                                    target_hit = (c.target_hit_rate*100 if c.target_hit_rate else 0)
+                                    profit_rate = (c.profitable_trade_rate*100 if c.profitable_trade_rate else 0)
 
-                                # Send to Queue button
-                                if st.button(
-                                    "📥 Send to Queue",
-                                    key=f"send_top_{idx}",
-                                    use_container_width=True,
-                                    type="primary" if idx == 0 else "secondary"
-                                ):
-                                    # Store selected candidate in session state
-                                    st.session_state['selected_candidate_for_queue'] = {
-                                        'orb_time': c.orb_time,
-                                        'rr_target': c.rr_target,
-                                        'score_proxy': c.score_proxy,
-                                        'sample_size': c.sample_size,
-                                        'param_hash': c.param_hash,
-                                        'expected_r_proxy': c.expected_r_proxy,
-                                        'profitable_trade_rate': c.profitable_trade_rate,
-                                        'target_hit_rate': c.target_hit_rate
-                                    }
-                                    st.success(f"✅ Selected: {c.orb_time} RR={c.rr_target:.1f}")
-                                    st.info("👇 Scroll down to 'Send to Validation Queue' section to confirm")
+                                    st.markdown(f"""
+                                    **Target Hit:** {target_hit:.1f}%
+                                    **Profit Rate:** {profit_rate:.1f}%
+                                    **Sample Size:** {c.sample_size}N
+                                    """)
+
+                                    st.divider()
+
+                                    # Send to Queue button
+                                    if st.button(
+                                        "📥 Send to Queue",
+                                        key=f"send_top_{idx}",
+                                        use_container_width=True,
+                                        type="primary" if idx == 0 else "secondary"
+                                    ):
+                                        # Store selected candidate in session state
+                                        st.session_state['selected_candidate_for_queue'] = {
+                                            'orb_time': c.orb_time,
+                                            'rr_target': c.rr_target,
+                                            'score_proxy': c.score_proxy,
+                                            'sample_size': c.sample_size,
+                                            'param_hash': c.param_hash,
+                                            'expected_r_proxy': c.expected_r_proxy,
+                                            'profitable_trade_rate': c.profitable_trade_rate,
+                                            'target_hit_rate': c.target_hit_rate
+                                        }
+                                        st.success(f"✅ Selected: {c.orb_time} RR={c.rr_target:.1f}")
+                                        st.info("👇 Scroll down to 'Send to Validation Queue' section to confirm")
 
                     # Raw results table (all candidates)
                     st.divider()
