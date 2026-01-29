@@ -1058,16 +1058,12 @@ with tab_research:
         st.markdown("#### 2️⃣ ORB Scope")
         st.caption("Select which ORB times to search")
 
-        # Initialize default ORB times (1000, 1100 as per spec)
-        if 'quick_search_orb_times' not in st.session_state:
-            st.session_state.quick_search_orb_times = ['1000', '1100']
-
         orb_time_options = ['0900', '1000', '1100', '1800', '2300', '0030']
         orb_times = st.multiselect(
             "ORB times",
             options=orb_time_options,
-            default=st.session_state.quick_search_orb_times,
-            key="quick_search_orb_times_select",
+            default=['1000', '1100'],  # Default: current + next ORB
+            key="quick_search_orb_times",
             label_visibility="collapsed"
         )
 
