@@ -308,8 +308,14 @@ class AutoSearchEngine:
         combinations = []
 
         # Simple baseline: ORB × RR (no filters)
+        # CRITICAL: Only RR=1.0 supported (database only has baseline data)
         for orb_time in settings.orb_times:
             for rr_target in settings.rr_targets:
+                # HONESTY FIX: Skip RR != 1.0 (no actual data, projections are unreliable)
+                if rr_target != 1.0:
+                    logger.warning(f"Skipping RR={rr_target} for {orb_time} (only RR=1.0 baseline data available)")
+                    continue
+
                 combinations.append({
                     'instrument': settings.instrument,
                     'setup_family': settings.setup_family,
@@ -349,9 +355,9 @@ class AutoSearchEngine:
         instrument = settings.instrument
 
         try:
-            # Use baseline tradeable columns (RR=1.0)
-            realized_rr_col = f"orb_{orb_time}_tradeable_realized_rr"
-            outcome_col = f"orb_{orb_time}_tradeable_outcome"
+            # FIXED: Use correct column names (no 'tradeable' prefix)
+            realized_rr_col = f"orb_{orb_time}_r_multiple"
+            outcome_col = f"orb_{orb_time}_outcome"
 
             query = f"""
                 SELECT
@@ -373,14 +379,9 @@ class AutoSearchEngine:
                 target_hit_rate = result[2]
                 avg_realized_rr = result[3]
 
-                # For RR != 1.0, use target_hit_rate as proxy for expected R
-                # (baseline data is RR=1.0, scaling would be inaccurate)
-                if rr_target == 1.0:
-                    expected_r = avg_realized_rr
-                else:
-                    # Use target hit rate as score proxy for higher RR
-                    # (conservative estimate: assumes same hit rate at higher targets)
-                    expected_r = target_hit_rate * rr_target - (1 - target_hit_rate) * 1.0
+                # Only RR=1.0 supported (baseline data only)
+                # Use actual average realized RR (no projections)
+                expected_r = avg_realized_rr
 
                 return {
                     'sample_size': sample_size,

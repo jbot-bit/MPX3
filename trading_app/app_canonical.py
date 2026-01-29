@@ -1091,35 +1091,9 @@ with tab_research:
         else:
             entry_rule_value = "LIMIT_ORDER"
 
-        # RR Targets
-
-        # Initialize defaults
-        if 'quick_search_rr_targets' not in st.session_state:
-            st.session_state.quick_search_rr_targets = [2.0, 2.5]
-
-        col_rr1, col_rr2, col_rr3, col_rr4, col_rr5 = st.columns(5)
-
-        rr_targets = []
-        with col_rr1:
-            if st.checkbox("1.0", value=1.0 in st.session_state.quick_search_rr_targets, key="quick_rr_1_0"):
-                rr_targets.append(1.0)
-        with col_rr2:
-            if st.checkbox("1.5", value=1.5 in st.session_state.quick_search_rr_targets, key="quick_rr_1_5"):
-                rr_targets.append(1.5)
-        with col_rr3:
-            if st.checkbox("2.0", value=2.0 in st.session_state.quick_search_rr_targets, key="quick_rr_2_0"):
-                rr_targets.append(2.0)
-        with col_rr4:
-            if st.checkbox("2.5", value=2.5 in st.session_state.quick_search_rr_targets, key="quick_rr_2_5"):
-                rr_targets.append(2.5)
-        with col_rr5:
-            if st.checkbox("3.0", value=3.0 in st.session_state.quick_search_rr_targets, key="quick_rr_3_0"):
-                rr_targets.append(3.0)
-
-        st.session_state.quick_search_rr_targets = rr_targets
-
-        if not rr_targets:
-            st.warning("Select at least one RR target")
+        # RR Targets (fixed to 1.0 - only baseline data available)
+        rr_targets = [1.0]
+        st.text("RR Target: 1.0 (baseline data only)")
 
         # Filters
 
