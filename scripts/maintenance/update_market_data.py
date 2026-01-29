@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
 Automated Daily Market Data Update Pipeline
 Keeps bars_1m and daily_features current
@@ -15,22 +16,27 @@ Exit codes:
 """
 
 import sys
+import io
 import os
 import duckdb
 from pathlib import Path
 from datetime import datetime, timedelta, timezone
 import subprocess
 
+# Fix Unicode output on Windows
+if sys.stdout.encoding != 'utf-8':
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+
 
 def get_latest_bar_timestamp(db_path: str, symbol: str = 'MGC'):
     """Query MAX timestamp from bars_1m to determine where data ends."""
+    conn = None
     try:
         conn = duckdb.connect(db_path, read_only=True)
         result = conn.execute("""
             SELECT MAX(ts_utc) FROM bars_1m
             WHERE symbol = ?
         """, [symbol]).fetchone()
-        conn.close()
 
         if not result or result[0] is None:
             raise Exception(
@@ -43,6 +49,9 @@ def get_latest_bar_timestamp(db_path: str, symbol: str = 'MGC'):
 
     except Exception as e:
         raise Exception(f"Failed to query latest bar timestamp: {e}")
+    finally:
+        if conn:
+            conn.close()
 
 
 def calculate_backfill_range(latest_ts):
@@ -108,6 +117,7 @@ def run_backfill(start_date, end_date):
 
 def print_status(db_path: str, symbol: str = 'MGC'):
     """Print current data status (latest timestamps in bars_1m and daily_features)."""
+    conn = None
     try:
         conn = duckdb.connect(db_path, read_only=True)
 
@@ -132,8 +142,6 @@ def print_status(db_path: str, symbol: str = 'MGC'):
             AND DATE_TRUNC('day', ts_utc AT TIME ZONE 'Australia/Brisbane') = ?
         """, [symbol, today_local]).fetchone()[0]
 
-        conn.close()
-
         print("\n" + "="*60)
         print("UPDATE STATUS")
         print("="*60)
@@ -145,6 +153,9 @@ def print_status(db_path: str, symbol: str = 'MGC'):
 
     except Exception as e:
         print(f"\nWarning: Could not print status: {e}\n", file=sys.stderr)
+    finally:
+        if conn:
+            conn.close()
 
 
 def main():
@@ -166,6 +177,17 @@ def main():
         print(f"Symbol: {symbol}")
         print("="*60)
 
+        # Run health check to auto-fix WAL corruption if present
+        print("\nRunning database health check...")
+        sys.path.insert(0, 'trading_app')
+        from db_health_check import run_startup_health_check
+
+        if not run_startup_health_check(db_path):
+            print("\n✗ ERROR: Database health check failed", file=sys.stderr)
+            return 1
+
+        print("Database healthy")
+
         # Step 1: Get current data status
         print("\nStep 1: Querying current data status...")
         latest_ts = get_latest_bar_timestamp(db_path, symbol)
@@ -178,25 +200,25 @@ def main():
 
         # Skip if already current
         if start_date > end_date:
-            print("\n✓ Data is already current. No update needed.")
+            print("\nData is already current. No update needed.")
             print_status(db_path, symbol)
             return 0
 
         # Step 3: Run backfill
         print("\nStep 3: Running incremental backfill...")
         if not run_backfill(start_date, end_date):
-            print("\n✗ FAILURE: Backfill failed", file=sys.stderr)
+            print("\nFAILURE: Backfill failed", file=sys.stderr)
             return 1  # Exit non-zero on failure
 
         # Step 4: Print status
         print("\nStep 4: Verifying update...")
         print_status(db_path, symbol)
 
-        print("✓ SUCCESS: Market data updated")
+        print("SUCCESS: Market data updated")
         return 0
 
     except Exception as e:
-        print(f"\n✗ ERROR: {e}", file=sys.stderr)
+        print(f"\nERROR: {e}", file=sys.stderr)
         import traceback
         traceback.print_exc()
         return 1
