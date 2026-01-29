@@ -52,6 +52,16 @@ class SnapshotManager:
 
     def _ensure_table_exists(self):
         """Create what_if_snapshots table if it doesn't exist"""
+        # Validate connection before executing
+        if self.conn is None:
+            raise ValueError("Database connection is None. Cannot create table.")
+
+        try:
+            # Test connection is alive
+            self.conn.execute("SELECT 1").fetchone()
+        except Exception as e:
+            raise ValueError(f"Database connection is invalid or closed: {e}")
+
         # Read schema from file
         import os
         schema_path = os.path.join(
@@ -64,14 +74,21 @@ class SnapshotManager:
             with open(schema_path, 'r') as f:
                 schema_sql = f.read()
                 # Execute schema (CREATE TABLE IF NOT EXISTS)
-                self.conn.execute(schema_sql)
+                try:
+                    self.conn.execute(schema_sql)
+                except Exception as e:
+                    # Log error but don't crash - table might already exist
+                    import logging
+                    logger = logging.getLogger(__name__)
+                    logger.warning(f"Error executing schema (table may already exist): {e}")
         else:
             # Fallback: create minimal table
-            self.conn.execute("""
-                CREATE TABLE IF NOT EXISTS what_if_snapshots (
-                    snapshot_id TEXT PRIMARY KEY,
-                    cache_key TEXT NOT NULL,
-                    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            try:
+                self.conn.execute("""
+                    CREATE TABLE IF NOT EXISTS what_if_snapshots (
+                        snapshot_id TEXT PRIMARY KEY,
+                        cache_key TEXT NOT NULL,
+                        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
                     instrument TEXT NOT NULL,
                     orb_time TEXT NOT NULL,
                     direction TEXT NOT NULL,
@@ -123,6 +140,11 @@ class SnapshotManager:
                     created_by TEXT
                 )
             """)
+            except Exception as e:
+                # Log error but don't crash - table might already exist
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.warning(f"Error creating table (may already exist): {e}")
 
     def save_snapshot(
         self,

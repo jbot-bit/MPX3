@@ -20,8 +20,9 @@ import sys
 import random
 from datetime import date
 
-sys.path.insert(0, 'C:/Users/sydne/OneDrive/Desktop/MPX2_fresh')
+sys.path.insert(0, 'C:/Users/sydne/OneDrive/Desktop/MPX3')
 from pipeline.cost_model import COST_MODELS
+from pipeline.load_validated_setups import load_validated_setups
 
 DB_PATH = 'data/db/gold.db'
 
@@ -44,13 +45,15 @@ print()
 
 conn = duckdb.connect(DB_PATH)
 
-# Get all strategies
-strategies = conn.execute("""
-    SELECT id, instrument, orb_time, rr, sl_mode, win_rate, expected_r, sample_size, orb_size_filter, notes
-    FROM validated_setups
-    WHERE instrument = 'MGC'
-    ORDER BY id
-""").fetchall()
+# Get all strategies using SHARED loader (CHECK.TXT Req #6)
+strategies_list = load_validated_setups(conn, instrument='MGC')
+
+# Convert to tuple format for backward compatibility with validation loop
+strategies = [
+    (s['id'], s['instrument'], s['orb_time'], s['rr'], s['sl_mode'],
+     s['win_rate'], s['expected_r'], s['sample_size'], s['filter'], s['notes'])
+    for s in strategies_list
+]
 
 print(f"Found {len(strategies)} strategies to validate")
 print()
@@ -259,7 +262,9 @@ for strategy in strategies:
     print(f"Total trades: {len(trades)}")
     print(f"  WIN: {win_count}")
     print(f"  LOSS: {loss_count}")
-    print(f"  OPEN (NO_TRADE): {open_count} (excluded from expectancy)")
+    print(f"  OPEN: {open_count} (excluded from expectancy)")
+    print(f"    NOTE: OPEN = position still open at scan end (not resolved yet)")
+    print(f"    NOT the same as NO_TRADE (no signal/invalid setup)")
     print(f"Resolved trades: {resolved_count}")
     print()
 

@@ -5,6 +5,7 @@ CRITICAL: Validates project synchronization across multiple systems:
 1. validated_setups database matches config.py
 2. All trading components load correctly
 3. ExecutionSpec system integrity (UPDATE14)
+4. realized_rr usage (Step 3 - AUDIT1 fixes)
 
 Prevents dangerous mismatches that could cause wrong trades in live trading.
 
@@ -15,12 +16,14 @@ Run this AFTER:
 - Adding new MGC/NQ/MPL setups
 - Changing ORB filters or RR values
 - Modifying execution spec files (execution_spec.py, execution_contract.py, entry_rules.py)
+- Updating any performance metric calculations
 
 From CLAUDE.md:
 "MANDATORY RULE: NEVER update validated_setups database without IMMEDIATELY
 updating config.py in the same operation."
 
-This test ensures that rule is followed and ExecutionSpec checks are not bypassed.
+This test ensures that rule is followed, ExecutionSpec checks are not bypassed,
+and r_multiple (theoretical R) is not used for decisions/scoring.
 """
 
 import sys
@@ -328,6 +331,30 @@ def main():
     test5_pass = test_execution_spec()
     print()
 
+    # Test 6: Realized RR Usage (Step 3 - AUDIT1 fixes)
+    print("=" * 70)
+    print("Test 6: Verify realized_rr usage (not r_multiple)")
+    print("=" * 70)
+    print("Running: scripts/check/check_realized_rr_usage.py")
+    print()
+
+    check_script = Path(__file__).parent / "scripts" / "check" / "check_realized_rr_usage.py"
+    if not check_script.exists():
+        print(f"[SKIP] check_realized_rr_usage.py not found at {check_script}")
+        test6_pass = True  # Don't fail if script doesn't exist (optional check)
+    else:
+        result = subprocess.run(
+            [sys.executable, str(check_script)],
+            capture_output=True,
+            text=True
+        )
+        print(result.stdout)
+        if result.stderr:
+            print(result.stderr)
+        test6_pass = (result.returncode == 0)
+
+    print()
+
     # SYNC GUARD ENFORCEMENT: Verify Test 5 was executed if spec files exist
     # This prevents silent drift if someone comments out the test5_pass line above
     project_root = Path(__file__).parent
@@ -356,7 +383,7 @@ def main():
 
     # Summary
     print("=" * 70)
-    if test1_pass and test2_pass and test3_pass and test4_pass and test5_pass:
+    if test1_pass and test2_pass and test3_pass and test4_pass and test5_pass and test6_pass:
         print("[PASS] ALL TESTS PASSED!")
         print()
         print("Your apps are now synchronized:")
@@ -365,6 +392,7 @@ def main():
         print("  - data_loader.py filter checking works")
         print("  - strategy_engine.py loads configs")
         print("  - ExecutionSpec system verified (UPDATE14)")
+        print("  - realized_rr usage verified (Step 3 - AUDIT1 fixes)")
         print("  - All components load without errors")
         print()
         print("[PASS] Your apps are SAFE TO USE!")

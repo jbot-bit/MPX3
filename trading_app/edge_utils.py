@@ -493,11 +493,12 @@ def run_real_validation(
                 trades.append({
                     'date': str(trade_date),
                     'outcome': result.outcome,
-                    'r_multiple': result.r_multiple,
+                    'realized_rr': result.realized_rr if result.realized_rr is not None else result.r_multiple,  # Use realized_rr (with costs), fallback to theoretical
                     'mae_r': result.mae_r,
                     'mfe_r': result.mfe_r,
                     'direction': result.direction,
-                    'cost_r': result.cost_r
+                    'cost_r': result.cost_r,
+                    'r_theoretical': result.r_multiple  # Keep theoretical for reference
                 })
 
         except Exception as e:
@@ -516,12 +517,12 @@ def run_real_validation(
             'error': f'No valid trades after filters (total dates: {len(rows)})'
         }
 
-    # Calculate base metrics
+    # Calculate base metrics (using REALIZED RR with costs embedded)
     wins = [t for t in trades if t['outcome'] == 'WIN']
     losses = [t for t in trades if t['outcome'] == 'LOSS']
     win_rate = len(wins) / n_trades
-    avg_win = sum(t['r_multiple'] for t in wins) / len(wins) if wins else 0
-    avg_loss = sum(t['r_multiple'] for t in losses) / len(losses) if losses else 0
+    avg_win = sum(t['realized_rr'] for t in wins) / len(wins) if wins else 0
+    avg_loss = sum(t['realized_rr'] for t in losses) / len(losses) if losses else 0
     expected_r = win_rate * avg_win + (1 - win_rate) * avg_loss
 
     # Calculate MAE/MFE statistics
@@ -530,33 +531,36 @@ def run_real_validation(
     avg_mae = sum(mae_values) / len(mae_values) if mae_values else 0
     avg_mfe = sum(mfe_values) / len(mfe_values) if mfe_values else 0
 
-    # Calculate max drawdown (simplified - cumulative R)
+    # Calculate max drawdown (simplified - cumulative R, using REALIZED RR)
     cum_r = 0
     max_r = 0
     max_dd = 0
     for t in trades:
-        cum_r += t['r_multiple']
+        cum_r += t['realized_rr']
         max_r = max(max_r, cum_r)
         dd = max_r - cum_r
         max_dd = max(max_dd, dd)
 
     # Stress tests: Increase costs by +25% and +50%
-    # Use each trade's actual cost (not just first trade)
+    # NOTE: realized_rr already includes normal costs embedded
+    # To simulate higher costs, we approximate by subtracting additional cost impact
+    # This is conservative (slightly overstates cost impact)
 
-    # +25% stress
+    # +25% stress (add 25% more cost impact)
     stress_25_trades = []
     for t in trades:
-        # Apply additional 25% cost on top of actual trade cost
-        adjusted_r = t['r_multiple'] - (t['cost_r'] * 0.25)
+        # Approximate: realized_rr - (additional 25% cost impact)
+        # realized_rr already has costs, so we're adding MORE cost
+        adjusted_r = t['realized_rr'] - (t['cost_r'] * 0.25)
         stress_25_trades.append(adjusted_r)
     stress_25_exp_r = sum(stress_25_trades) / len(stress_25_trades) if stress_25_trades else 0
     stress_25_pass = stress_25_exp_r >= 0.15  # Must maintain +0.15R expectancy
 
-    # +50% stress
+    # +50% stress (add 50% more cost impact)
     stress_50_trades = []
     for t in trades:
-        # Apply additional 50% cost on top of actual trade cost
-        adjusted_r = t['r_multiple'] - (t['cost_r'] * 0.50)
+        # Approximate: realized_rr - (additional 50% cost impact)
+        adjusted_r = t['realized_rr'] - (t['cost_r'] * 0.50)
         stress_50_trades.append(adjusted_r)
     stress_50_exp_r = sum(stress_50_trades) / len(stress_50_trades) if stress_50_trades else 0
     stress_50_pass = stress_50_exp_r >= 0.15

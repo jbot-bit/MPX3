@@ -115,8 +115,9 @@ def load_instrument_configs(
             logger.warning(f"Could not connect to database. Returning empty configs.")
             return {}, {}
 
-        # Query validated_setups for this instrument
+        # Query validated_setups for this instrument (ACTIVE only, filters REJECTED)
         # Exclude special strategy types (CASCADE, SINGLE_LIQ) that aren't time-based ORBs
+        # bugs.txt STEP 4: Only ACTIVE strategies for trading (excludes REJECTED, RETIRED, INVALID_NO_DATA)
         query = """
             SELECT
                 orb_time,
@@ -126,6 +127,7 @@ def load_instrument_configs(
             FROM validated_setups
             WHERE instrument = ?
               AND orb_time NOT IN ('CASCADE', 'SINGLE_LIQ')
+              AND status = 'ACTIVE'
             ORDER BY orb_time, rr
         """
 

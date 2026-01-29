@@ -19,14 +19,44 @@ from zoneinfo import ZoneInfo
 
 sys.path.insert(0, 'C:/Users/sydne/OneDrive/Desktop/MPX3')
 from pipeline.cost_model import calculate_realized_rr
+from pipeline.load_validated_setups import load_validated_setups
 
 TZ_LOCAL = ZoneInfo("Australia/Brisbane")
 TZ_UTC = ZoneInfo("UTC")
 
 DB_PATH = "data/db/gold.db"
 SYMBOL = "MGC"
-SL_MODE = "full"  # Default: full = stop at opposite edge
-RR_DEFAULT = 1.0  # Default RR for calculations
+
+
+def get_strategy_config(conn):
+    """
+    Wrapper for load_validated_setups() to maintain backward compatibility.
+
+    Returns dict: {orb_time: {'rr': float, 'sl_mode': str, 'filter': float|None}}
+
+    Uses SHARED loader function (CHECK.TXT Req #6).
+    """
+    # Use shared loader (prints schema + evidence table + enforces constraints)
+    strategies = load_validated_setups(conn, instrument='MGC')
+
+    # Convert to dict format for backward compatibility
+    config = {}
+    for s in strategies:
+        orb_time = s['orb_time']
+
+        # Store first occurrence for each ORB time (lowest RR if multiple)
+        # For tradeable metrics, we use LOWEST RR per ORB (most conservative)
+        if orb_time not in config:
+            config[orb_time] = {
+                'rr': s['rr'],
+                'sl_mode': s['sl_mode'],
+                'filter': s['filter']
+            }
+
+    print(f"Loaded config: {config}")
+    print()
+
+    return config
 
 
 def _dt_local(d: date, hh: int, mm: int) -> datetime:
@@ -40,7 +70,7 @@ def _fetch_1m_bars(conn, start_local: datetime, end_local: datetime):
 
     rows = conn.execute(
         """
-        SELECT ts_utc, high, low, close
+        SELECT ts_utc, open, high, low, close
         FROM bars_1m
         WHERE symbol = ?
           AND ts_utc >= ? AND ts_utc < ?
@@ -53,7 +83,7 @@ def _fetch_1m_bars(conn, start_local: datetime, end_local: datetime):
 
 
 def calculate_tradeable_for_orb(conn, trade_date: date, orb_time: str, orb_high: float, orb_low: float,
-                                 scan_end_local: datetime, rr: float = RR_DEFAULT, sl_mode: str = SL_MODE):
+                                 scan_end_local: datetime, rr: float, sl_mode: str):
     """
     Calculate tradeable metrics for a single ORB using B-entry model.
 
@@ -96,7 +126,7 @@ def calculate_tradeable_for_orb(conn, trade_date: date, orb_time: str, orb_high:
     signal_bar_index = None
     break_dir = "NONE"
 
-    for i, (ts_utc, h, l, c) in enumerate(bars):
+    for i, (ts_utc, o, h, l, c) in enumerate(bars):
         c = float(c)
         if c > orb_high:
             break_dir = "UP"
@@ -135,13 +165,12 @@ def calculate_tradeable_for_orb(conn, trade_date: date, orb_time: str, orb_high:
         }
 
     entry_bar = bars[signal_bar_index + 1]
-    entry_ts, entry_bar_high, entry_bar_low, entry_bar_close = entry_bar
+    entry_ts, entry_bar_open, entry_bar_high, entry_bar_low, entry_bar_close = entry_bar
 
-    # Entry price = OPEN of entry bar (conservative: worst fill)
-    if break_dir == "UP":
-        entry_price = float(entry_bar_low)
-    else:
-        entry_price = float(entry_bar_high)
+    # Entry price = OPEN of entry bar (B-entry model)
+    # Use actual OPEN from database (not high/low approximation)
+    # This is the real fill price at market open after signal bar close
+    entry_price = float(entry_bar_open)
 
     # STEP 3: Calculate stop
     if sl_mode == "full":
@@ -158,7 +187,7 @@ def calculate_tradeable_for_orb(conn, trade_date: date, orb_time: str, orb_high:
             "stop_price": stop_price,
             "risk_points": 0.0,
             "target_price": None,
-            "outcome": "OPEN",
+            "outcome": "NO_TRADE",  # BUG #6 FIX: Zero risk = invalid setup, not open position
             "realized_rr": None,
             "realized_risk_dollars": None,
             "realized_reward_dollars": None
@@ -189,7 +218,7 @@ def calculate_tradeable_for_orb(conn, trade_date: date, orb_time: str, orb_high:
     # STEP 7: Check outcome
     outcome = "OPEN"
 
-    for ts_utc, h, l, c in bars[signal_bar_index + 2:]:
+    for ts_utc, o, h, l, c in bars[signal_bar_index + 2:]:
         h = float(h)
         l = float(l)
 
@@ -243,6 +272,14 @@ def calculate_tradeable_for_orb(conn, trade_date: date, orb_time: str, orb_high:
 def main():
     conn = duckdb.connect(DB_PATH)
 
+    # Load strategy configuration from validated_setups
+    try:
+        strategy_config = get_strategy_config(conn)
+    except RuntimeError as e:
+        print(f"\n❌ {e}")
+        print("\nAborting to prevent incorrect calculations.")
+        sys.exit(1)
+
     # Get date range
     if len(sys.argv) > 1:
         start_date = date.fromisoformat(sys.argv[1])
@@ -253,8 +290,6 @@ def main():
         start_date, end_date = rows[0], rows[1]
         print(f"Populating tradeable metrics for: {start_date} to {end_date}")
 
-    print(f"SL mode: {SL_MODE}")
-    print(f"RR: {RR_DEFAULT}")
     print()
 
     # Process each date
@@ -294,7 +329,28 @@ def main():
 
         results = {}
         for orb_time, orb_high, orb_low in orbs:
-            result = calculate_tradeable_for_orb(conn, current_date, orb_time, orb_high, orb_low, next_asia_open, sl_mode=SL_MODE)
+            # Get strategy-specific RR and SL_MODE from validated_setups
+            if orb_time in strategy_config:
+                rr = strategy_config[orb_time]['rr']
+                sl_mode = strategy_config[orb_time]['sl_mode']
+            else:
+                # If ORB not in validated_setups, skip calculation (NO_TRADE)
+                results[orb_time] = {
+                    "entry_price": None,
+                    "stop_price": None,
+                    "risk_points": None,
+                    "target_price": None,
+                    "outcome": "NO_TRADE",
+                    "realized_rr": None,
+                    "realized_risk_dollars": None,
+                    "realized_reward_dollars": None
+                }
+                continue
+
+            result = calculate_tradeable_for_orb(
+                conn, current_date, orb_time, orb_high, orb_low, next_asia_open,
+                rr=rr, sl_mode=sl_mode
+            )
             results[orb_time] = result
 
         # Update database

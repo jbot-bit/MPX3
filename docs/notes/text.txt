@@ -1,0 +1,22 @@
+Yes. app_canonical.py is the one.
+
+Do NOT touch any other app_*.py.
+
+Now implement the grouped ORB-variant display INSIDE app_canonical.py only:
+
+Requirements:
+1) Read from validated_setups + validated_trades.
+2) Group by ORB time.
+3) Collapsed view: 1 row per ORB showing BEST approved variant (by expectancy) + sample + winrate + friction-pass%.
+4) Expand view: show all variants under that ORB (RR 1.5/2/2.5/3 etc), each with checkbox.
+5) Enforce: user can select MAX 1 variant per ORB (hard block, not just warning).
+6) Default ordering: ORBs sorted by best expectancy desc (or by session time if you prefer).
+7) No emojis (Windows cp1252). Use plain text labels.
+
+Before coding:
+- Show where in app_canonical.py Production zone displays “validated setups” now (line numbers).
+- Insert this UI in Production zone near that section (minimal diffs).
+
+After coding:
+- Show a screenshot-equivalent: exact headings + what columns are displayed.
+- Run the app and confirm no encoding errors.

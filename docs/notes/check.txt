@@ -1,0 +1,36 @@
+RR SINGLE SOURCE OF TRUTH = validated_setups (DuckDB). FAIL CLOSED.
+
+Implement a single loader used everywhere:
+
+Function: load_validated_setups(conn, instrument='MGC') -> List[dict]
+Must return: id, orb_time, rr, sl_mode, filter_name/filter_sql, direction/entry_model if stored.
+
+MANDATORY:
+1) Query validated_setups and print schema:
+   DESCRIBE validated_setups;
+
+2) Query actual configs and print an evidence table:
+   SELECT id, instrument, orb_time, rr, sl_mode, filter
+   FROM validated_setups
+   WHERE instrument='MGC'
+   ORDER BY id;
+
+3) Enforce:
+   - rr is not NULL
+   - rr >= 1.5 by default (unless --allow-low-rr)
+   - sl_mode not NULL
+   If any fail: raise RuntimeError and stop.
+
+4) Remove RR_DEFAULT=1.0 from populate_tradeable_metrics.py.
+   Replace with per-strategy rr from validated_setups.
+
+5) Validator must ALSO use the same loader function.
+   No duplicated querying.
+
+6) Add regression test:
+   - If validated_setups rr != 1.0, ensure populated tradeable target uses that rr (sample 3 ids).
+   - If rr is NULL, script must exit non-zero (fail closed).
+
+After changes:
+- Repopulate tradeable metrics for all 745 days.
+- Re-run validator IDs 20–27 and show new table.

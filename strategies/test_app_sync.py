@@ -47,12 +47,14 @@ def test_config_matches_database():
         return False
 
     try:
-        # Get all setups from database
+        # Get all ACTIVE setups from database (exclude REJECTED and RETIRED)
+        # This matches what config_generator.py loads
         query = """
         SELECT instrument, orb_time, rr, sl_mode, orb_size_filter
         FROM validated_setups
         WHERE instrument IN ('MGC', 'NQ', 'MPL')
           AND orb_time NOT IN ('CASCADE', 'SINGLE_LIQ')
+          AND (status IS NULL OR status = 'ACTIVE')
         ORDER BY instrument, orb_time
         """
 
@@ -115,40 +117,44 @@ def test_instrument_sync(instrument, db_setups, orb_configs, orb_size_filters):
             all_pass = False
             continue
 
-        config_data = orb_configs[orb_time]
-        config_rr = config_data.get('rr')
-        config_sl_mode = config_data.get('sl_mode')
-        config_filter = orb_size_filters.get(orb_time)
+        # Config now returns LIST of configs (supports multiple RR/SL per ORB)
+        config_list = orb_configs[orb_time]
+        filter_list = orb_size_filters.get(orb_time, [])
 
-        # Check RR
-        if abs(db_rr - config_rr) > 0.001:
-            print(f"[FAIL] MISMATCH: {orb_time} RR")
-            print(f"   Database: {db_rr}")
-            print(f"   Config:   {config_rr}")
-            all_pass = False
+        # Find matching config in list
+        found_match = False
+        for idx, config_data in enumerate(config_list):
+            config_rr = config_data.get('rr')
+            config_sl_mode = config_data.get('sl_mode')
 
-        # Check SL mode
-        if db_sl_mode != config_sl_mode:
-            print(f"[FAIL] MISMATCH: {orb_time} SL Mode")
-            print(f"   Database: {db_sl_mode}")
-            print(f"   Config:   {config_sl_mode}")
-            all_pass = False
+            # Get corresponding filter (if exists)
+            config_filter = filter_list[idx] if idx < len(filter_list) else None
 
-        # Check filter (handle None vs NULL)
-        db_filter_val = db_filter if db_filter is not None else None
-        config_filter_val = config_filter if config_filter is not None else None
+            # Check if this config matches database setup
+            rr_match = abs(db_rr - config_rr) < 0.001
+            sl_match = db_sl_mode == config_sl_mode
 
-        if db_filter_val is None and config_filter_val is None:
-            filter_match = True
-        elif db_filter_val is None or config_filter_val is None:
-            filter_match = False
-        else:
-            filter_match = abs(db_filter_val - config_filter_val) < 0.001
+            # Check filter match
+            db_filter_val = db_filter if db_filter is not None else None
+            config_filter_val = config_filter if config_filter is not None else None
 
-        if not filter_match:
-            print(f"[FAIL] MISMATCH: {orb_time} ORB Size Filter")
-            print(f"   Database: {db_filter_val}")
-            print(f"   Config:   {config_filter_val}")
+            if db_filter_val is None and config_filter_val is None:
+                filter_match = True
+            elif db_filter_val is None or config_filter_val is None:
+                filter_match = False
+            else:
+                filter_match = abs(db_filter_val - config_filter_val) < 0.001
+
+            # If all match, we found it
+            if rr_match and sl_match and filter_match:
+                found_match = True
+                break
+
+        # Report if no match found
+        if not found_match:
+            print(f"[FAIL] MISMATCH: {orb_time} RR={db_rr} SL={db_sl_mode} Filter={db_filter}")
+            print(f"   Database setup not found in config list")
+            print(f"   Available configs: {config_list}")
             all_pass = False
 
     # Check for config entries not in database

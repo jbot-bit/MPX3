@@ -1,28 +1,65 @@
-HARDPRESS COST IMPACT. ASSUME WRONG UNTIL PROVEN.
+You need one automated “update pipeline” that runs daily:
 
-Authority: CLAUDE.md > CANONICAL_LOGIC.txt > code.
+A) backfill new 1-minute bars into bars_1m
 
-For strategy_id=24 (and one “passing-looking” one), print evidence:
+B) build daily_features for the new dates only
 
-A) Stop distance reality
-- Print summary stats of stop_dist_points actually used in calculations:
-  count, mean, median, p10, p90
-- Also print 10 sample rows: date, entry_price (if available), stop_price/stop_dist_points, outcome
+C) (optional) re-run validator on a schedule
 
-B) Cost weight in R
-- Compute friction_R = total_friction / (stop_dist_points * MGC_POINT_VALUE)
-- Print same summary stats for friction_R
+Step 1 — Create one script to update bars + features (incremental)
 
-C) Double-count check
-- Show the exact realized_rr formula used.
-- Confirm total_friction is applied once per trade RT, not twice.
-- Grep for any extra additions/subtractions of friction besides the main place.
+Create: scripts/maintenance/update_market_data.py
 
-D) Contract spec sanity
-- Print from pipeline/cost_model.py for MGC:
-  tick_size, point_value, total_friction
-- Confirm point_value == 10 ($/point) for Micro Gold MGC (not GC).
+What it must do:
 
-Output ONLY:
-- Raw prints
-- Conclusion: “Cost model correct / incorrect” + why
+Read max bar timestamp you currently have for MGC from DuckDB
+
+Backfill from (max_ts + 1 minute) → now
+
+Then run pipeline/build_daily_features.py for only new days
+
+Exit non-zero if anything fails (so scheduler alerts you)
+
+Pseudo-flow:
+
+Query: SELECT MAX(ts_utc) FROM bars_1m WHERE symbol='MGC'
+
+Compute start = max_ts + 60 seconds
+
+End = now_utc rounded down to last full minute
+
+Call:
+
+python backfill_databento_continuous.py --symbol MGC --start <start> --end <end>
+
+python pipeline/build_daily_features.py <start_date_local> <end_date_local> --instrument MGC
+
+Step 2 — Run it automatically (Windows Task Scheduler)
+
+Create a task: Daily 6:00pm Brisbane (or after your session ends)
+
+Action:
+
+Program: C:\Users\sydne\AppData\Local\Programs\Python\Python310\python.exe
+
+Args: scripts\maintenance\update_market_data.py
+
+Start in: C:\Users\sydne\OneDrive\Desktop\MPX3
+
+Enable:
+
+“Run whether user is logged on or not”
+
+“Stop task if runs longer than X minutes” (pick something sane)
+
+“Retry on failure”
+
+Step 3 — Add a quick “did it work?” check
+
+At the end of the script print:
+
+latest bars_1m ts for MGC
+
+latest daily_features.date_local for MGC
+
+So you can see “I’m current” instantly.

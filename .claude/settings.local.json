@@ -44,7 +44,25 @@
       "Bash(timeout 10 streamlit run:*)",
       "Bash(taskkill:*)",
       "Bash(dir /s /b *edge_discovery*.md *terminal*.md)",
-      "Bash(dir:*)"
+      "Bash(dir:*)",
+      "Bash(chmod:*)",
+      "Bash(git stash:*)",
+      "Bash(git pull:*)",
+      "Bash(del test_entry_price.py)",
+      "Bash(tee:*)",
+      "Skill(project-management-guru-adhd)",
+      "Bash(git restore:*)",
+      "Bash(del:*)",
+      "Skill(code-review:code-review)",
+      "Bash(if [ -f .env ])",
+      "Bash(then grep \"PROJECTX_LIVE\\\\|DATABENTO\" .env)",
+      "Bash(else echo \"No .env file found\")",
+      "Bash(fi)",
+      "Bash(venvScriptspython.exe -m pip install:*)",
+      "Bash(git checkout:*)",
+      "Bash(powershell -Command:*)",
+      "Bash(git reset:*)",
+      "Bash(echo:*)"
     ]
   }
 }

@@ -62,7 +62,8 @@ class TradingMemory:
         orb_time: Optional[str] = None,
         instrument: str = 'MGC',
         outcome: str = 'SKIP',
-        r_multiple: Optional[float] = None,
+        r_multiple: Optional[float] = None,  # Theoretical R (without costs)
+        realized_rr: Optional[float] = None,  # Realized R (with costs embedded) - PREFERRED
         entry_price: Optional[float] = None,
         exit_price: Optional[float] = None,
         mae: Optional[float] = None,
@@ -88,10 +89,11 @@ class TradingMemory:
             orb_time: ORB time (0900, 1000, 1100, etc.)
             instrument: Instrument (MGC, NQ, MPL)
             outcome: WIN, LOSS, SKIP, BREAKEVEN
-            r_multiple: R-multiple achieved
+            r_multiple: R-multiple achieved (theoretical, without costs) - DEPRECATED
+            realized_rr: Realized R-multiple (with costs embedded) - PREFERRED
             lesson_learned: Post-trade insight
             notable: Flag exceptional events
-            **kwargs: Additional context (slippage, fill_time_ms, etc.)
+            **kwargs: Additional context (slippage, fill_time_ms, realized_rr, etc.)
 
         Returns:
             True if stored successfully
@@ -103,6 +105,7 @@ class TradingMemory:
             instrument = trade.get('instrument', 'MGC')
             outcome = trade.get('outcome', 'SKIP')
             r_multiple = trade.get('r_multiple')
+            realized_rr = trade.get('realized_rr')  # Preferred over r_multiple
             entry_price = trade.get('entry_price')
             exit_price = trade.get('exit_price')
             mae = trade.get('mae')
@@ -115,7 +118,7 @@ class TradingMemory:
             notable = trade.get('notable', False)
             # Merge any additional fields from dict
             for k, v in trade.items():
-                if k not in ['date_local', 'orb_time', 'instrument', 'outcome', 'r_multiple',
+                if k not in ['date_local', 'orb_time', 'instrument', 'outcome', 'r_multiple', 'realized_rr',
                              'entry_price', 'exit_price', 'mae', 'mfe', 'asia_travel',
                              'london_reversals', 'pre_orb_travel', 'liquidity_state',
                              'lesson_learned', 'notable']:
@@ -128,11 +131,13 @@ class TradingMemory:
         conn = duckdb.connect(self.db_path)
 
         # Build session context JSON
+        # Store realized_rr in session_context (no schema change needed)
         session_context = {
             'asia_travel': asia_travel,
             'london_reversals': london_reversals,
             'pre_orb_travel': pre_orb_travel,
-            'liquidity_state': liquidity_state
+            'liquidity_state': liquidity_state,
+            'realized_rr': realized_rr  # Store realized R (with costs) for analysis
         }
         session_context.update(kwargs)
         session_context_json = json.dumps(session_context)

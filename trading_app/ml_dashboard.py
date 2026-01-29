@@ -90,10 +90,12 @@ with tabs[0]:
             )
 
         with col3:
+            # TODO: ml_performance table should store realized_rr (with costs), not r_multiple (theoretical)
+            # Current value is OPTIMISTIC (costs not included)
             st.metric(
-                "Avg R-Multiple",
+                "Avg R (Theoretical)",
                 f"{performance['avg_r_multiple']:.2f}R",
-                help="Average R-multiple achieved"
+                help="Average R-multiple (theoretical - costs not included)"
             )
 
         with col4:
@@ -110,6 +112,8 @@ with tabs[0]:
             import duckdb
             conn = duckdb.connect("../data/db/gold.db")
 
+            # TODO: ml_performance table should use realized_rr instead of avg_r_multiple
+            # Current query returns THEORETICAL R (costs not included)
             daily_data = conn.execute("""
                 SELECT
                     date_local,
@@ -191,7 +195,8 @@ with tabs[0]:
                     st.plotly_chart(fig_winrate, use_container_width=True)
 
                 with col2:
-                    st.subheader("Average R-Multiple Over Time")
+                    # TODO: Should use realized_rr instead of avg_r_multiple (costs not included)
+                    st.subheader("Average R (Theoretical) Over Time")
                     fig_r = go.Figure()
 
                     fig_r.add_trace(go.Scatter(

@@ -63,12 +63,18 @@ class LiveScanner:
             row = self.conn.execute("""
                 SELECT
                     date_local, atr_20,
-                    orb_0900_size, orb_0900_break_dir,
-                    orb_1000_size, orb_1000_break_dir,
-                    orb_1100_size, orb_1100_break_dir,
-                    orb_1800_size, orb_1800_break_dir,
-                    orb_2300_size, orb_2300_break_dir,
-                    orb_0030_size, orb_0030_break_dir
+                    orb_0900_high, orb_0900_low, orb_0900_size, orb_0900_break_dir,
+                    orb_0900_tradeable_entry_price, orb_0900_tradeable_stop_price, orb_0900_tradeable_target_price,
+                    orb_1000_high, orb_1000_low, orb_1000_size, orb_1000_break_dir,
+                    orb_1000_tradeable_entry_price, orb_1000_tradeable_stop_price, orb_1000_tradeable_target_price,
+                    orb_1100_high, orb_1100_low, orb_1100_size, orb_1100_break_dir,
+                    orb_1100_tradeable_entry_price, orb_1100_tradeable_stop_price, orb_1100_tradeable_target_price,
+                    orb_1800_high, orb_1800_low, orb_1800_size, orb_1800_break_dir,
+                    orb_1800_tradeable_entry_price, orb_1800_tradeable_stop_price, orb_1800_tradeable_target_price,
+                    orb_2300_high, orb_2300_low, orb_2300_size, orb_2300_break_dir,
+                    orb_2300_tradeable_entry_price, orb_2300_tradeable_stop_price, orb_2300_tradeable_target_price,
+                    orb_0030_high, orb_0030_low, orb_0030_size, orb_0030_break_dir,
+                    orb_0030_tradeable_entry_price, orb_0030_tradeable_stop_price, orb_0030_tradeable_target_price
                 FROM daily_features
                 WHERE date_local = ? AND instrument = ?
             """, [today_date, instrument]).fetchone()
@@ -78,22 +84,27 @@ class LiveScanner:
                 orb_data['atr_20'] = atr
 
                 orb_columns = [
-                    ('0900', row[2], row[3]),
-                    ('1000', row[4], row[5]),
-                    ('1100', row[6], row[7]),
-                    ('1800', row[8], row[9]),
-                    ('2300', row[10], row[11]),
-                    ('0030', row[12], row[13])
+                    ('0900', row[2], row[3], row[4], row[5], row[6], row[7], row[8]),
+                    ('1000', row[9], row[10], row[11], row[12], row[13], row[14], row[15]),
+                    ('1100', row[16], row[17], row[18], row[19], row[20], row[21], row[22]),
+                    ('1800', row[23], row[24], row[25], row[26], row[27], row[28], row[29]),
+                    ('2300', row[30], row[31], row[32], row[33], row[34], row[35], row[36]),
+                    ('0030', row[37], row[38], row[39], row[40], row[41], row[42], row[43])
                 ]
 
-                for orb_name, orb_size, break_dir in orb_columns:
+                for orb_name, high, low, orb_size, break_dir, entry, stop, target in orb_columns:
                     if orb_name in available_orbs and orb_size is not None:
                         orb_size_norm = orb_size / atr if atr and atr > 0 else None
                         orb_data[orb_name] = {
+                            'high': high,
+                            'low': low,
                             'size': orb_size,
                             'size_norm': orb_size_norm,
                             'break_dir': break_dir,
-                            'atr': atr
+                            'atr': atr,
+                            'entry_price': entry,
+                            'stop_price': stop,
+                            'target_price': target
                         }
         except Exception as e:
             orb_data['error'] = str(e)
@@ -379,3 +390,167 @@ class LiveScanner:
         """
         all_setups = self.scan_current_market(instrument)
         return [s for s in all_setups if s['status'] == 'INVALID']
+
+    def get_latest_price(self, instrument: str = 'MGC') -> Optional[Dict]:
+        """
+        Get latest bar/price with freshness information
+
+        Returns:
+            Dict with:
+            - price: Latest close price
+            - timestamp: Bar timestamp
+            - seconds_ago: Seconds since bar timestamp
+            - is_stale: True if > 60 seconds old
+            - warning: Optional warning message if stale
+        """
+        try:
+            # Get most recent bar from bars_1m
+            row = self.conn.execute("""
+                SELECT ts_utc, close
+                FROM bars_1m
+                WHERE symbol = ?
+                ORDER BY ts_utc DESC
+                LIMIT 1
+            """, [instrument]).fetchone()
+
+            if not row:
+                return None
+
+            from zoneinfo import ZoneInfo
+            import datetime as dt
+
+            bar_ts_utc = row[0]
+            close_price = row[1]
+
+            # Convert to local time
+            tz_local = ZoneInfo("Australia/Brisbane")
+            bar_ts_local = bar_ts_utc.astimezone(tz_local)
+
+            # Calculate seconds ago
+            now_utc = dt.datetime.now(dt.timezone.utc)
+            seconds_ago = (now_utc - bar_ts_utc).total_seconds()
+
+            is_stale = seconds_ago > 60
+            warning = None
+
+            if is_stale:
+                if seconds_ago > 86400:  # > 1 day
+                    warning = f"Last bar is {int(seconds_ago/3600)} hours old (weekend/holiday)"
+                else:
+                    warning = f"Data may be stale ({int(seconds_ago)} seconds old)"
+
+            return {
+                'price': float(close_price),
+                'timestamp': bar_ts_local,
+                'seconds_ago': int(seconds_ago),
+                'is_stale': is_stale,
+                'warning': warning
+            }
+
+        except Exception as e:
+            return {'error': str(e)}
+
+    def get_current_market_state_with_fallback(self, instrument: str = 'MGC') -> Dict:
+        """
+        Get current market state with weekend fallback
+
+        If today has no data (weekend/holiday), falls back to most recent trading day
+
+        Returns:
+            Same as get_current_market_state() plus:
+            - is_fallback: True if using historical data
+            - fallback_date: The date being used (if different from today)
+        """
+        import datetime as dt
+
+        now_local = datetime.now()
+        today_date = now_local.date()
+
+        # Try today first
+        market_state = self.get_current_market_state(instrument)
+
+        # Check if we have data
+        has_data = bool(market_state['orb_data'] and not market_state['orb_data'].get('error'))
+
+        if has_data:
+            market_state['is_fallback'] = False
+            market_state['fallback_date'] = None
+            return market_state
+
+        # No data for today - find most recent trading day
+        try:
+            row = self.conn.execute("""
+                SELECT date_local, atr_20,
+                    orb_0900_high, orb_0900_low, orb_0900_size, orb_0900_break_dir,
+                    orb_0900_tradeable_entry_price, orb_0900_tradeable_stop_price, orb_0900_tradeable_target_price,
+                    orb_1000_high, orb_1000_low, orb_1000_size, orb_1000_break_dir,
+                    orb_1000_tradeable_entry_price, orb_1000_tradeable_stop_price, orb_1000_tradeable_target_price,
+                    orb_1100_high, orb_1100_low, orb_1100_size, orb_1100_break_dir,
+                    orb_1100_tradeable_entry_price, orb_1100_tradeable_stop_price, orb_1100_tradeable_target_price,
+                    orb_1800_high, orb_1800_low, orb_1800_size, orb_1800_break_dir,
+                    orb_1800_tradeable_entry_price, orb_1800_tradeable_stop_price, orb_1800_tradeable_target_price,
+                    orb_2300_high, orb_2300_low, orb_2300_size, orb_2300_break_dir,
+                    orb_2300_tradeable_entry_price, orb_2300_tradeable_stop_price, orb_2300_tradeable_target_price,
+                    orb_0030_high, orb_0030_low, orb_0030_size, orb_0030_break_dir,
+                    orb_0030_tradeable_entry_price, orb_0030_tradeable_stop_price, orb_0030_tradeable_target_price
+                FROM daily_features
+                WHERE date_local < ? AND instrument = ?
+                ORDER BY date_local DESC
+                LIMIT 1
+            """, [today_date, instrument]).fetchone()
+
+            if not row:
+                # No historical data either
+                market_state['is_fallback'] = False
+                market_state['fallback_date'] = None
+                return market_state
+
+            fallback_date = row[0]
+            atr = row[1]
+
+            orb_data = {'atr_20': atr}
+
+            orb_columns = [
+                ('0900', row[2], row[3], row[4], row[5], row[6], row[7], row[8]),
+                ('1000', row[9], row[10], row[11], row[12], row[13], row[14], row[15]),
+                ('1100', row[16], row[17], row[18], row[19], row[20], row[21], row[22]),
+                ('1800', row[23], row[24], row[25], row[26], row[27], row[28], row[29]),
+                ('2300', row[30], row[31], row[32], row[33], row[34], row[35], row[36]),
+                ('0030', row[37], row[38], row[39], row[40], row[41], row[42], row[43])
+            ]
+
+            for orb_name, high, low, orb_size, break_dir, entry, stop, target in orb_columns:
+                if orb_size is not None:
+                    orb_size_norm = orb_size / atr if atr and atr > 0 else None
+                    orb_data[orb_name] = {
+                        'high': high,
+                        'low': low,
+                        'size': orb_size,
+                        'size_norm': orb_size_norm,
+                        'break_dir': break_dir,
+                        'atr': atr,
+                        'entry_price': entry,
+                        'stop_price': stop,
+                        'target_price': target
+                    }
+
+            # All ORBs are "available" for fallback date
+            available_orbs = list(orb_data.keys())
+            if 'atr_20' in available_orbs:
+                available_orbs.remove('atr_20')
+
+            return {
+                'date_local': fallback_date,
+                'current_time_local': now_local.time(),
+                'available_orbs': available_orbs,
+                'orb_data': orb_data,
+                'instrument': instrument,
+                'is_fallback': True,
+                'fallback_date': fallback_date
+            }
+
+        except Exception as e:
+            market_state['is_fallback'] = False
+            market_state['fallback_date'] = None
+            market_state['fallback_error'] = str(e)
+            return market_state

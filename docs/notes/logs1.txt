@@ -1,0 +1,141 @@
+PS C:\Users\sydne\OneDrive\Desktop\MPX3> venv\Scripts\Activate
+(venv) PS C:\Users\sydne\OneDrive\Desktop\MPX3>
+(venv) PS C:\Users\sydne\OneDrive\Desktop\MPX3> ssh-keygen -t ed25519 -C "<comment>"
+>>
+Generating public/private ed25519 key pair.
+Enter file in which to save the key (C:\Users\sydne/.ssh/id_ed25519): TEST
+Enter passphrase (empty for no passphrase):
+Enter same passphrase again:
+Your identification has been saved in TEST
+Your public key has been saved in TEST.pub
+The key fingerprint is:
+SHA256:Sk1+C7c9zOvD+WqE+6X7VJk3UNLVPvzExZIynLpY0Yk <comment>
+The key's randomart image is:
++--[ED25519 256]--+
+|           + +.++|
+|          E B =.+|
+|        .  o +.+.|
+|       +  o   .o*|
+|      . Sooo   ==|
+|     . ..+o*.  .+|
+|      .   o+=.o  |
+|          . =*   |
+|           +B*o  |
++----[SHA256]-----+
+(venv) PS C:\Users\sydne\OneDrive\Desktop\MPX3>
+(venv) PS C:\Users\sydne\OneDrive\Desktop\MPX3>
+(venv) PS C:\Users\sydne\OneDrive\Desktop\MPX3> dir $env:USERPROFILE\.ssh\*.pub
+
+
+    Directory: C:\Users\sydne\.ssh
+
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+-a----        23/11/2025   4:34 PM            102 id_ed25519.pub
+
+
+(venv) PS C:\Users\sydne\OneDrive\Desktop\MPX3> type $env:USERPROFILE\.ssh\id_ed25519.pub
+ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPiqfBBE6oF3SN8Q6aFwWkuJqnjbci83Kzde1aLjq6Cm joshdlees@gmail.com
+(venv) PS C:\Users\sydne\OneDrive\Desktop\MPX3> streamlit run trading_app/app_canonical.py
+
+  You can now view your Streamlit app in your browser.
+
+  Local URL: http://localhost:8501
+  Network URL: http://192.168.0.128:8501
+
+2026-01-28 19:04:23,129 - __main__ - INFO - Connected to database: C:\Users\sydne\OneDrive\Desktop\MPX3\data\db\gold.db
+2026-01-28 19:04:25,614 - __main__ - ERROR - Candidate list error: 'Timestamp' object is not subscriptable
+2026-01-28 19:04:25,670 - __main__ - ERROR - Validation tab error: 'Timestamp' object is not subscriptable
+2026-01-28 19:04:25,677 - __main__ - ERROR - Validation history error: 'Timestamp' object is not subscriptable
+2026-01-28 19:04:25,731 - __main__ - ERROR - Production registry error: 'Timestamp' object is not subscriptable
+2026-01-28 19:04:25,735 - cloud_mode - INFO - DB MODE: LOCAL (reason: FORCE_LOCAL_DB)
+2026-01-28 19:04:25,736 - cloud_mode - INFO - Using local DuckDB at: C:\Users\sydne\OneDrive\Desktop\MPX3\data\db\gold.db
+2026-01-28 19:04:25,741 - setup_detector - ERROR - Error connecting to database: Connection Error: Can't open a connection to same database file with a different configuration than existing connections
+2026-01-28 19:04:34,238 - __main__ - INFO - Connected to database: C:\Users\sydne\OneDrive\Desktop\MPX3\data\db\gold.db
+2026-01-28 19:04:34,442 - __main__ - ERROR - Candidate list error: 'Timestamp' object is not subscriptable
+2026-01-28 19:04:34,495 - __main__ - ERROR - Validation tab error: 'Timestamp' object is not subscriptable
+2026-01-28 19:04:34,501 - __main__ - ERROR - Validation history error: 'Timestamp' object is not subscriptable
+2026-01-28 19:04:34,562 - __main__ - ERROR - Production registry error: 'Timestamp' object is not subscriptable
+2026-01-28 19:04:34,564 - cloud_mode - INFO - Using local DuckDB at: C:\Users\sydne\OneDrive\Desktop\MPX3\data\db\gold.db
+2026-01-28 19:04:34,566 - setup_detector - ERROR - Error connecting to database: Connection Error: Can't open a connection to same database file with a different configuration than existing connections
+2026-01-28 19:05:06,426 - __main__ - ERROR - Validation tab error: 'Timestamp' object is not subscriptable
+2026-01-28 19:05:06,434 - __main__ - ERROR - Validation history error: 'Timestamp' object is not subscriptable
+2026-01-28 19:05:06,491 - __main__ - ERROR - Production registry error: 'Timestamp' object is not subscriptable
+2026-01-28 19:05:06,492 - cloud_mode - INFO - Using local DuckDB at: C:\Users\sydne\OneDrive\Desktop\MPX3\data\db\gold.db
+2026-01-28 19:05:06,493 - setup_detector - ERROR - Error connecting to database: Connection Error: Can't open a connection to same database file with a different configuration than existing connections
+2026-01-28 19:05:17,456 - __main__ - ERROR - Candidate list error: 'Timestamp' object is not subscriptable
+2026-01-28 19:05:17,505 - __main__ - ERROR - Validation tab error: 'Timestamp' object is not subscriptable
+2026-01-28 19:05:17,510 - __main__ - ERROR - Validation history error: 'Timestamp' object is not subscriptable
+2026-01-28 19:05:17,569 - __main__ - ERROR - Production registry error: 'Timestamp' object is not subscriptable
+2026-01-28 19:05:17,571 - cloud_mode - INFO - Using local DuckDB at: C:\Users\sydne\OneDrive\Desktop\MPX3\data\db\gold.db
+2026-01-28 19:05:17,572 - setup_detector - ERROR - Error connecting to database: Connection Error: Can't open a connection to same database file with a different configuration than existing connections
+2026-01-28 19:05:18,944 - __main__ - ERROR - Validation tab error: 'Timestamp' object is not subscriptable
+2026-01-28 19:05:18,950 - __main__ - ERROR - Validation history error: 'Timestamp' object is not subscriptable
+2026-01-28 19:05:19,008 - __main__ - ERROR - Production registry error: 'Timestamp' object is not subscriptable
+2026-01-28 19:05:19,010 - cloud_mode - INFO - Using local DuckDB at: C:\Users\sydne\OneDrive\Desktop\MPX3\data\db\gold.db
+2026-01-28 19:05:19,011 - setup_detector - ERROR - Error connecting to database: Connection Error: Can't open a connection to same database file with a different configuration than existing connections
+2026-01-28 19:05:20,185 - __main__ - ERROR - Candidate list error: 'Timestamp' object is not subscriptable
+2026-01-28 19:05:20,240 - __main__ - ERROR - Validation tab error: 'Timestamp' object is not subscriptable
+2026-01-28 19:05:20,246 - __main__ - ERROR - Validation history error: 'Timestamp' object is not subscriptable
+2026-01-28 19:05:20,311 - __main__ - ERROR - Production registry error: 'Timestamp' object is not subscriptable
+2026-01-28 19:05:20,312 - cloud_mode - INFO - Using local DuckDB at: C:\Users\sydne\OneDrive\Desktop\MPX3\data\db\gold.db
+2026-01-28 19:05:20,313 - setup_detector - ERROR - Error connecting to database: Connection Error: Can't open a connection to same database file with a different configuration than existing connections
+2026-01-28 19:05:23,176 - __main__ - ERROR - Candidate list error: 'Timestamp' object is not subscriptable
+2026-01-28 19:05:23,226 - __main__ - ERROR - Validation tab error: 'Timestamp' object is not subscriptable
+2026-01-28 19:05:23,233 - __main__ - ERROR - Validation history error: 'Timestamp' object is not subscriptable
+2026-01-28 19:05:23,292 - __main__ - ERROR - Production registry error: 'Timestamp' object is not subscriptable
+2026-01-28 19:05:23,294 - cloud_mode - INFO - Using local DuckDB at: C:\Users\sydne\OneDrive\Desktop\MPX3\data\db\gold.db
+2026-01-28 19:05:23,295 - setup_detector - ERROR - Error connecting to database: Connection Error: Can't open a connection to same database file with a different configuration than existing connections
+2026-01-28 19:05:24,662 - __main__ - ERROR - Candidate list error: 'Timestamp' object is not subscriptable
+2026-01-28 19:05:25,017 - __main__ - ERROR - Candidate list error: 'Timestamp' object is not subscriptable
+2026-01-28 19:05:25,069 - __main__ - ERROR - Validation tab error: 'Timestamp' object is not subscriptable
+2026-01-28 19:05:25,074 - __main__ - ERROR - Validation history error: 'Timestamp' object is not subscriptable
+2026-01-28 19:05:25,135 - __main__ - ERROR - Production registry error: 'Timestamp' object is not subscriptable
+2026-01-28 19:05:25,138 - cloud_mode - INFO - Using local DuckDB at: C:\Users\sydne\OneDrive\Desktop\MPX3\data\db\gold.db
+2026-01-28 19:05:25,139 - setup_detector - ERROR - Error connecting to database: Connection Error: Can't open a connection to same database file with a different configuration than existing connections
+2026-01-28 19:05:39,600 - __main__ - ERROR - Candidate list error: 'Timestamp' object is not subscriptable
+2026-01-28 19:05:39,670 - __main__ - ERROR - Validation tab error: 'Timestamp' object is not subscriptable
+2026-01-28 19:05:39,678 - __main__ - ERROR - Validation history error: 'Timestamp' object is not subscriptable
+2026-01-28 19:05:39,748 - __main__ - ERROR - Production registry error: 'Timestamp' object is not subscriptable
+2026-01-28 19:05:39,749 - cloud_mode - INFO - Using local DuckDB at: C:\Users\sydne\OneDrive\Desktop\MPX3\data\db\gold.db
+2026-01-28 19:05:39,754 - setup_detector - ERROR - Error connecting to database: Connection Error: Can't open a connection to same database file with a different configuration than existing connections
+2026-01-28 19:05:42,302 - __main__ - ERROR - Candidate list error: 'Timestamp' object is not subscriptable
+2026-01-28 19:05:42,361 - __main__ - ERROR - Validation tab error: 'Timestamp' object is not subscriptable
+2026-01-28 19:05:42,368 - __main__ - ERROR - Validation history error: 'Timestamp' object is not subscriptable
+2026-01-28 19:05:42,433 - __main__ - ERROR - Production registry error: 'Timestamp' object is not subscriptable
+2026-01-28 19:05:42,435 - cloud_mode - INFO - Using local DuckDB at: C:\Users\sydne\OneDrive\Desktop\MPX3\data\db\gold.db
+2026-01-28 19:05:42,437 - setup_detector - ERROR - Error connecting to database: Connection Error: Can't open a connection to same database file with a different configuration than existing connections
+2026-01-28 19:05:51,359 - __main__ - ERROR - Candidate list error: 'Timestamp' object is not subscriptable
+2026-01-28 19:05:51,406 - __main__ - ERROR - Validation tab error: 'Timestamp' object is not subscriptable
+2026-01-28 19:05:51,412 - __main__ - ERROR - Validation history error: 'Timestamp' object is not subscriptable
+2026-01-28 19:05:51,461 - __main__ - ERROR - Production registry error: 'Timestamp' object is not subscriptable
+2026-01-28 19:05:51,461 - cloud_mode - INFO - Using local DuckDB at: C:\Users\sydne\OneDrive\Desktop\MPX3\data\db\gold.db
+2026-01-28 19:05:51,462 - setup_detector - ERROR - Error connecting to database: Connection Error: Can't open a connection to same database file with a different configuration than existing connections
+2026-01-28 19:06:00,832 - __main__ - ERROR - Candidate list error: 'Timestamp' object is not subscriptable
+2026-01-28 19:06:00.705 Uncaught app execution
+Traceback (most recent call last):
+  File "C:\Users\sydne\OneDrive\Desktop\MPX3\venv\lib\site-packages\streamlit\runtime\scriptrunner\exec_code.py", line 129, in exec_func_with_error_handling
+    result = func()
+  File "C:\Users\sydne\OneDrive\Desktop\MPX3\venv\lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 672, in code_to_exec
+    exec(code, module.__dict__)  # noqa: S102
+  File "C:\Users\sydne\OneDrive\Desktop\MPX3\trading_app\app_canonical.py", line 553, in <module>
+    snapshot_manager = SnapshotManager(app_state.db_connection)
+  File "C:\Users\sydne\OneDrive\Desktop\MPX3\analysis\what_if_snapshots.py", line 51, in __init__
+    self._ensure_table_exists()
+  File "C:\Users\sydne\OneDrive\Desktop\MPX3\analysis\what_if_snapshots.py", line 67, in _ensure_table_exists
+    self.conn.execute(schema_sql)
+_duckdb.InvalidInputException: Invalid Input Error: Attempting to execute an unsuccessful or closed pending query result
+2026-01-28 19:06:00,907 - __main__ - ERROR - Validation tab error: 'Timestamp' object is not subscriptable
+2026-01-28 19:06:00,969 - __main__ - ERROR - Validation history error: 'Timestamp' object is not subscriptable
+2026-01-28 19:06:01,027 - __main__ - ERROR - Production registry error: 'Timestamp' object is not subscriptable
+2026-01-28 19:06:01,029 - cloud_mode - INFO - Using local DuckDB at: C:\Users\sydne\OneDrive\Desktop\MPX3\data\db\gold.db
+2026-01-28 19:06:01,030 - setup_detector - ERROR - Error connecting to database: Connection Error: Can't open a connection to same database file with a different configuration than existing connections
+2026-01-28 19:06:18,060 - __main__ - ERROR - Candidate list error: 'Timestamp' object is not subscriptable
+2026-01-28 19:06:19,167 - __main__ - ERROR - Candidate list error: 'Timestamp' object is not subscriptable
+2026-01-28 19:06:37,863 - __main__ - ERROR - Validation tab error: 'Timestamp' object is not subscriptable
+2026-01-28 19:06:37,870 - __main__ - ERROR - Validation history error: 'Timestamp' object is not subscriptable
+2026-01-28 19:06:37,942 - __main__ - ERROR - Production registry error: 'Timestamp' object is not subscriptable
+2026-01-28 19:06:37,943 - cloud_mode - INFO - Using local DuckDB at: C:\Users\sydne\OneDrive\Desktop\MPX3\data\db\gold.db
+2026-01-28 19:06:37,945 - setup_detector - ERROR - Error connecting to database: Connection Error: Can't open a connection to same database file with a different configuration than existing connections
+  Stopping...

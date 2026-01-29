@@ -433,7 +433,55 @@ def simulate_orb_trade(
             mae_r=None,
             mfe_r=None,
             execution_mode=execution_mode,
-            execution_params=execution_params
+            execution_params=execution_params,
+            slippage_ticks=0.0,
+            commission=0.0,
+            cost_r=0.0,
+            fill_ts=None,
+            realized_rr=None,
+            realized_risk_dollars=None,
+            realized_reward_dollars=None,
+            realized_expectancy=None
+        )
+
+    # INTEGRITY GATE (MANDATORY): Check minimum viable risk
+    # Prevents mathematically impossible trades where costs dominate stop
+    # This is a SECONDARY check (primary is in cost_model.py)
+    from pipeline.cost_model import check_minimum_viable_risk, COST_MODELS
+
+    # Get total friction for MGC (only instrument supported)
+    total_friction = COST_MODELS[SYMBOL]['total_friction']
+    stop_points = stop_ticks * TICK_SIZE
+
+    is_viable, cost_ratio, gate_message = check_minimum_viable_risk(
+        stop_distance_points=stop_points,
+        point_value=POINT_VALUE,
+        total_friction=total_friction
+    )
+
+    if not is_viable:
+        return TradeResult(
+            outcome='SKIPPED_COST_GATE',
+            direction=direction,
+            entry_ts=entry_ts,
+            entry_price=entry_price,
+            stop_price=stop_price,
+            target_price=None,
+            stop_ticks=stop_ticks,
+            r_multiple=0.0,
+            entry_delay_bars=entry_idx + 1,
+            mae_r=None,
+            mfe_r=None,
+            execution_mode=execution_mode,
+            execution_params={**execution_params, 'rejection_reason': gate_message},
+            slippage_ticks=0.0,
+            commission=0.0,
+            cost_r=0.0,
+            fill_ts=None,
+            realized_rr=None,
+            realized_risk_dollars=None,
+            realized_reward_dollars=None,
+            realized_expectancy=None
         )
 
     # Target = entry +/- RR * risk

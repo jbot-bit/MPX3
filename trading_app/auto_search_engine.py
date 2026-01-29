@@ -30,6 +30,12 @@ from typing import Dict, List, Optional, Any
 from datetime import datetime, date
 from dataclasses import dataclass
 import logging
+import math
+
+# Import audit3 modules
+from result_classifier import classify_result, RULESET_VERSION
+from priority_engine import PriorityEngine, PRIORITY_VERSION
+from provenance import create_provenance_dict
 
 logger = logging.getLogger(__name__)
 
@@ -106,6 +112,79 @@ def compute_param_hash(params: Dict) -> str:
     # Compute hash
     hash_obj = hashlib.sha256(json_str.encode('utf-8'))
     return hash_obj.hexdigest()[:16]
+
+
+def _sort_dict_recursive(d: Dict) -> List:
+    """
+    Recursively sort dictionary for canonical serialization
+
+    Returns list of tuples for stable ordering
+    """
+    if not isinstance(d, dict):
+        return d
+
+    sorted_items = []
+    for key in sorted(d.keys()):
+        value = d[key]
+        if isinstance(value, dict):
+            sorted_items.append((key, _sort_dict_recursive(value)))
+        elif isinstance(value, list):
+            sorted_items.append((key, [_sort_dict_recursive(item) if isinstance(item, dict) else item for item in value]))
+        else:
+            sorted_items.append((key, value))
+
+    return sorted_items
+
+
+def compute_param_hash_v2(params: Dict) -> str:
+    """
+    Canonical param serialization for deterministic hashing
+
+    Version: 2.0 (audit3 - explicit field order, no dict assumptions)
+    Algorithm: SHA256
+    Encoding: UTF-8
+
+    Field order (fixed):
+    1. instrument (str)
+    2. setup_family (str)
+    3. orb_time (str)
+    4. rr_target (float, 2 decimals)
+    5. filters (sorted dict, recursive)
+
+    FUTURE EXTENSIBILITY: When adding new dimensions (direction, entry_rule,
+    stop_mode, etc.), append to canonical list and increment PARAM_HASH_VERSION
+    to "3.0". This ensures old hashes remain valid for comparison.
+
+    Args:
+        params: Dict with instrument, setup_family, orb_time, rr_target, filters
+                Optional future: direction, entry_rule, stop_mode
+
+    Returns:
+        SHA256 hash (first 16 chars)
+    """
+    # Explicit field order (no Python dict order assumptions)
+    # Fields MUST be in fixed order for deterministic hashing
+    canonical = [
+        ('instrument', params.get('instrument', '')),
+        ('setup_family', params.get('setup_family', '')),
+        ('orb_time', params.get('orb_time', '')),
+        ('rr_target', round(float(params.get('rr_target', 0.0)), 2)),
+        ('filters', _sort_dict_recursive(params.get('filters', {})))
+    ]
+
+    # Create stable JSON string (no whitespace variability)
+    json_str = json.dumps(canonical, ensure_ascii=True, separators=(',', ':'))
+
+    # Compute hash
+    hash_obj = hashlib.sha256(json_str.encode('utf-8'))
+    return hash_obj.hexdigest()[:16]
+
+
+# Version constants (audit3)
+PARAM_HASH_VERSION = "2.0"
+RULESET_VERSION = "1.0"
+PRIORITY_VERSION = "1.0"
+EPSILON = 0.15  # Exploration budget (15% of each chunk)
 
 
 class AutoSearchEngine:
@@ -316,6 +395,7 @@ class AutoSearchEngine:
                     logger.warning(f"Skipping RR={rr_target} for {orb_time} (proxy mode only, no RR-specific data)")
                     continue
 
+                # Generate baseline (no filters)
                 combinations.append({
                     'instrument': settings.instrument,
                     'setup_family': settings.setup_family,
@@ -324,8 +404,34 @@ class AutoSearchEngine:
                     'filters': {}
                 })
 
-        # TODO: Add filter combinations (size, travel, session type)
-        # For now, keep it simple with baseline only
+                # Generate filter combinations
+                if settings.filter_types and settings.filter_ranges:
+                    # Generate all filter combinations for this ORB + RR pair
+                    for filter_type in settings.filter_types:
+                        if filter_type not in settings.filter_ranges:
+                            continue
+
+                        filter_values = settings.filter_ranges[filter_type]
+
+                        for filter_value in filter_values:
+                            # Map filter_type to actual filter key
+                            # SIZE -> orb_size, TRAVEL -> pre_orb_travel, SESSION_TYPE -> session_type
+                            if filter_type == 'SIZE':
+                                filter_key = 'orb_size'
+                            elif filter_type == 'TRAVEL':
+                                filter_key = 'pre_orb_travel'
+                            elif filter_type == 'SESSION_TYPE':
+                                filter_key = 'session_type'
+                            else:
+                                filter_key = filter_type.lower()
+
+                            combinations.append({
+                                'instrument': settings.instrument,
+                                'setup_family': settings.setup_family,
+                                'orb_time': orb_time,
+                                'rr_target': rr_target,
+                                'filters': {filter_key: filter_value}
+                            })
 
         return combinations
 
@@ -432,6 +538,51 @@ class AutoSearchEngine:
             candidate.target_hit_rate
         ])
 
+        # Also save to search_knowledge with result classification
+        expectancy_r = candidate.expected_r_proxy if candidate.expected_r_proxy else 0.0
+        sample_size = candidate.sample_size if candidate.sample_size else 0
+
+        # Calculate robust_flags (bitmask for extensibility)
+        # Uses bit flags so future concerns (OOS stability, cost stress, regime slices,
+        # drawdown/tail checks) can be added without changing existing semantics.
+        #
+        # Current concerns (v1.0):
+        # Bit 0 (0x01): Marginal sample size (30-49 trades)
+        # Bit 1 (0x02): Marginal expectancy (0.15R-0.20R)
+        # Bit 2 (0x04): Very low sample size (< 30)
+        # Bit 3 (0x08): Weak/negative expectancy (< 0.15R)
+        #
+        # Future extensibility (reserve bits 4-7 for additional gates):
+        # Bit 4 (0x10): OOS stability concern (not implemented)
+        # Bit 5 (0x20): Cost stress failure (not implemented)
+        # Bit 6 (0x40): Regime instability (not implemented)
+        # Bit 7 (0x80): Tail risk / drawdown concern (not implemented)
+        #
+        robust_flags = 0
+
+        # Bit 0: Marginal sample size (30-49 trades)
+        if 30 <= sample_size < 50:
+            robust_flags |= 0x01
+
+        # Bit 1: Marginal expectancy (0.15R-0.20R)
+        if 0.15 <= expectancy_r < 0.20:
+            robust_flags |= 0x02
+
+        # Bit 2: Very low sample size (< 30)
+        if sample_size < 30:
+            robust_flags |= 0x04
+
+        # Bit 3: Weak/negative expectancy (< 0.15R)
+        if expectancy_r < 0.15:
+            robust_flags |= 0x08
+
+        self._save_to_search_knowledge(
+            candidate=candidate,
+            expectancy_r=expectancy_r,
+            sample_size=sample_size,
+            robust_flags=robust_flags
+        )
+
     def _add_to_memory(self, candidate: SearchCandidate):
         """Add candidate to search_memory (deduplication registry)"""
         from datetime import datetime
@@ -495,6 +646,172 @@ class AutoSearchEngine:
             })
 
         return candidates
+
+    def _save_to_search_knowledge(
+        self,
+        candidate: SearchCandidate,
+        expectancy_r: float,
+        sample_size: int,
+        robust_flags: int = 0
+    ):
+        """
+        Save candidate to search_knowledge with result classification
+
+        Args:
+            candidate: SearchCandidate to save
+            expectancy_r: Expected R from scoring
+            sample_size: Number of trades
+            robust_flags: Number of robustness concerns (default 0)
+        """
+        # Classify result
+        result_class = classify_result(expectancy_r, sample_size, robust_flags)
+
+        # Get provenance
+        prov = create_provenance_dict(
+            ruleset_version=RULESET_VERSION,
+            priority_version=PRIORITY_VERSION,
+            param_hash_version=PARAM_HASH_VERSION
+        )
+
+        # Generate knowledge_id from param_hash (deterministic)
+        knowledge_id = int(candidate.param_hash[:8], 16) % (2**31 - 1)
+
+        # Insert or update
+        self.conn.execute("""
+            INSERT INTO search_knowledge (
+                knowledge_id, param_hash, param_hash_version,
+                instrument, setup_family, orb_time, rr_target, filters_json,
+                result_class, expectancy_r, sample_size, robust_flags,
+                ruleset_version, priority_version,
+                git_commit, db_path, created_at, last_seen_at, notes
+            ) VALUES (
+                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+            )
+            ON CONFLICT (param_hash) DO UPDATE SET
+                result_class = EXCLUDED.result_class,
+                expectancy_r = EXCLUDED.expectancy_r,
+                sample_size = EXCLUDED.sample_size,
+                robust_flags = EXCLUDED.robust_flags,
+                last_seen_at = CURRENT_TIMESTAMP
+        """, [
+            knowledge_id,
+            candidate.param_hash,
+            PARAM_HASH_VERSION,
+            candidate.instrument,
+            candidate.setup_family,
+            candidate.orb_time,
+            candidate.rr_target,
+            json.dumps(candidate.filters),
+            result_class,
+            expectancy_r,
+            sample_size,
+            robust_flags,
+            RULESET_VERSION,
+            PRIORITY_VERSION,
+            prov['git_commit'],
+            prov['db_path'],
+            datetime.now(),
+            datetime.now(),
+            candidate.notes
+        ])
+
+    def _get_untested_combinations(
+        self,
+        settings: SearchSettings,
+        max_count: int = 1000
+    ) -> List[Dict]:
+        """
+        Get untested parameter combinations (not in search_memory)
+
+        Args:
+            settings: Search settings
+            max_count: Maximum combinations to return
+
+        Returns:
+            List of untested combinations (sorted by param_hash for determinism)
+        """
+        # Generate all combinations
+        all_combinations = self._generate_combinations(settings)
+
+        # Filter to untested only
+        untested = []
+        for combo in all_combinations:
+            param_hash = compute_param_hash_v2(combo)
+            if not self._is_in_memory(param_hash):
+                combo['param_hash'] = param_hash
+                untested.append(combo)
+
+        # Sort by param_hash for deterministic ordering
+        untested_sorted = sorted(untested, key=lambda x: x['param_hash'])
+
+        # Limit count
+        return untested_sorted[:max_count]
+
+    def _apply_epsilon_exploration(
+        self,
+        settings: SearchSettings,
+        total_budget: int,
+        epsilon: float = EPSILON
+    ) -> tuple[List[Dict], List[Dict]]:
+        """
+        Split combinations into exploitation and exploration sets
+
+        Exploitation: Top (1-ε) of total_budget by priority score
+        Exploration: ε of total_budget from UNTESTED pool (hash-sorted for determinism)
+
+        CRITICAL: Exploration MUST draw from untested pool, NOT from low-priority
+        combinations in current batch. This ensures systematic parameter space coverage.
+
+        Args:
+            settings: Search settings
+            total_budget: Total number of combinations to test
+            epsilon: Exploration fraction (default 0.15 = 15%)
+
+        Returns:
+            (exploitation_list, exploration_list)
+        """
+        # Calculate split
+        exploit_count = int(total_budget * (1 - epsilon))
+        explore_count = total_budget - exploit_count
+
+        # Initialize priority engine
+        priority_engine = PriorityEngine(self.conn)
+
+        # Generate ALL combinations (tested + untested)
+        all_combinations = self._generate_combinations(settings)
+
+        # Score all combinations (includes already-tested ones for priority learning)
+        scored = []
+        for combo in all_combinations:
+            param_hash = compute_param_hash_v2(combo)
+            combo['param_hash'] = param_hash
+
+            # Skip if already tested (memory deduplication)
+            if self._is_in_memory(param_hash):
+                continue
+
+            priority_score = priority_engine.score_combination(combo)
+            combo['priority_score'] = priority_score
+            scored.append(combo)
+
+        # Sort by priority (descending)
+        scored_sorted = sorted(scored, key=lambda x: x['priority_score'], reverse=True)
+
+        # EXPLOITATION: Top (1-ε) by priority
+        exploitation = scored_sorted[:exploit_count]
+
+        # EXPLORATION: ε from UNTESTED pool (deterministic hash-sorted)
+        # Get untested combinations (already hash-sorted by _get_untested_combinations)
+        untested_pool = self._get_untested_combinations(settings, max_count=explore_count * 2)
+
+        # Take first explore_count from hash-sorted untested pool (deterministic)
+        exploration = untested_pool[:explore_count]
+
+        logger.info(f"ε-exploration split: {exploit_count} exploit + {explore_count} explore (ε={epsilon})")
+        logger.info(f"  Exploitation: Top {exploit_count} by priority score")
+        logger.info(f"  Exploration: First {explore_count} from {len(untested_pool)} untested (hash-sorted)")
+
+        return exploitation, exploration
 
 
 def test_engine():

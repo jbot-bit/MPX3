@@ -1,0 +1,123 @@
+================================================================================
+BUGS.TXT VERIFICATION SUMMARY
+================================================================================
+
+STATUS: PARTIAL PASS
+
+WHAT WAS DELIVERED:
+  [PASS] Phase 2.1-2.4: Dual-Track Pipeline (COMPLETE)
+  [PASS] Bug A: NO_TRADE Ambiguity (FIXED)
+  [PASS] Bug B: Tradeable-Truth Mismatch (FIXED)
+  [PASS] Bug C: Schema Mismatch (FIXED)
+  [PASS] Bug D: Cost Model Display (FIXED)
+
+WHAT WAS NOT DELIVERED:
+  [FAIL] HARDPRESS Bug A: Single Source of Truth for RR
+  [FAIL] HARDPRESS Bug B: Hard Fail if RR Missing
+  [FAIL] HARDPRESS Bug C: Ban RR=1.0 as Implicit Scan
+  [PARTIAL] HARDPRESS Bug D: Validation Gate (RR < 1.5)
+  [FAIL] HARDPRESS Bug E: Regression Test
+  [FAIL] RR EVIDENCE TABLE (required by bugs.txt line 22-23)
+
+CRITICAL FINDING:
+  All 8 strategies validated with RR=1.0 targets
+  Current validation results are INVALID
+  Must re-populate with correct RR from validated_setups
+
+PROOF OF INCORRECT RR:
+  Strategies 20-23 (1000 ORB) show IDENTICAL +0.149R expectancy
+  But they have DIFFERENT configured RR (1.5/2.0/2.5/3.0)
+  This proves populate_tradeable_metrics.py uses RR=1.0 for all
+
+RR MISMATCH TABLE (IDs 20-27):
+  ID  | Configured RR | Populate Uses | Validator Reads | Result   |
+  ----|---------------|---------------|-----------------|----------|
+  20  | 1.5           | 1.0 (WRONG)   | 1.5 (correct)   | INVALID  |
+  21  | 2.0           | 1.0 (WRONG)   | 2.0 (correct)   | INVALID  |
+  22  | 2.5           | 1.0 (WRONG)   | 2.5 (correct)   | INVALID  |
+  23  | 3.0           | 1.0 (WRONG)   | 3.0 (correct)   | INVALID  |
+  24  | 1.5           | 1.0 (WRONG)   | 1.5 (correct)   | INVALID  |
+  25  | 1.5           | 1.0 (WRONG)   | 1.5 (correct)   | INVALID  |
+  26  | 1.5           | 1.0 (WRONG)   | 1.5 (correct)   | INVALID  |
+  27  | 1.5           | 1.0 (WRONG)   | 1.5 (correct)   | INVALID  |
+
+CODE LOCATIONS WHERE RR IS WRONG:
+  File: pipeline/populate_tradeable_metrics.py
+    Line 29:  RR_DEFAULT = 1.0  # This IS the forbidden default
+    Line 56:  def calculate_tradeable_for_orb(..., rr: float = RR_DEFAULT)
+    Line 297: result = calculate_tradeable_for_orb(..., sl_mode=SL_MODE)
+              # No rr parameter passed, so defaults to RR_DEFAULT = 1.0
+
+  File: scripts/audit/autonomous_strategy_validator.py
+    Line 86:  strategy_id, instrument, orb_time, rr, ... = strategy
+              # Reads correct RR from validated_setups
+              # But validates against trades calculated with WRONG RR
+
+================================================================================
+NEXT ACTIONS (MANDATORY)
+================================================================================
+
+1. Implement single source of truth for RR
+   - Create get_strategy_config() function
+   - Query validated_setups for RR per ORB/filter
+   - Use in BOTH populate AND validator
+
+2. Remove RR_DEFAULT = 1.0 constant
+   - Delete line 29 from populate_tradeable_metrics.py
+   - Remove default parameter from calculate_tradeable_for_orb()
+   - Force explicit RR from validated_setups
+
+3. Add fail-closed logic (abort if RR missing)
+   - Check if RR is None/0/empty
+   - Raise ValueError("RR MUST BE REAL. NO DEFAULTS. FAIL CLOSED.")
+   - Print RR EVIDENCE TABLE before aborting
+
+4. Print RR EVIDENCE TABLE at runtime
+   - Format: strategy_id | rr | sl_mode | orb_time | filter_name | source
+   - Print for ALL strategies being validated
+   - Show that RR comes from validated_setups
+
+5. Add --rr-scan CLI flag
+   - For explicit RR scanning only
+   - Default behavior: use ONLY strategy's RR
+   - No implicit RR=1.0 fallback
+
+6. Create regression test
+   - tests/test_rr_sync.py
+   - Assert populate uses strategy RR (not 1.0)
+   - Assert script aborts if RR missing
+
+7. Re-populate tradeable metrics
+   - Run populate_tradeable_metrics.py with corrected RR logic
+   - Use each strategy's configured RR
+   - May require per-strategy population
+
+8. Re-validate all strategies
+   - Run autonomous_strategy_validator.py again
+   - Verify RR evidence table prints correctly
+   - Check if any strategies pass +0.15R with correct RR
+
+================================================================================
+REFERENCE DOCUMENTS
+================================================================================
+  - bugs.txt (original specification - HARDPRESS section lines 1-43)
+  - BUGS_TXT_FINAL_VERIFICATION.md (complete verification analysis)
+  - DUAL_TRACK_RECONCILIATION_REPORT.md (dual-track implementation status)
+  - BUGS_TXT_VERIFICATION_RESULTS.md (initial fast verification)
+
+================================================================================
+VERDICT: PARTIAL PASS
+================================================================================
+
+Dual-track reconciliation: COMPLETE and VALIDATED
+HARDPRESS RR requirements: NOT IMPLEMENTED
+Validation results: INVALID (must re-populate with correct RR)
+
+The dual-track edge pipeline is architecturally sound and correctly
+implemented. However, the HARDPRESS requirement from bugs.txt (RR must be
+real, no defaults, fail closed) was NOT IMPLEMENTED.
+
+HONESTY OVER OUTCOME: The system correctly exposed this issue through
+identical expectancy values, proving validation is using wrong RR.
+
+Status: Implementation 60% complete (dual-track done, RR requirements missing)

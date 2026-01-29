@@ -116,6 +116,134 @@ SLIPPAGE_STRESS_MULTIPLIERS = {
 
 
 # =============================================================================
+# SCOPE LOCK (MANDATORY - Prevents use of unvalidated instruments)
+# =============================================================================
+
+# HARD BLOCK: Only MGC is validated and production-ready
+# NQ and CL are BLOCKED until contract specs and cost models are validated
+# Using wrong multipliers = fake R values = catastrophic losses
+
+PRODUCTION_INSTRUMENTS = ['MGC']  # ONLY validated instruments
+BLOCKED_INSTRUMENTS = ['NQ', 'MNQ', 'CL', 'MCL', 'MPL', 'PL']  # Unvalidated (wrong multipliers!)
+
+
+def validate_instrument_or_block(instrument: str) -> None:
+    """
+    SCOPE LOCK: Hard-block unvalidated instruments (NQ, CL).
+
+    This is a SAFETY GUARDRAIL to prevent accidental use of instruments
+    with unvalidated contract specs. Wrong multipliers = fake R values = losses.
+
+    Args:
+        instrument: Instrument symbol to validate
+
+    Raises:
+        ValueError: If instrument is blocked (NQ, CL) or unknown
+
+    Example:
+        >>> validate_instrument_or_block('MGC')  # OK - passes
+        >>> validate_instrument_or_block('NQ')   # ERROR - blocked
+        ValueError: BLOCKED INSTRUMENT: NQ is not production-ready...
+    """
+    instrument_upper = instrument.upper()
+
+    # Check if blocked
+    if instrument_upper in BLOCKED_INSTRUMENTS:
+        raise ValueError(
+            f"BLOCKED INSTRUMENT: {instrument} is not production-ready.\n"
+            f"  Reason: Contract specs and cost model not validated\n"
+            f"  Risk: Wrong multipliers = fake R values = catastrophic losses\n"
+            f"  Production instruments: {PRODUCTION_INSTRUMENTS}\n"
+            f"  Blocked instruments: {BLOCKED_INSTRUMENTS}\n"
+            f"  To use {instrument}: Validate contract specs, cost model, then update PRODUCTION_INSTRUMENTS list."
+        )
+
+    # Check if production-ready
+    if instrument_upper not in PRODUCTION_INSTRUMENTS:
+        raise ValueError(
+            f"UNKNOWN INSTRUMENT: {instrument} is not recognized.\n"
+            f"  Production instruments: {PRODUCTION_INSTRUMENTS}\n"
+            f"  Blocked instruments: {BLOCKED_INSTRUMENTS}\n"
+            f"  Add {instrument} to cost_model.py after validation."
+        )
+
+    # Passed all checks
+    return
+
+
+# =============================================================================
+# INTEGRITY GATE (MANDATORY - Prevents mathematically impossible trades)
+# =============================================================================
+
+# Cost-to-stop threshold: If transaction costs exceed this % of stop distance,
+# trade is mathematically unviable (edge is destroyed by friction).
+MINIMUM_VIABLE_RISK_THRESHOLD = 0.30  # 30% - from AUDIT1_RESULTS.md
+
+
+def check_minimum_viable_risk(
+    stop_distance_points: float,
+    point_value: float,
+    total_friction: float
+) -> tuple[bool, float, str]:
+    """
+    INTEGRITY GATE: Check if trade has minimum viable risk (costs < 30% of stop).
+
+    Prevents mathematically impossible trades where transaction costs dominate
+    the stop distance, making positive expectancy impossible.
+
+    Rule: If (total_friction / chart_risk_dollars) > 30%, REJECT trade.
+
+    Args:
+        stop_distance_points: Stop distance in points
+        point_value: Dollar value per point
+        total_friction: Total transaction costs (round-trip)
+
+    Returns:
+        (is_viable, cost_ratio, message) tuple:
+            - is_viable: True if trade passes gate, False if rejected
+            - cost_ratio: Fraction of stop consumed by costs (0.0 to 1.0+)
+            - message: Human-readable explanation
+
+    Example:
+        >>> check_minimum_viable_risk(0.5, 10.0, 8.40)
+        (False, 1.68, "REJECTED: Costs ($8.40) are 168% of stop ($5.00) - exceeds 30% limit")
+
+        >>> check_minimum_viable_risk(3.0, 10.0, 8.40)
+        (True, 0.28, "PASS: Costs ($8.40) are 28% of stop ($30.00) - within 30% limit")
+    """
+    if stop_distance_points <= 0:
+        return False, 0.0, "REJECTED: Invalid stop distance (must be positive)"
+
+    if point_value <= 0:
+        return False, 0.0, "REJECTED: Invalid point value (must be positive)"
+
+    if total_friction < 0:
+        return False, 0.0, "REJECTED: Invalid friction (must be non-negative)"
+
+    # Calculate chart risk (before costs)
+    chart_risk_dollars = stop_distance_points * point_value
+
+    # Calculate cost ratio
+    cost_ratio = total_friction / chart_risk_dollars
+
+    # Check against threshold
+    if cost_ratio > MINIMUM_VIABLE_RISK_THRESHOLD:
+        return (
+            False,
+            cost_ratio,
+            f"REJECTED: Costs (${total_friction:.2f}) are {cost_ratio:.1%} of stop "
+            f"(${chart_risk_dollars:.2f}) - exceeds {MINIMUM_VIABLE_RISK_THRESHOLD:.0%} limit"
+        )
+    else:
+        return (
+            True,
+            cost_ratio,
+            f"PASS: Costs (${total_friction:.2f}) are {cost_ratio:.1%} of stop "
+            f"(${chart_risk_dollars:.2f}) - within {MINIMUM_VIABLE_RISK_THRESHOLD:.0%} limit"
+        )
+
+
+# =============================================================================
 # CORE FUNCTIONS
 # =============================================================================
 
@@ -130,8 +258,11 @@ def get_instrument_specs(instrument: str) -> Dict:
         dict with tick_size, tick_value, point_value, status
 
     Raises:
-        ValueError if instrument not supported
+        ValueError if instrument not supported or blocked
     """
+    # SCOPE LOCK: Hard-block unvalidated instruments
+    validate_instrument_or_block(instrument)
+
     if instrument not in INSTRUMENT_SPECS:
         raise ValueError(
             f"Instrument '{instrument}' not supported. "
@@ -161,8 +292,11 @@ def get_cost_model(instrument: str, stress_level: str = 'normal') -> Dict:
         dict with commission_rt, slippage_rt, spread, total_friction
 
     Raises:
-        ValueError if instrument not supported or stress_level invalid
+        ValueError if instrument not supported, blocked, or stress_level invalid
     """
+    # SCOPE LOCK: Hard-block unvalidated instruments
+    validate_instrument_or_block(instrument)
+
     if instrument not in COST_MODELS:
         raise ValueError(
             f"Cost model for '{instrument}' not defined. "
@@ -255,6 +389,24 @@ def calculate_realized_rr(
 
     point_value = specs['point_value']
     total_friction = costs['total_friction']
+
+    # INTEGRITY GATE (MANDATORY): Check minimum viable risk
+    # Prevents mathematically impossible trades where costs dominate stop
+    is_viable, cost_ratio, gate_message = check_minimum_viable_risk(
+        stop_distance_points=stop_distance_points,
+        point_value=point_value,
+        total_friction=total_friction
+    )
+
+    if not is_viable:
+        raise ValueError(
+            f"INTEGRITY GATE REJECTION: {gate_message}\n"
+            f"  Instrument: {instrument}\n"
+            f"  Stop: {stop_distance_points:.3f} points (${stop_distance_points * point_value:.2f})\n"
+            f"  Costs: ${total_friction:.2f}\n"
+            f"  Cost Ratio: {cost_ratio:.1%} (limit: {MINIMUM_VIABLE_RISK_THRESHOLD:.0%})\n"
+            f"  Trade is mathematically unviable - edge destroyed by friction."
+        )
 
     # Target distance = RR × stop distance (theoretical)
     target_distance_points = rr_theoretical * stop_distance_points

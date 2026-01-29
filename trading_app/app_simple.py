@@ -31,6 +31,10 @@ from trading_app.ai_chat import TradingAssistant
 from trading_app.edge_tracker import EdgeTracker
 from trading_app.memory import TradingMemory
 from trading_app.config import TZ_LOCAL, MGC_ORB_CONFIGS
+from trading_app.error_logger import initialize_error_log, log_error
+
+# Initialize error logging (clears file on startup)
+initialize_error_log()
 
 # Page config
 st.set_page_config(
@@ -66,16 +70,22 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Initialize session state
-if 'data_bridge' not in st.session_state:
-    st.session_state.data_bridge = DataBridge()
-if 'scanner' not in st.session_state:
-    st.session_state.scanner = MarketScanner()
-if 'assistant' not in st.session_state:
-    st.session_state.assistant = TradingAssistant()
-if 'edge_tracker' not in st.session_state:
-    st.session_state.edge_tracker = EdgeTracker()
-if 'memory' not in st.session_state:
-    st.session_state.memory = TradingMemory()
+try:
+    if 'data_bridge' not in st.session_state:
+        st.session_state.data_bridge = DataBridge()
+    if 'scanner' not in st.session_state:
+        st.session_state.scanner = MarketScanner()
+    if 'assistant' not in st.session_state:
+        st.session_state.assistant = TradingAssistant()
+    if 'edge_tracker' not in st.session_state:
+        st.session_state.edge_tracker = EdgeTracker()
+    if 'memory' not in st.session_state:
+        st.session_state.memory = TradingMemory()
+except Exception as e:
+    log_error(e, context="Initializing session state")
+    st.error(f"❌ Initialization failed: {e}")
+    st.info("Check app_errors.txt for details")
+    st.stop()
 
 # ==============================================================================
 # HEADER
@@ -113,9 +123,15 @@ with tab1:
 
     if 'scan_results' not in st.session_state or st.session_state.scan_results is None:
         with st.spinner("Scanning market..."):
-            scanner = st.session_state.scanner
-            results = scanner.scan_all_setups()
-            st.session_state.scan_results = results
+            try:
+                scanner = st.session_state.scanner
+                results = scanner.scan_all_setups()
+                st.session_state.scan_results = results
+            except Exception as e:
+                log_error(e, context="Market scanner")
+                st.error(f"Scan failed: {e}")
+                st.info("Check app_errors.txt for details")
+                st.stop()
 
     results = st.session_state.scan_results
 
@@ -249,8 +265,14 @@ with tab3:
     # Get system status
     if 'system_status' not in st.session_state or st.session_state.system_status is None:
         with st.spinner("Analyzing edge health..."):
-            status = tracker.get_system_status()
-            st.session_state.system_status = status
+            try:
+                status = tracker.get_system_status()
+                st.session_state.system_status = status
+            except Exception as e:
+                log_error(e, context="Edge tracker - system status")
+                st.error(f"Edge tracker failed: {e}")
+                st.info("Check app_errors.txt for details")
+                st.stop()
 
     status = st.session_state.system_status
 
@@ -376,7 +398,9 @@ with tab4:
                         st.warning("No new trades to sync")
 
                 except Exception as e:
+                    log_error(e, context="Tradovate sync")
                     st.error(f"Sync failed: {e}")
+                    st.info("Check app_errors.txt for details")
                     st.exception(e)
 
         st.divider()
@@ -400,7 +424,9 @@ with tab4:
                     col1, col2, col3 = st.columns(3)
                     with col1:
                         st.write(f"**Outcome:** {trade['outcome']}")
-                        st.write(f"**R-Multiple:** {trade['r_multiple']:.2f}" if trade['r_multiple'] else "")
+                        # Use realized_rr (with costs) if available, else fallback to r_multiple
+                        r_val = trade.get('realized_rr') or trade.get('r_multiple')
+                        st.write(f"**Realized R:** {r_val:.2f}" if r_val else "")
                     with col2:
                         st.write(f"**Asia Travel:** {trade['asia_travel']:.2f}" if trade['asia_travel'] else "")
                         st.write(f"**London Reversals:** {trade['london_reversals']}" if trade['london_reversals'] else "")
@@ -470,12 +496,17 @@ with tab5:
 
         if st.button("🔄 UPDATE DATA NOW", type="primary"):
             with st.spinner("Updating data..."):
-                success = bridge.update_to_current()
-                if success:
-                    st.success("✅ Data updated!")
-                    st.rerun()
-                else:
-                    st.error("❌ Update failed")
+                try:
+                    success = bridge.update_to_current()
+                    if success:
+                        st.success("✅ Data updated!")
+                        st.rerun()
+                    else:
+                        st.error("❌ Update failed")
+                except Exception as e:
+                    log_error(e, context="Data update")
+                    st.error(f"Update failed: {e}")
+                    st.info("Check app_errors.txt for details")
     else:
         st.success("✅ Data is current")
 
