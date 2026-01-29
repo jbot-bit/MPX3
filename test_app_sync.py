@@ -22,18 +22,18 @@ import sys
 from pathlib import Path
 import duckdb
 
-# Add trading_app to path (from strategies/ folder, go up to parent then into trading_app)
-sys.path.insert(0, str(Path(__file__).parent.parent / "trading_app"))
-# Also add parent directory so 'trading_app' can be imported as a module
-sys.path.insert(0, str(Path(__file__).parent.parent))
+# Add trading_app to path (from root folder, go directly into trading_app)
+sys.path.insert(0, str(Path(__file__).parent / "trading_app"))
+# Also add project root so 'trading_app' can be imported as a module
+sys.path.insert(0, str(Path(__file__).parent))
 
-from config import MGC_ORB_CONFIGS, MGC_ORB_SIZE_FILTERS, NQ_ORB_CONFIGS, NQ_ORB_SIZE_FILTERS, MPL_ORB_CONFIGS, MPL_ORB_SIZE_FILTERS
+from trading_app.config import MGC_ORB_CONFIGS, MGC_ORB_SIZE_FILTERS, NQ_ORB_CONFIGS, NQ_ORB_SIZE_FILTERS, MPL_ORB_CONFIGS, MPL_ORB_SIZE_FILTERS
 
 
 def test_config_matches_database():
     """Verify config.py matches validated_setups database"""
 
-    db_path = Path(__file__).parent.parent / "data" / "db" / "gold.db"
+    db_path = Path(__file__).parent / "data" / "db" / "gold.db"
 
     if not db_path.exists():
         print("[FAIL] FAILED: gold.db not found")
