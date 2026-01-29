@@ -287,7 +287,7 @@ class AutoSearchEngine:
                     sample_size=score['sample_size'],
                     win_rate_proxy=None,  # DEPRECATED - use specific rates below
                     expected_r_proxy=score.get('expected_r'),
-                    notes=f"Auto-discovered: {score['sample_size']}N, {score['score_proxy']:.3f}R proxy",
+                    notes=f"Auto-discovered: {score['sample_size']}N, {score.get('score_proxy', 0):.3f}R proxy",
                     profitable_trade_rate=score.get('profitable_trade_rate'),  # Profitable trades (RR > 0)
                     target_hit_rate=score.get('target_hit_rate')  # Trades that hit target
                 )
