@@ -159,9 +159,10 @@
 
 ## Maintenance Scripts (scripts/maintenance/)
 
-- `scripts/maintenance/update_market_data_projectx.py` - **CRITICAL** - Auto-update (ProjectX)
+- `scripts/maintenance/update_market_data_projectx.py` - **CRITICAL** - Auto-update (ProjectX) + PHASE 2+3
 - `scripts/maintenance/update_market_data.py` - Auto-update (Databento - broken)
-- `scripts/maintenance/test_update_script.py` - Update script tests
+- `scripts/maintenance/test_update_script.py` - Quick audit (no API calls)
+- `scripts/maintenance/verify_system_integrity.py` - **NEW** - Full 5-layer integrity sweep (PHASE 4)
 - `scripts/maintenance/recover_wal.py` - WAL corruption recovery
 
 ---
@@ -175,7 +176,9 @@
 3. `trading_app/strategy_engine.py` - Reads validated_setups
 4. `pipeline/build_daily_features.py` - Writes to daily_features
 5. `pipeline/backfill_range.py` - Writes to bars_1m
-6. `scripts/maintenance/update_market_data_projectx.py` - Queries MAX timestamps
+6. `scripts/maintenance/update_market_data_projectx.py` - Queries MAX timestamps, verification checks
+7. `scripts/maintenance/test_update_script.py` - Quick audit queries (duplicates, OHLC, freshness)
+8. `scripts/maintenance/verify_system_integrity.py` - **NEW** - Full 5-layer integrity sweep
 
 ### Config-Dependent Files
 **These files import trading_app/config.py:**
@@ -209,21 +212,27 @@ setup_detector.py + strategy_engine.py → UI display
 
 ---
 
-## Files Modified by updatre.txt Implementation
+## Files Modified by updatre.txt Implementation (✅ COMPLETE)
 
-**Phase 2 (current):**
-- `scripts/maintenance/update_market_data_projectx.py` (modify feature build logic)
+**Phase 0:** Discovery (no file changes)
 
-**Phase 3 (planned):**
-- `scripts/maintenance/update_market_data_projectx.py` (add verification checks)
-- Possibly new: `scripts/maintenance/verify_data_integrity.py`
+**Phase 1:** Script identification (no file changes)
 
-**Phase 4 (planned):**
-- No file changes (verification only)
+**Phase 2:** Auto-update daily_features ✅
+- `scripts/maintenance/update_market_data_projectx.py` (+120 lines) - Feature build logic, honesty rule
+- `pipeline/build_daily_features.py` (10 fixes) - Fixed unpacking bugs
+- `pipeline/backfill_range.py` (-10 lines) - Disabled feature build, fixed path
 
-**Phase 5 (planned):**
-- `scripts/maintenance/README.md` (update docs)
-- Possibly: `scripts/maintenance/test_update_script.py` (add verification tests)
+**Phase 3:** Data verification ✅
+- `scripts/maintenance/update_market_data_projectx.py` (+100 lines) - 5 verification checks (Step 3.5)
+
+**Phase 4:** Full integrity sweep ✅
+- `scripts/maintenance/verify_system_integrity.py` (422 lines) - **NEW** - 5-layer integrity checker
+
+**Phase 5:** Documentation ✅
+- `scripts/maintenance/test_update_script.py` (188 lines) - Rewritten as quick audit
+- `scripts/maintenance/README.md` (600+ lines) - Comprehensive docs
+- `UPDATRE_COMPLETE.md` - Final summary
 
 ---
 
@@ -232,6 +241,6 @@ setup_detector.py + strategy_engine.py → UI display
 - **Trading App:** 69 files
 - **Pipeline:** 25 files
 - **Strategies:** 6 files
-- **Maintenance:** 4 files
+- **Maintenance:** 5 files (+1 new: verify_system_integrity.py)
 
-**Total:** 104 Python files
+**Total:** 105 Python files
