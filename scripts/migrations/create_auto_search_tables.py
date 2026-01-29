@@ -71,7 +71,9 @@ def create_auto_search_tables(db_path: str = "data/db/gold.db"):
             sample_size INTEGER,
             win_rate_proxy DOUBLE,
             expected_r_proxy DOUBLE,
-            notes TEXT
+            notes TEXT,
+            profitable_trade_rate DOUBLE,
+            target_hit_rate DOUBLE
             -- Note: FK constraint removed (DuckDB limitations)
             -- Application enforces run_id referential integrity
         )

@@ -459,8 +459,8 @@ class AutoSearchEngine:
         self.conn.execute("""
             INSERT INTO search_memory (
                 memory_id, param_hash, instrument, setup_family, filters_json,
-                first_seen_at, last_seen_at, test_count, best_score
-            ) VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1, ?)
+                first_seen_at, last_seen_at, test_count, best_score, notes
+            ) VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1, ?, '')
             ON CONFLICT (param_hash) DO UPDATE SET
                 last_seen_at = CURRENT_TIMESTAMP,
                 test_count = search_memory.test_count + 1,
