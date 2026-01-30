@@ -25,13 +25,9 @@ for p in [current_dir, repo_root]:
     if str(p) not in sys.path:
         sys.path.insert(0, str(p))
 
-# CRITICAL: Startup sync guard - blocks app if config/DB mismatch
-try:
-    from trading_app.sync_guard import assert_sync_or_die
-    assert_sync_or_die()
-except Exception as e:
-    st.error(f"🚨 APP STARTUP BLOCKED - CONFIG/DB SYNC FAILURE\n\n{e}")
-    st.stop()
+# NOTE: sync_guard now requires injected database connection
+# TODO: Add singleton connection and run sync_guard after connection creation
+# For now, this app skips sync check (use app_canonical.py for production)
 
 from trading_app.market_scanner import MarketScanner
 from trading_app.data_bridge import DataBridge

@@ -1,0 +1,24 @@
+GUARDIAN MODE ACTIVE. FIX STARTUP BLOCK.
+
+Problem: DuckDB config conflict because multiple duckdb.connect calls occur in startup/runtime.
+
+Known extra connects to remove:
+- trading_app/sync_guard.py:60 duckdb.connect(db_path, read_only=True)
+- trading_app/db_health_check.py:43 duckdb.connect(str(db_path))
+- trading_app/db_health_check.py:68 test_conn = duckdb.connect(str(db_path))  (WAL test)
+
+Singleton must remain ONLY here:
+- trading_app/app_canonical.py:175 self.db_connection = duckdb.connect(self.db_path)
+
+PASS 2 BUILD (NO AUDIT):
+1) Remove all duckdb.connect calls from sync_guard.py and db_health_check.py (no “fallback”).
+   - Functions must require an injected conn parameter.
+2) Delete WAL test secondary connection completely.
+3) Update call sites so these checks run AFTER singleton creation, using app_state.db_connection.
+4) Verification:
+   - rg -n "duckdb\.connect\(" trading_app must show ONLY the singleton line.
+   - Start app: no startup block.
+   - Click Refresh -> Generate PB Grid -> Refresh again: no crash.
+   - Run: python scripts/check/app_preflight.py ; python test_app_sync.py ; pytest -q
+
+STOP if any forbidden paths touched.

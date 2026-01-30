@@ -35,15 +35,8 @@ if str(current_dir) not in sys.path:
 if str(repo_root) not in sys.path:
     sys.path.insert(0, str(repo_root))
 
-# CRITICAL: Startup sync guard - blocks app if config/DB mismatch
-# Must run BEFORE any trading logic to prevent real-money losses
-try:
-    from sync_guard import assert_sync_or_die
-    assert_sync_or_die()
-except Exception as e:
-    # If sync check fails, show error and stop
-    st.error(f"🚨 APP STARTUP BLOCKED - CONFIG/DB SYNC FAILURE\n\n{e}")
-    st.stop()
+# NOTE: sync_guard now runs AFTER singleton connection is created
+# See AppState.initialize() for connection and validation logic
 
 from cloud_mode import get_database_path
 from edge_utils import (
@@ -165,14 +158,22 @@ class AppState:
         try:
             self.db_path = get_database_path()
 
-            # Run health check and auto-fix WAL corruption before connecting
-            from db_health_check import run_startup_health_check
-            if not run_startup_health_check(self.db_path):
-                raise Exception("Database health check failed")
-
-            # Don't use read_only to allow multiple connections (app doesn't write anyway)
+            # CRITICAL: Create singleton connection FIRST (prevents multiple connections)
+            # Use default (read_only=False) to match write operations
+            # DuckDB doesn't allow mixing read_only=True and read_only=False connections
             self.db_connection = duckdb.connect(self.db_path)
             logger.info(f"Connected to database: {self.db_path}")
+
+            # Run health check AFTER singleton creation (uses injected connection)
+            from db_health_check import run_startup_health_check
+            if not run_startup_health_check(self.db_connection, self.db_path):
+                raise Exception("Database health check failed")
+
+            # Run sync guard AFTER singleton creation (uses injected connection)
+            from sync_guard import assert_sync_or_die
+            assert_sync_or_die(self.db_connection, self.db_path)
+            logger.info(f"[OK] Config/DB sync verified")
+
             return True
         except Exception as e:
             logger.error(f"Failed to initialize: {e}")
@@ -1204,6 +1205,67 @@ For RR-specific win rates, use `validated_setups` or run a full backtest.
 
         # NOTE: "Send to Validation Queue" removed - candidates must be created in edge_candidates table directly
         # Use the "New Candidate Draft" form below to create edge_candidates entries
+
+    st.divider()
+
+    # ========================================================================
+    # PB FAMILY GRID GENERATOR (UPDATE22)
+    # ========================================================================
+    st.subheader("🔬 PB Family Grid Generator")
+    st.markdown("""
+    Generate all 144 PB (Pullback) family parameter combinations for systematic testing.
+
+    **Parameters:**
+    - ORBs: First 3 daytime ORBs from time_spec.ORBS
+    - Directions: LONG, SHORT
+    - Entry: RETEST_ORB, MID_PULLBACK
+    - Confirmation: CLOSE_CONFIRM, WICK_REJECT
+    - Stop: STOP_ORB_OPP, STOP_SWING
+    - Target: TP_FIXED_R_1_0, TP_FIXED_R_1_5, TP_FIXED_R_2_0
+
+    **Output:** 3 × 2 × 2 × 2 × 2 × 3 = 144 candidates (DRAFT status)
+    """)
+
+    col_pb1, col_pb2 = st.columns([1, 2])
+    with col_pb1:
+        pb_instrument = st.selectbox("Instrument", ["MGC", "NQ", "MPL"], key="pb_instrument")
+
+        if st.button("🚀 Generate PB Grid", use_container_width=True, type="primary"):
+            with st.spinner("Generating 144 PB candidates..."):
+                try:
+                    from pb_grid_generator import generate_pb_batch
+
+                    results = generate_pb_batch(
+                        instrument=pb_instrument,
+                        actor='user',
+                        db_connection=app_state.db_connection  # Pass singleton to prevent conflicts
+                    )
+
+                    st.success(f"""
+                    ✅ **PB Grid Generation Complete!**
+
+                    - Total combinations: {results['total']}
+                    - Candidates created: {results['inserted']}
+                    - Duplicates skipped: {results['skipped']}
+                    - Elapsed time: {results['elapsed_seconds']:.1f}s
+
+                    All candidates set to DRAFT status. Review them in the candidate list below.
+                    """)
+
+                except Exception as e:
+                    st.error(f"❌ PB grid generation failed: {e}")
+                    logger.error(f"PB grid error: {e}")
+
+    with col_pb2:
+        st.info("""
+        **💡 Usage Notes:**
+
+        - First run: Creates 144 new candidates
+        - Subsequent runs: Skips duplicates (0 inserted)
+        - Deduplication: Based on parameter hash
+        - Status: All created as DRAFT
+        - Next step: Review candidates, send best to Validation
+        """)
 
     st.divider()
 
@@ -2434,13 +2496,18 @@ with tab_production:
         st.caption("Complete list of all setups with variant selection")
 
         # Cached query function for performance
-        @st.cache_data(ttl=3600)  # Cache for 1 hour
-        def load_validated_setups_with_stats(instrument: str, db_path: str):
-            """Load validated setups with trade statistics (cached)"""
-            import duckdb
+        # Use hash_funcs to exclude _db_connection from cache key (non-serializable)
+        @st.cache_data(ttl=3600, hash_funcs={type(None): lambda x: None})
+        def load_validated_setups_with_stats(instrument: str, db_path: str, _db_connection):
+            """Load validated setups with trade statistics (cached)
 
-            # Don't use read_only to allow multiple connections (app never writes anyway)
-            conn = duckdb.connect(db_path)
+            Args:
+                instrument: Instrument code (e.g., 'MGC')
+                db_path: Database path (for cache key)
+                _db_connection: Database connection to reuse (prefix _ excludes from cache key)
+            """
+            # Reuse provided connection (no new connection needed)
+            conn = _db_connection
 
             query = """
             SELECT
@@ -2471,7 +2538,7 @@ with tab_production:
             """
 
             result = conn.execute(query, [instrument]).fetchdf()
-            conn.close()
+            # Don't close - we're reusing the singleton connection
 
             return result
 
@@ -2730,7 +2797,8 @@ with tab_production:
             # Load validated setups with trade statistics (cached for performance)
             result = load_validated_setups_with_stats(
                 instrument=app_state.current_instrument,
-                db_path=app_state.db_path
+                db_path=app_state.db_path,
+                _db_connection=app_state.db_connection
             )
 
             if len(result) == 0:

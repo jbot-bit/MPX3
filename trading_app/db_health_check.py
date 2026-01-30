@@ -11,11 +11,12 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def check_and_fix_wal_corruption(db_path: str) -> bool:
+def check_and_fix_wal_corruption(db_connection, db_path: str) -> bool:
     """
     Check for WAL corruption and auto-fix if needed
 
     Args:
+        db_connection: REQUIRED database connection (from app singleton)
         db_path: Path to database file
 
     Returns:
@@ -25,17 +26,22 @@ def check_and_fix_wal_corruption(db_path: str) -> bool:
     db_file = Path(db_path)
     wal_file = Path(f"{db_path}.wal")
 
+    # CRITICAL: Connection must be provided (no fallback to prevent connection conflicts)
+    if db_connection is None:
+        logger.error("No database connection provided to db_health_check")
+        raise ValueError(
+            "db_connection is required. This function must receive an injected connection "
+            "to prevent DuckDB config conflicts."
+        )
+
     # If no WAL file exists, database is fine
     if not wal_file.exists():
         logger.info(f"Database healthy: no WAL file present")
         return True
 
-    # Try to connect to database to test if WAL is corrupt
+    # Try to test if WAL is corrupt using provided connection
     try:
-        import duckdb
-        conn = duckdb.connect(str(db_path))
-        conn.execute("SELECT 1").fetchone()
-        conn.close()
+        db_connection.execute("SELECT 1").fetchone()
         logger.info(f"Database healthy: WAL file valid")
         return True
 
@@ -52,12 +58,9 @@ def check_and_fix_wal_corruption(db_path: str) -> bool:
                 wal_file.unlink()
                 logger.info(f"[OK] Deleted corrupt WAL file: {wal_file}")
 
-                # Verify database works now
-                conn = duckdb.connect(str(db_path))
-                conn.execute("SELECT 1").fetchone()
-                conn.close()
-
-                logger.info(f"[OK] Database recovered successfully")
+                # NOTE: Cannot verify recovery here because connection is already broken
+                # Caller must reconnect after WAL deletion
+                logger.warning(f"[!] WAL file deleted. App must reconnect to verify recovery.")
                 return True
 
             except Exception as fix_error:
@@ -69,11 +72,12 @@ def check_and_fix_wal_corruption(db_path: str) -> bool:
             return False
 
 
-def run_startup_health_check(db_path: str) -> bool:
+def run_startup_health_check(db_connection, db_path: str) -> bool:
     """
     Run all health checks on database at startup
 
     Args:
+        db_connection: REQUIRED database connection (from app singleton)
         db_path: Path to database file
 
     Returns:
@@ -88,7 +92,7 @@ def run_startup_health_check(db_path: str) -> bool:
         return False
 
     # Check 2: WAL corruption
-    if not check_and_fix_wal_corruption(db_path):
+    if not check_and_fix_wal_corruption(db_connection, db_path):
         logger.error(f"WAL corruption could not be fixed")
         return False
 
@@ -97,9 +101,14 @@ def run_startup_health_check(db_path: str) -> bool:
 
 
 if __name__ == "__main__":
-    # Test the health check
+    # Test the health check (NOTE: This standalone test creates its own connection)
+    import duckdb
     db_path = Path(__file__).parent.parent / "data" / "db" / "gold.db"
-    result = run_startup_health_check(str(db_path))
+
+    # Create connection for testing
+    conn = duckdb.connect(str(db_path))
+    result = run_startup_health_check(conn, str(db_path))
+    conn.close()
 
     if result:
         print("[OK] Database is healthy")

@@ -1,0 +1,65 @@
+GUARDIAN MODE ACTIVE. FOLLOW GUARDIAN.md. TWO-PASS REQUIRED. NO ASSUMPTIONS.
+
+OBJECTIVE
+Make “code-guardian” an ACTUALLY enforced project safety system:
+- Ensure it exists as a project skill (discoverable in /skills)
+- Add project hooks in .claude/settings.json that RUN gates automatically
+- Make the hook commands Windows-safe (PowerShell), but runnable from Claude’s hook shell
+- Prove it works (show /skills output + show hook output)
+
+NON-NEGOTIABLES
+- No trading logic changes.
+- No schema changes.
+- No refactors.
+- Only edit: skill location/content + .claude/settings.json (+ optionally add a tiny hook script under .claude/hooks/).
+- Keep diffs small.
+
+PASS 1 (AUDIT ONLY — NO CODE CHANGES)
+1) Skill discovery self-detect:
+   a) List .claude/skills/*
+   b) List skills/*
+   c) Run /skills and confirm whether “code-guardian” appears, and under which section.
+2) Hook capability self-detect:
+   a) Read .claude/settings.json and .claude/settings.local.json
+   b) Identify whether "hooks" already exists, and whether any managed restriction blocks hooks.
+   c) If hooks are present, list their events + matchers.
+3) Gate inventory self-detect (must be real files/commands):
+   - scripts/check/app_preflight.py
+   - python test_app_sync.py
+   - pytest -q
+   - python scripts/check/check_time_literals.py
+   Confirm each path exists and is runnable from repo root.
+4) Reconcile protection scope:
+   - Read GUARDIAN.md protected/forbidden paths
+   - Compare to code-guardian tiers and list mismatches (stale references, non-existent files).
+5) Output a precise PASS 2 plan:
+   - Exact files to change
+   - Exact JSON to add under .claude/settings.json hooks
+   - Whether you’ll use inline commands or a single script (recommended: one script)
+STOP. WAIT.
+
+PASS 2 (BUILD — ONLY AFTER APPROVAL)
+A) Ensure skill is in the right place:
+   - If code-guardian exists only under skills/, copy/move to .claude/skills/code-guardian/SKILL.md
+   - Confirm /skills shows it (after reload if required)
+B) Update SKILL.md to be current and Windows-safe:
+   - Remove stale file refs
+   - Replace bash cp/date backups with PowerShell-safe backup instructions
+   - Align tiers/forbidden paths to GUARDIAN.md
+C) Add project hooks in .claude/settings.json:
+   - Use hooks schema from Claude Code docs (EventName → [{ matcher, hooks:[{type:"command", command:"..."}]}])
+   - Add PreToolUse for Edit|Write on trading_app/ and pipeline/ and schema.sql and .claude/ itself:
+       * run: python scripts/check/app_preflight.py
+       * run: python test_app_sync.py
+       * run: pytest -q
+       * run: python scripts/check/check_time_literals.py
+     If any fails → non-zero exit to block tool.
+   - Prefer one script: .claude/hooks/run_gates.(sh or py) invoked by hook to avoid quoting issues.
+D) Prove enforcement:
+   1) Show /skills output contains code-guardian
+   2) Show hook firing output (run a tiny harmless Edit on a protected file and demonstrate hook runs gates)
+   3) Confirm Claude Code acknowledges hooks snapshot/review step if required
+STOP.
+
+IMPORTANT NOTE
+Claude Code uses a hooks snapshot per session; if .claude/settings.json changes, you may need to review/enable changes in /hooks or restart session for them to apply.

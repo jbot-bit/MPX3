@@ -23,7 +23,7 @@ class ConfigSyncError(Exception):
     pass
 
 
-def assert_sync_or_die(db_path: str = "data/db/gold.db") -> None:
+def assert_sync_or_die(db_connection, db_path: str = "data/db/gold.db") -> None:
     """
     Fast sync check. Raises ConfigSyncError if mismatch.
 
@@ -33,7 +33,8 @@ def assert_sync_or_die(db_path: str = "data/db/gold.db") -> None:
     - Filter value precision (0.001 tolerance)
 
     Args:
-        db_path: Path to gold.db (default: data/db/gold.db)
+        db_connection: REQUIRED database connection (from app singleton)
+        db_path: Path to gold.db (default: data/db/gold.db) - used for existence check only
 
     Raises:
         ConfigSyncError: If DB and config don't match
@@ -50,14 +51,15 @@ def assert_sync_or_die(db_path: str = "data/db/gold.db") -> None:
             f"Cannot verify config sync without database."
         )
 
-    # Connect read-only (won't block on locks)
-    try:
-        conn = duckdb.connect(db_path, read_only=True)
-    except Exception as e:
+    # CRITICAL: Connection must be provided (no fallback to prevent connection conflicts)
+    if db_connection is None:
         raise ConfigSyncError(
-            f"Cannot connect to database: {e}\n"
-            f"Sync verification failed. App startup blocked."
+            "No database connection provided to sync_guard.\n"
+            "This function must receive an injected connection to prevent DuckDB config conflicts.\n"
+            "Call this AFTER creating the singleton connection."
         )
+
+    conn = db_connection
 
     try:
         # Get DB values for MGC
@@ -133,8 +135,6 @@ def assert_sync_or_die(db_path: str = "data/db/gold.db") -> None:
                             f"(diff={abs(db_val - config_val):.4f})"
                         )
 
-        conn.close()
-
         # Raise if any mismatches found
         if mismatches:
             error_msg = (
@@ -155,17 +155,20 @@ def assert_sync_or_die(db_path: str = "data/db/gold.db") -> None:
         # Re-raise config errors
         raise
     except Exception as e:
-        # Catch unexpected errors
-        conn.close()
+        # Catch unexpected errors (no connection cleanup - caller owns connection)
         raise ConfigSyncError(
             f"Sync verification failed with unexpected error: {e}\n"
             f"App startup blocked for safety."
         )
 
 
-def check_sync_status(db_path: str = "data/db/gold.db") -> Dict[str, any]:
+def check_sync_status(db_connection, db_path: str = "data/db/gold.db") -> Dict[str, any]:
     """
     Non-blocking sync status check (doesn't raise on mismatch).
+
+    Args:
+        db_connection: REQUIRED database connection (from app singleton)
+        db_path: Path to gold.db (default: data/db/gold.db)
 
     Returns:
         dict with keys:
@@ -175,7 +178,7 @@ def check_sync_status(db_path: str = "data/db/gold.db") -> Dict[str, any]:
         - 'config_orbs': list of ORB times in config
     """
     try:
-        assert_sync_or_die(db_path)
+        assert_sync_or_die(db_connection, db_path)
         return {
             'synced': True,
             'errors': [],
