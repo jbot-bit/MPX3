@@ -35,6 +35,16 @@ if str(current_dir) not in sys.path:
 if str(repo_root) not in sys.path:
     sys.path.insert(0, str(repo_root))
 
+# CRITICAL: Startup sync guard - blocks app if config/DB mismatch
+# Must run BEFORE any trading logic to prevent real-money losses
+try:
+    from sync_guard import assert_sync_or_die
+    assert_sync_or_die()
+except Exception as e:
+    # If sync check fails, show error and stop
+    st.error(f"🚨 APP STARTUP BLOCKED - CONFIG/DB SYNC FAILURE\n\n{e}")
+    st.stop()
+
 from cloud_mode import get_database_path
 from edge_utils import (
     create_candidate,

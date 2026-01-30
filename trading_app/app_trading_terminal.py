@@ -23,6 +23,14 @@ if __name__ == "__main__" or "streamlit" in sys.modules:
         sys.path.insert(0, str(repo_root))
 
 import streamlit as st
+
+# CRITICAL: Startup sync guard - blocks app if config/DB mismatch
+try:
+    from sync_guard import assert_sync_or_die
+    assert_sync_or_die()
+except Exception as e:
+    st.error(f"🚨 APP STARTUP BLOCKED - CONFIG/DB SYNC FAILURE\n\n{e}")
+    st.stop()
 import pandas as pd
 import plotly.graph_objects as go
 from datetime import datetime, timedelta
