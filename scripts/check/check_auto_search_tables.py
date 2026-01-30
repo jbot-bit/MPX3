@@ -108,8 +108,8 @@ def check_auto_search_tables(db_path: str = "data/db/gold.db"):
 
     try:
         # Import hash function
-        sys.path.insert(0, str(Path(__file__).parent.parent.parent / "trading_app"))
-        from auto_search_engine import compute_param_hash
+        sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+        from trading_app.auto_search_engine import compute_param_hash
 
         # Test same params produce same hash
         params = {

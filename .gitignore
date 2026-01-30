@@ -35,6 +35,7 @@ candidate_claude.txt
 # Runtime logs
 trading_app.log
 log.txt
+app_errors.txt
 
 # Audit outputs (generated)
 audit_reports/
