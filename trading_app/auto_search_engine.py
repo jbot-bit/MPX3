@@ -33,9 +33,9 @@ import logging
 import math
 
 # Import audit3 modules
-from result_classifier import classify_result, RULESET_VERSION
-from priority_engine import PriorityEngine, PRIORITY_VERSION
-from provenance import create_provenance_dict
+from trading_app.result_classifier import classify_result, RULESET_VERSION
+from trading_app.priority_engine import PriorityEngine, PRIORITY_VERSION
+from trading_app.provenance import create_provenance_dict
 
 logger = logging.getLogger(__name__)
 

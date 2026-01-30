@@ -62,7 +62,9 @@
       "Bash(git checkout:*)",
       "Bash(powershell -Command:*)",
       "Bash(git reset:*)",
-      "Bash(echo:*)"
+      "Bash(echo:*)",
+      "Bash(pkill:*)",
+      "Bash(curl:*)"
     ]
   }
 }

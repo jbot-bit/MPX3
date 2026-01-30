@@ -518,7 +518,7 @@ def render_backtester_view():
 
                 candidate_id = create_edge_candidate(
                     instrument=instrument,
-                    name=f"{instrument}_{orb_time}_RR{rr_target}",
+                    name=None,  # Auto-generate using naming policy
                     hypothesis_text=f"Ad-hoc backtest: {instrument} {orb_time} ORB with {rr_target}R target",
                     feature_spec={},
                     filter_spec=filter_spec,

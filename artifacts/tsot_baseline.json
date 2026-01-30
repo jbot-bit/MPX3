@@ -1,0 +1,4777 @@
+{
+  "generated_at": "2026-01-30T20:02:46.897351",
+  "total_violations": 876,
+  "total_files": 78,
+  "by_file": {
+    "trading_app\\ai_assistant.py": {
+      "total": 2,
+      "violations": [
+        {
+          "line": 413,
+          "pattern": "\\b0900\\b",
+          "content_preview": "\"    theory_text='MGC 0900 ORB with 3.0 RR shows strong performance',\\n\""
+        },
+        {
+          "line": 415,
+          "pattern": "\\b0900\\b",
+          "content_preview": "\"    metadata={'orb_time': '0900', 'name': 'My Theory'}\\n\""
+        }
+      ]
+    },
+    "trading_app\\ai_chat.py": {
+      "total": 16,
+      "violations": [
+        {
+          "line": 16,
+          "pattern": "\\b0900\\b",
+          "content_preview": "response = assistant.ask(\"How did 0900 ORB perform last 30 days?\")"
+        },
+        {
+          "line": 236,
+          "pattern": "\\b0900\\b",
+          "content_preview": "for orb in ['0900', '1000', '1100', '1800', '2300', '0030']:"
+        },
+        {
+          "line": 236,
+          "pattern": "\\b1000\\b",
+          "content_preview": "for orb in ['0900', '1000', '1100', '1800', '2300', '0030']:"
+        },
+        {
+          "line": 236,
+          "pattern": "\\b1100\\b",
+          "content_preview": "for orb in ['0900', '1000', '1100', '1800', '2300', '0030']:"
+        },
+        {
+          "line": 236,
+          "pattern": "\\b1800\\b",
+          "content_preview": "for orb in ['0900', '1000', '1100', '1800', '2300', '0030']:"
+        },
+        {
+          "line": 236,
+          "pattern": "\\b2300\\b",
+          "content_preview": "for orb in ['0900', '1000', '1100', '1800', '2300', '0030']:"
+        },
+        {
+          "line": 236,
+          "pattern": "\\b0030\\b",
+          "content_preview": "for orb in ['0900', '1000', '1100', '1800', '2300', '0030']:"
+        },
+        {
+          "line": 239,
+          "pattern": "\\b0900\\b",
+          "content_preview": "return \"Please specify which ORB (e.g., '0900 ORB performance')\""
+        },
+        {
+          "line": 245,
+          "pattern": "\\b0900\\b",
+          "content_preview": "for orb in ['0900', '1000', '1100', '1800', '2300', '0030']:"
+        },
+        {
+          "line": 245,
+          "pattern": "\\b1000\\b",
+          "content_preview": "for orb in ['0900', '1000', '1100', '1800', '2300', '0030']:"
+        },
+        {
+          "line": 245,
+          "pattern": "\\b1100\\b",
+          "content_preview": "for orb in ['0900', '1000', '1100', '1800', '2300', '0030']:"
+        },
+        {
+          "line": 245,
+          "pattern": "\\b1800\\b",
+          "content_preview": "for orb in ['0900', '1000', '1100', '1800', '2300', '0030']:"
+        },
+        {
+          "line": 245,
+          "pattern": "\\b2300\\b",
+          "content_preview": "for orb in ['0900', '1000', '1100', '1800', '2300', '0030']:"
+        },
+        {
+          "line": 245,
+          "pattern": "\\b0030\\b",
+          "content_preview": "for orb in ['0900', '1000', '1100', '1800', '2300', '0030']:"
+        },
+        {
+          "line": 266,
+          "pattern": "\\b0900\\b",
+          "content_preview": "- \"How did 0900 ORB perform recently?\""
+        },
+        {
+          "line": 267,
+          "pattern": "\\b1100\\b",
+          "content_preview": "- \"Edge health for 1100 ORB\""
+        }
+      ]
+    },
+    "trading_app\\app_canonical.py": {
+      "total": 24,
+      "violations": [
+        {
+          "line": 502,
+          "pattern": "\\b0900\\b",
+          "content_preview": "for orb_name in ['0900', '1000', '1100', '1800', '2300', '0030']:"
+        },
+        {
+          "line": 502,
+          "pattern": "\\b1000\\b",
+          "content_preview": "for orb_name in ['0900', '1000', '1100', '1800', '2300', '0030']:"
+        },
+        {
+          "line": 502,
+          "pattern": "\\b1100\\b",
+          "content_preview": "for orb_name in ['0900', '1000', '1100', '1800', '2300', '0030']:"
+        },
+        {
+          "line": 502,
+          "pattern": "\\b1800\\b",
+          "content_preview": "for orb_name in ['0900', '1000', '1100', '1800', '2300', '0030']:"
+        },
+        {
+          "line": 502,
+          "pattern": "\\b2300\\b",
+          "content_preview": "for orb_name in ['0900', '1000', '1100', '1800', '2300', '0030']:"
+        },
+        {
+          "line": 502,
+          "pattern": "\\b0030\\b",
+          "content_preview": "for orb_name in ['0900', '1000', '1100', '1800', '2300', '0030']:"
+        },
+        {
+          "line": 714,
+          "pattern": "\\b0900\\b",
+          "content_preview": "all_orbs = ['0900', '1000', '1100', '1800', '2300', '0030']"
+        },
+        {
+          "line": 714,
+          "pattern": "\\b1000\\b",
+          "content_preview": "all_orbs = ['0900', '1000', '1100', '1800', '2300', '0030']"
+        },
+        {
+          "line": 714,
+          "pattern": "\\b1100\\b",
+          "content_preview": "all_orbs = ['0900', '1000', '1100', '1800', '2300', '0030']"
+        },
+        {
+          "line": 714,
+          "pattern": "\\b1800\\b",
+          "content_preview": "all_orbs = ['0900', '1000', '1100', '1800', '2300', '0030']"
+        },
+        {
+          "line": 714,
+          "pattern": "\\b2300\\b",
+          "content_preview": "all_orbs = ['0900', '1000', '1100', '1800', '2300', '0030']"
+        },
+        {
+          "line": 714,
+          "pattern": "\\b0030\\b",
+          "content_preview": "all_orbs = ['0900', '1000', '1100', '1800', '2300', '0030']"
+        },
+        {
+          "line": 796,
+          "pattern": "\\b0900\\b",
+          "content_preview": "(col1, '0900'),"
+        },
+        {
+          "line": 797,
+          "pattern": "\\b1000\\b",
+          "content_preview": "(col2, '1000'),"
+        },
+        {
+          "line": 798,
+          "pattern": "\\b1100\\b",
+          "content_preview": "(col3, '1100'),"
+        },
+        {
+          "line": 799,
+          "pattern": "\\b1800\\b",
+          "content_preview": "(col4, '1800'),"
+        },
+        {
+          "line": 800,
+          "pattern": "\\b2300\\b",
+          "content_preview": "(col5, '2300'),"
+        },
+        {
+          "line": 801,
+          "pattern": "\\b0030\\b",
+          "content_preview": "(col6, '0030')"
+        },
+        {
+          "line": 1254,
+          "pattern": "\\b0900\\b",
+          "content_preview": "candidate_orb = st.selectbox(\"ORB Time\", [\"0900\", \"1000\", \"1100\", \"1800\", \"2300\""
+        },
+        {
+          "line": 1254,
+          "pattern": "\\b1000\\b",
+          "content_preview": "candidate_orb = st.selectbox(\"ORB Time\", [\"0900\", \"1000\", \"1100\", \"1800\", \"2300\""
+        },
+        {
+          "line": 1254,
+          "pattern": "\\b1100\\b",
+          "content_preview": "candidate_orb = st.selectbox(\"ORB Time\", [\"0900\", \"1000\", \"1100\", \"1800\", \"2300\""
+        },
+        {
+          "line": 1254,
+          "pattern": "\\b1800\\b",
+          "content_preview": "candidate_orb = st.selectbox(\"ORB Time\", [\"0900\", \"1000\", \"1100\", \"1800\", \"2300\""
+        },
+        {
+          "line": 1254,
+          "pattern": "\\b2300\\b",
+          "content_preview": "candidate_orb = st.selectbox(\"ORB Time\", [\"0900\", \"1000\", \"1100\", \"1800\", \"2300\""
+        },
+        {
+          "line": 1254,
+          "pattern": "\\b0030\\b",
+          "content_preview": "candidate_orb = st.selectbox(\"ORB Time\", [\"0900\", \"1000\", \"1100\", \"1800\", \"2300\""
+        }
+      ]
+    },
+    "trading_app\\app_mobile.py": {
+      "total": 4,
+      "violations": [
+        {
+          "line": 173,
+          "pattern": "\\b1000\\b",
+          "content_preview": "daily_loss_dollars=1000.0,"
+        },
+        {
+          "line": 218,
+          "pattern": "\\b1000\\b",
+          "content_preview": "count = st_autorefresh(interval=refresh_interval * 1000, key=\"mobile_refresh\")"
+        },
+        {
+          "line": 467,
+          "pattern": "\\b1000\\b",
+          "content_preview": "min_value=1000.0,"
+        },
+        {
+          "line": 470,
+          "pattern": "\\b1000\\b",
+          "content_preview": "step=1000.0,"
+        }
+      ]
+    },
+    "trading_app\\app_research_lab.py": {
+      "total": 15,
+      "violations": [
+        {
+          "line": 165,
+          "pattern": "\\b0900\\b",
+          "content_preview": "[\"0900\", \"1000\", \"1100\", \"1800\", \"2300\", \"0030\"],"
+        },
+        {
+          "line": 165,
+          "pattern": "\\b1000\\b",
+          "content_preview": "[\"0900\", \"1000\", \"1100\", \"1800\", \"2300\", \"0030\"],"
+        },
+        {
+          "line": 165,
+          "pattern": "\\b1100\\b",
+          "content_preview": "[\"0900\", \"1000\", \"1100\", \"1800\", \"2300\", \"0030\"],"
+        },
+        {
+          "line": 165,
+          "pattern": "\\b1800\\b",
+          "content_preview": "[\"0900\", \"1000\", \"1100\", \"1800\", \"2300\", \"0030\"],"
+        },
+        {
+          "line": 165,
+          "pattern": "\\b2300\\b",
+          "content_preview": "[\"0900\", \"1000\", \"1100\", \"1800\", \"2300\", \"0030\"],"
+        },
+        {
+          "line": 165,
+          "pattern": "\\b0030\\b",
+          "content_preview": "[\"0900\", \"1000\", \"1100\", \"1800\", \"2300\", \"0030\"],"
+        },
+        {
+          "line": 166,
+          "pattern": "\\b0900\\b",
+          "content_preview": "default=[\"0900\", \"1000\", \"1100\"],"
+        },
+        {
+          "line": 166,
+          "pattern": "\\b1000\\b",
+          "content_preview": "default=[\"0900\", \"1000\", \"1100\"],"
+        },
+        {
+          "line": 166,
+          "pattern": "\\b1100\\b",
+          "content_preview": "default=[\"0900\", \"1000\", \"1100\"],"
+        },
+        {
+          "line": 478,
+          "pattern": "\\b0900\\b",
+          "content_preview": "orb_time = st.selectbox(\"ORB TIME\", [\"0900\", \"1000\", \"1100\", \"1800\", \"2300\", \"00"
+        },
+        {
+          "line": 478,
+          "pattern": "\\b1000\\b",
+          "content_preview": "orb_time = st.selectbox(\"ORB TIME\", [\"0900\", \"1000\", \"1100\", \"1800\", \"2300\", \"00"
+        },
+        {
+          "line": 478,
+          "pattern": "\\b1100\\b",
+          "content_preview": "orb_time = st.selectbox(\"ORB TIME\", [\"0900\", \"1000\", \"1100\", \"1800\", \"2300\", \"00"
+        },
+        {
+          "line": 478,
+          "pattern": "\\b1800\\b",
+          "content_preview": "orb_time = st.selectbox(\"ORB TIME\", [\"0900\", \"1000\", \"1100\", \"1800\", \"2300\", \"00"
+        },
+        {
+          "line": 478,
+          "pattern": "\\b2300\\b",
+          "content_preview": "orb_time = st.selectbox(\"ORB TIME\", [\"0900\", \"1000\", \"1100\", \"1800\", \"2300\", \"00"
+        },
+        {
+          "line": 478,
+          "pattern": "\\b0030\\b",
+          "content_preview": "orb_time = st.selectbox(\"ORB TIME\", [\"0900\", \"1000\", \"1100\", \"1800\", \"2300\", \"00"
+        }
+      ]
+    },
+    "trading_app\\app_simple.py": {
+      "total": 4,
+      "violations": [
+        {
+          "line": 233,
+          "pattern": "\\b0900\\b",
+          "content_preview": "placeholder=\"How did 0900 ORB perform last 30 days?\""
+        },
+        {
+          "line": 245,
+          "pattern": "\\b0900\\b",
+          "content_preview": "- \"How did 0900 ORB perform recently?\""
+        },
+        {
+          "line": 246,
+          "pattern": "\\b1100\\b",
+          "content_preview": "- \"1100 ORB performance last 60 days\""
+        },
+        {
+          "line": 249,
+          "pattern": "\\b0900\\b",
+          "content_preview": "- \"Edge health for 0900 ORB\""
+        }
+      ]
+    },
+    "trading_app\\app_trading_terminal.py": {
+      "total": 2,
+      "violations": [
+        {
+          "line": 710,
+          "pattern": "\\b0900\\b",
+          "content_preview": "<p>0900 ORB strategy performing well. 1000 ORB showing strong results in trendin"
+        },
+        {
+          "line": 710,
+          "pattern": "\\b1000\\b",
+          "content_preview": "<p>0900 ORB strategy performing well. 1000 ORB showing strong results in trendin"
+        }
+      ]
+    },
+    "trading_app\\auto_search_engine.py": {
+      "total": 10,
+      "violations": [
+        {
+          "line": 48,
+          "pattern": "\\b0900\\b",
+          "content_preview": "orb_times: List[str] = None  # ['0900', '1000', '1100']"
+        },
+        {
+          "line": 48,
+          "pattern": "\\b1000\\b",
+          "content_preview": "orb_times: List[str] = None  # ['0900', '1000', '1100']"
+        },
+        {
+          "line": 48,
+          "pattern": "\\b1100\\b",
+          "content_preview": "orb_times: List[str] = None  # ['0900', '1000', '1100']"
+        },
+        {
+          "line": 60,
+          "pattern": "\\b0900\\b",
+          "content_preview": "self.orb_times = ['0900', '1000', '1100']"
+        },
+        {
+          "line": 60,
+          "pattern": "\\b1000\\b",
+          "content_preview": "self.orb_times = ['0900', '1000', '1100']"
+        },
+        {
+          "line": 60,
+          "pattern": "\\b1100\\b",
+          "content_preview": "self.orb_times = ['0900', '1000', '1100']"
+        },
+        {
+          "line": 721,
+          "pattern": "\\b1000\\b",
+          "content_preview": "max_count: int = 1000"
+        },
+        {
+          "line": 835,
+          "pattern": "\\b0900\\b",
+          "content_preview": "'orb_time': '0900',"
+        },
+        {
+          "line": 852,
+          "pattern": "\\b0900\\b",
+          "content_preview": "'orb_times': ['0900', '1000'],"
+        },
+        {
+          "line": 852,
+          "pattern": "\\b1000\\b",
+          "content_preview": "'orb_times': ['0900', '1000'],"
+        }
+      ]
+    },
+    "trading_app\\chart_analyzer.py": {
+      "total": 12,
+      "violations": [
+        {
+          "line": 308,
+          "pattern": "\\b0900\\b",
+          "content_preview": "if orb_time in [\"0900\", \"1000\", \"1100\"] and \"ASIA\" in session_from_analysis:"
+        },
+        {
+          "line": 308,
+          "pattern": "\\b1000\\b",
+          "content_preview": "if orb_time in [\"0900\", \"1000\", \"1100\"] and \"ASIA\" in session_from_analysis:"
+        },
+        {
+          "line": 308,
+          "pattern": "\\b1100\\b",
+          "content_preview": "if orb_time in [\"0900\", \"1000\", \"1100\"] and \"ASIA\" in session_from_analysis:"
+        },
+        {
+          "line": 310,
+          "pattern": "\\b1800\\b",
+          "content_preview": "elif orb_time == \"1800\" and \"LONDON\" in session_from_analysis:"
+        },
+        {
+          "line": 312,
+          "pattern": "\\b2300\\b",
+          "content_preview": "elif orb_time in [\"2300\", \"0030\"] and \"NY\" in session_from_analysis:"
+        },
+        {
+          "line": 312,
+          "pattern": "\\b0030\\b",
+          "content_preview": "elif orb_time in [\"2300\", \"0030\"] and \"NY\" in session_from_analysis:"
+        },
+        {
+          "line": 373,
+          "pattern": "\\b0900\\b",
+          "content_preview": "\"ASIA\": [\"0900\", \"1000\", \"1100\"],"
+        },
+        {
+          "line": 373,
+          "pattern": "\\b1000\\b",
+          "content_preview": "\"ASIA\": [\"0900\", \"1000\", \"1100\"],"
+        },
+        {
+          "line": 373,
+          "pattern": "\\b1100\\b",
+          "content_preview": "\"ASIA\": [\"0900\", \"1000\", \"1100\"],"
+        },
+        {
+          "line": 374,
+          "pattern": "\\b1800\\b",
+          "content_preview": "\"LONDON\": [\"1800\"],"
+        },
+        {
+          "line": 375,
+          "pattern": "\\b2300\\b",
+          "content_preview": "\"NY\": [\"2300\", \"0030\"]"
+        },
+        {
+          "line": 375,
+          "pattern": "\\b0030\\b",
+          "content_preview": "\"NY\": [\"2300\", \"0030\"]"
+        }
+      ]
+    },
+    "trading_app\\cloud_mode.py": {
+      "total": 1,
+      "violations": [
+        {
+          "line": 262,
+          "pattern": "\\b1000\\b",
+          "content_preview": "\"volume\": 1000"
+        }
+      ]
+    },
+    "trading_app\\config.py": {
+      "total": 6,
+      "violations": [
+        {
+          "line": 46,
+          "pattern": "\\b0900\\b",
+          "content_preview": "{\"hour\": 9, \"min\": 0, \"name\": \"0900\"},"
+        },
+        {
+          "line": 47,
+          "pattern": "\\b1000\\b",
+          "content_preview": "{\"hour\": 10, \"min\": 0, \"name\": \"1000\"},"
+        },
+        {
+          "line": 48,
+          "pattern": "\\b1100\\b",
+          "content_preview": "{\"hour\": 11, \"min\": 0, \"name\": \"1100\"},"
+        },
+        {
+          "line": 49,
+          "pattern": "\\b1800\\b",
+          "content_preview": "{\"hour\": 18, \"min\": 0, \"name\": \"1800\"},   # London open (Asia close)"
+        },
+        {
+          "line": 50,
+          "pattern": "\\b2300\\b",
+          "content_preview": "{\"hour\": 23, \"min\": 0, \"name\": \"2300\"},"
+        },
+        {
+          "line": 51,
+          "pattern": "\\b0030\\b",
+          "content_preview": "{\"hour\": 0, \"min\": 30, \"name\": \"0030\"},  # Next day"
+        }
+      ]
+    },
+    "trading_app\\csv_chart_analyzer.py": {
+      "total": 6,
+      "violations": [
+        {
+          "line": 548,
+          "pattern": "\\b0900\\b",
+          "content_preview": "if orb_time in [\"0900\", \"1000\", \"1100\"] and session == \"ASIA\":"
+        },
+        {
+          "line": 548,
+          "pattern": "\\b1000\\b",
+          "content_preview": "if orb_time in [\"0900\", \"1000\", \"1100\"] and session == \"ASIA\":"
+        },
+        {
+          "line": 548,
+          "pattern": "\\b1100\\b",
+          "content_preview": "if orb_time in [\"0900\", \"1000\", \"1100\"] and session == \"ASIA\":"
+        },
+        {
+          "line": 550,
+          "pattern": "\\b1800\\b",
+          "content_preview": "elif orb_time == \"1800\" and session == \"LONDON\":"
+        },
+        {
+          "line": 552,
+          "pattern": "\\b2300\\b",
+          "content_preview": "elif orb_time in [\"2300\", \"0030\"] and session == \"NY\":"
+        },
+        {
+          "line": 552,
+          "pattern": "\\b0030\\b",
+          "content_preview": "elif orb_time in [\"2300\", \"0030\"] and session == \"NY\":"
+        }
+      ]
+    },
+    "trading_app\\data_loader.py": {
+      "total": 9,
+      "violations": [
+        {
+          "line": 550,
+          "pattern": "\\b0900\\b",
+          "content_preview": "orb_name: ORB name (\"0900\", \"1000\", etc.)"
+        },
+        {
+          "line": 550,
+          "pattern": "\\b1000\\b",
+          "content_preview": "orb_name: ORB name (\"0900\", \"1000\", etc.)"
+        },
+        {
+          "line": 639,
+          "pattern": "\\b0900\\b",
+          "content_preview": "orb_name: ORB name (\"0900\", \"1000\", etc.)"
+        },
+        {
+          "line": 639,
+          "pattern": "\\b1000\\b",
+          "content_preview": "orb_name: ORB name (\"0900\", \"1000\", etc.)"
+        },
+        {
+          "line": 647,
+          "pattern": "\\b2300\\b",
+          "content_preview": "\"2300\": 1.15,  # 15% increase for filtered trades"
+        },
+        {
+          "line": 648,
+          "pattern": "\\b0030\\b",
+          "content_preview": "\"0030\": 1.61,  # 61% increase"
+        },
+        {
+          "line": 649,
+          "pattern": "\\b1100\\b",
+          "content_preview": "\"1100\": 1.78,  # 78% increase"
+        },
+        {
+          "line": 650,
+          "pattern": "\\b1000\\b",
+          "content_preview": "\"1000\": 1.23,  # 23% increase"
+        },
+        {
+          "line": 692,
+          "pattern": "\\b1000\\b",
+          "content_preview": "\"volume\": random.randint(100, 1000),"
+        }
+      ]
+    },
+    "trading_app\\directional_bias.py": {
+      "total": 2,
+      "violations": [
+        {
+          "line": 84,
+          "pattern": "\\b1100\\b",
+          "content_preview": "orb_time: ORB time (e.g., \"1100\")"
+        },
+        {
+          "line": 94,
+          "pattern": "\\b1100\\b",
+          "content_preview": "if orb_time != \"1100\":"
+        }
+      ]
+    },
+    "trading_app\\drawdown_engine.py": {
+      "total": 3,
+      "violations": [
+        {
+          "line": 396,
+          "pattern": "\\b1000\\b",
+          "content_preview": "< $1000: WARNING (caution zone)"
+        },
+        {
+          "line": 397,
+          "pattern": "\\b1000\\b",
+          "content_preview": ">= $1000: SAFE (comfortable cushion)"
+        },
+        {
+          "line": 409,
+          "pattern": "\\b1000\\b",
+          "content_preview": "elif distance_to_breach < 1000:"
+        }
+      ]
+    },
+    "trading_app\\edge_memory_bridge.py": {
+      "total": 4,
+      "violations": [
+        {
+          "line": 35,
+          "pattern": "\\b0900\\b",
+          "content_preview": "orb_time: '0900', '1000', etc."
+        },
+        {
+          "line": 35,
+          "pattern": "\\b1000\\b",
+          "content_preview": "orb_time: '0900', '1000', etc."
+        },
+        {
+          "line": 187,
+          "pattern": "\\b0900\\b",
+          "content_preview": "orb_time: '0900', '1000', etc."
+        },
+        {
+          "line": 187,
+          "pattern": "\\b1000\\b",
+          "content_preview": "orb_time: '0900', '1000', etc."
+        }
+      ]
+    },
+    "trading_app\\edge_tracker.py": {
+      "total": 17,
+      "violations": [
+        {
+          "line": 18,
+          "pattern": "\\b0900\\b",
+          "content_preview": "health = tracker.check_edge_health('0900', 'MGC')"
+        },
+        {
+          "line": 57,
+          "pattern": "\\b0900\\b",
+          "content_preview": "orb_time: ORB time (0900, 1000, etc.)"
+        },
+        {
+          "line": 57,
+          "pattern": "\\b1000\\b",
+          "content_preview": "orb_time: ORB time (0900, 1000, etc.)"
+        },
+        {
+          "line": 273,
+          "pattern": "\\b0900\\b",
+          "content_preview": "valid_orb_times = ('0030', '0900', '1000', '1100', '1800', '2300')"
+        },
+        {
+          "line": 273,
+          "pattern": "\\b1000\\b",
+          "content_preview": "valid_orb_times = ('0030', '0900', '1000', '1100', '1800', '2300')"
+        },
+        {
+          "line": 273,
+          "pattern": "\\b1100\\b",
+          "content_preview": "valid_orb_times = ('0030', '0900', '1000', '1100', '1800', '2300')"
+        },
+        {
+          "line": 273,
+          "pattern": "\\b1800\\b",
+          "content_preview": "valid_orb_times = ('0030', '0900', '1000', '1100', '1800', '2300')"
+        },
+        {
+          "line": 273,
+          "pattern": "\\b2300\\b",
+          "content_preview": "valid_orb_times = ('0030', '0900', '1000', '1100', '1800', '2300')"
+        },
+        {
+          "line": 273,
+          "pattern": "\\b0030\\b",
+          "content_preview": "valid_orb_times = ('0030', '0900', '1000', '1100', '1800', '2300')"
+        },
+        {
+          "line": 278,
+          "pattern": "\\b0900\\b",
+          "content_preview": "AND orb_time IN ('0030', '0900', '1000', '1100', '1800', '2300')"
+        },
+        {
+          "line": 278,
+          "pattern": "\\b1000\\b",
+          "content_preview": "AND orb_time IN ('0030', '0900', '1000', '1100', '1800', '2300')"
+        },
+        {
+          "line": 278,
+          "pattern": "\\b1100\\b",
+          "content_preview": "AND orb_time IN ('0030', '0900', '1000', '1100', '1800', '2300')"
+        },
+        {
+          "line": 278,
+          "pattern": "\\b1800\\b",
+          "content_preview": "AND orb_time IN ('0030', '0900', '1000', '1100', '1800', '2300')"
+        },
+        {
+          "line": 278,
+          "pattern": "\\b2300\\b",
+          "content_preview": "AND orb_time IN ('0030', '0900', '1000', '1100', '1800', '2300')"
+        },
+        {
+          "line": 278,
+          "pattern": "\\b0030\\b",
+          "content_preview": "AND orb_time IN ('0030', '0900', '1000', '1100', '1800', '2300')"
+        },
+        {
+          "line": 455,
+          "pattern": "\\b0900\\b",
+          "content_preview": "print(\"[2] Checking 0900 ORB health...\")"
+        },
+        {
+          "line": 456,
+          "pattern": "\\b0900\\b",
+          "content_preview": "health = tracker.check_edge_health('0900')"
+        }
+      ]
+    },
+    "trading_app\\edge_utils.py": {
+      "total": 5,
+      "violations": [
+        {
+          "line": 39,
+          "pattern": "\\b0900\\b",
+          "content_preview": "orb_time: 0900, 1000, etc."
+        },
+        {
+          "line": 39,
+          "pattern": "\\b1000\\b",
+          "content_preview": "orb_time: 0900, 1000, etc."
+        },
+        {
+          "line": 77,
+          "pattern": "\\b0900\\b",
+          "content_preview": "orb_time: 4-digit ORB time (0900, 1000, etc.)"
+        },
+        {
+          "line": 77,
+          "pattern": "\\b1000\\b",
+          "content_preview": "orb_time: 4-digit ORB time (0900, 1000, etc.)"
+        },
+        {
+          "line": 87,
+          "pattern": "\\b1000\\b",
+          "content_preview": ">>> generate_strategy_name(\"MGC\", \"1000\", \"LONG\", \"1ST\", \"ORB_LOW\", 1)"
+        }
+      ]
+    },
+    "trading_app\\entry_rules.py": {
+      "total": 6,
+      "violations": [
+        {
+          "line": 29,
+          "pattern": "\\b0900\\b",
+          "content_preview": "orb_time: Time string like \"0900\", \"1000\""
+        },
+        {
+          "line": 29,
+          "pattern": "\\b1000\\b",
+          "content_preview": "orb_time: Time string like \"0900\", \"1000\""
+        },
+        {
+          "line": 491,
+          "pattern": "\\b1000\\b",
+          "content_preview": "'volume': [1000] * 20"
+        },
+        {
+          "line": 498,
+          "pattern": "\\b1000\\b",
+          "content_preview": "orb_time=\"1000\","
+        },
+        {
+          "line": 516,
+          "pattern": "\\b1000\\b",
+          "content_preview": "orb_time=\"1000\","
+        },
+        {
+          "line": 535,
+          "pattern": "\\b1000\\b",
+          "content_preview": "orb_time=\"1000\","
+        }
+      ]
+    },
+    "trading_app\\execution_contract.py": {
+      "total": 2,
+      "violations": [
+        {
+          "line": 346,
+          "pattern": "\\b1000\\b",
+          "content_preview": "orb_time=\"1000\","
+        },
+        {
+          "line": 361,
+          "pattern": "\\b1000\\b",
+          "content_preview": "orb_time=\"1000\","
+        }
+      ]
+    },
+    "trading_app\\execution_spec.py": {
+      "total": 14,
+      "violations": [
+        {
+          "line": 32,
+          "pattern": "\\b1000\\b",
+          "content_preview": "orb_time=\"1000\","
+        },
+        {
+          "line": 47,
+          "pattern": "\\b0900\\b",
+          "content_preview": "orb_time: str = \"1000\"  # Format: \"0900\", \"1000\", \"1100\", etc."
+        },
+        {
+          "line": 47,
+          "pattern": "\\b1000\\b",
+          "content_preview": "orb_time: str = \"1000\"  # Format: \"0900\", \"1000\", \"1100\", etc."
+        },
+        {
+          "line": 47,
+          "pattern": "\\b1100\\b",
+          "content_preview": "orb_time: str = \"1000\"  # Format: \"0900\", \"1000\", \"1100\", etc."
+        },
+        {
+          "line": 80,
+          "pattern": "\\b0900\\b",
+          "content_preview": "f\"orb_time must be 4 digits (e.g., '0900', '1000'), got: {self.orb_time}\""
+        },
+        {
+          "line": 80,
+          "pattern": "\\b1000\\b",
+          "content_preview": "f\"orb_time must be 4 digits (e.g., '0900', '1000'), got: {self.orb_time}\""
+        },
+        {
+          "line": 201,
+          "pattern": "\\b1000\\b",
+          "content_preview": "orb_time=\"1000\","
+        },
+        {
+          "line": 208,
+          "pattern": "\\b1000\\b",
+          "content_preview": "description=\"MGC 1000 ORB, tradeable entry (1st close outside)\""
+        },
+        {
+          "line": 214,
+          "pattern": "\\b1000\\b",
+          "content_preview": "orb_time=\"1000\","
+        },
+        {
+          "line": 221,
+          "pattern": "\\b1000\\b",
+          "content_preview": "description=\"MGC 1000 ORB, limit order entry\""
+        },
+        {
+          "line": 227,
+          "pattern": "\\b1000\\b",
+          "content_preview": "orb_time=\"1000\","
+        },
+        {
+          "line": 234,
+          "pattern": "\\b1000\\b",
+          "content_preview": "description=\"MGC 1000 ORB, 5m close confirmation\""
+        },
+        {
+          "line": 272,
+          "pattern": "\\b1000\\b",
+          "content_preview": "orb_time=\"1000\","
+        },
+        {
+          "line": 291,
+          "pattern": "\\b1000\\b",
+          "content_preview": "orb_time=\"1000\","
+        }
+      ]
+    },
+    "trading_app\\experimental_scanner.py": {
+      "total": 11,
+      "violations": [
+        {
+          "line": 192,
+          "pattern": "\\b0900\\b",
+          "content_preview": "- prev_0900_outcome: Previous trading day's 0900 ORB outcome"
+        },
+        {
+          "line": 249,
+          "pattern": "\\b0900\\b",
+          "content_preview": "'0900': orb_0900_size,"
+        },
+        {
+          "line": 250,
+          "pattern": "\\b1000\\b",
+          "content_preview": "'1000': orb_1000_size,"
+        },
+        {
+          "line": 251,
+          "pattern": "\\b1100\\b",
+          "content_preview": "'1100': orb_1100_size"
+        },
+        {
+          "line": 257,
+          "pattern": "\\b0900\\b",
+          "content_preview": "'0900': orb_0900_size / current_atr if orb_0900_size else None,"
+        },
+        {
+          "line": 258,
+          "pattern": "\\b1000\\b",
+          "content_preview": "'1000': orb_1000_size / current_atr if orb_1000_size else None,"
+        },
+        {
+          "line": 259,
+          "pattern": "\\b1100\\b",
+          "content_preview": "'1100': orb_1100_size / current_atr if orb_1100_size else None"
+        },
+        {
+          "line": 364,
+          "pattern": "\\b0900\\b",
+          "content_preview": "return (False, \"No previous 0900 outcome data\")"
+        },
+        {
+          "line": 367,
+          "pattern": "\\b0900\\b",
+          "content_preview": "if 'Previous day 0900 ORB failed' in filter_condition:"
+        },
+        {
+          "line": 369,
+          "pattern": "\\b0900\\b",
+          "content_preview": "return (True, \"Previous 0900 ORB failed (mean reversion setup)\")"
+        },
+        {
+          "line": 370,
+          "pattern": "\\b0900\\b",
+          "content_preview": "return (False, f\"Previous 0900 was {prev_0900_outcome}, not LOSS\")"
+        }
+      ]
+    },
+    "trading_app\\live_chart_builder.py": {
+      "total": 2,
+      "violations": [
+        {
+          "line": 18,
+          "pattern": "\\b0900\\b",
+          "content_preview": "orb_name: str = \"0900\","
+        },
+        {
+          "line": 37,
+          "pattern": "\\b0900\\b",
+          "content_preview": "orb_name: ORB name (e.g., \"0900\")"
+        }
+      ]
+    },
+    "trading_app\\live_scanner.py": {
+      "total": 18,
+      "violations": [
+        {
+          "line": 47,
+          "pattern": "\\b0900\\b",
+          "content_preview": "'0900': time(9, 5),   # 09:00-09:05"
+        },
+        {
+          "line": 48,
+          "pattern": "\\b1000\\b",
+          "content_preview": "'1000': time(10, 5),  # 10:00-10:05"
+        },
+        {
+          "line": 49,
+          "pattern": "\\b1100\\b",
+          "content_preview": "'1100': time(11, 5),  # 11:00-11:05"
+        },
+        {
+          "line": 50,
+          "pattern": "\\b1800\\b",
+          "content_preview": "'1800': time(18, 5),  # 18:00-18:05"
+        },
+        {
+          "line": 51,
+          "pattern": "\\b2300\\b",
+          "content_preview": "'2300': time(23, 5),  # 23:00-23:05"
+        },
+        {
+          "line": 52,
+          "pattern": "\\b0030\\b",
+          "content_preview": "'0030': time(0, 35)   # 00:30-00:35"
+        },
+        {
+          "line": 87,
+          "pattern": "\\b0900\\b",
+          "content_preview": "('0900', row[2], row[3], row[4], row[5], row[6], row[7], row[8]),"
+        },
+        {
+          "line": 88,
+          "pattern": "\\b1000\\b",
+          "content_preview": "('1000', row[9], row[10], row[11], row[12], row[13], row[14], row[15]),"
+        },
+        {
+          "line": 89,
+          "pattern": "\\b1100\\b",
+          "content_preview": "('1100', row[16], row[17], row[18], row[19], row[20], row[21], row[22]),"
+        },
+        {
+          "line": 90,
+          "pattern": "\\b1800\\b",
+          "content_preview": "('1800', row[23], row[24], row[25], row[26], row[27], row[28], row[29]),"
+        },
+        {
+          "line": 91,
+          "pattern": "\\b2300\\b",
+          "content_preview": "('2300', row[30], row[31], row[32], row[33], row[34], row[35], row[36]),"
+        },
+        {
+          "line": 92,
+          "pattern": "\\b0030\\b",
+          "content_preview": "('0030', row[37], row[38], row[39], row[40], row[41], row[42], row[43])"
+        },
+        {
+          "line": 514,
+          "pattern": "\\b0900\\b",
+          "content_preview": "('0900', row[2], row[3], row[4], row[5], row[6], row[7], row[8]),"
+        },
+        {
+          "line": 515,
+          "pattern": "\\b1000\\b",
+          "content_preview": "('1000', row[9], row[10], row[11], row[12], row[13], row[14], row[15]),"
+        },
+        {
+          "line": 516,
+          "pattern": "\\b1100\\b",
+          "content_preview": "('1100', row[16], row[17], row[18], row[19], row[20], row[21], row[22]),"
+        },
+        {
+          "line": 517,
+          "pattern": "\\b1800\\b",
+          "content_preview": "('1800', row[23], row[24], row[25], row[26], row[27], row[28], row[29]),"
+        },
+        {
+          "line": 518,
+          "pattern": "\\b2300\\b",
+          "content_preview": "('2300', row[30], row[31], row[32], row[33], row[34], row[35], row[36]),"
+        },
+        {
+          "line": 519,
+          "pattern": "\\b0030\\b",
+          "content_preview": "('0030', row[37], row[38], row[39], row[40], row[41], row[42], row[43])"
+        }
+      ]
+    },
+    "trading_app\\market_hours_monitor.py": {
+      "total": 4,
+      "violations": [
+        {
+          "line": 97,
+          "pattern": "time\\(\\s*9\\s*,\\s*0\\s*\\)",
+          "content_preview": "'start': time(9, 0),"
+        },
+        {
+          "line": 103,
+          "pattern": "time\\(\\s*18\\s*,\\s*0\\s*\\)",
+          "content_preview": "'start': time(18, 0),"
+        },
+        {
+          "line": 104,
+          "pattern": "time\\(\\s*23\\s*,\\s*0\\s*\\)",
+          "content_preview": "'end': time(23, 0),"
+        },
+        {
+          "line": 109,
+          "pattern": "time\\(\\s*23\\s*,\\s*0\\s*\\)",
+          "content_preview": "'start': time(23, 0),"
+        }
+      ]
+    },
+    "trading_app\\market_intelligence.py": {
+      "total": 7,
+      "violations": [
+        {
+          "line": 101,
+          "pattern": "\\b0900\\b",
+          "content_preview": "\"0900\": (9, 0),"
+        },
+        {
+          "line": 102,
+          "pattern": "\\b1000\\b",
+          "content_preview": "\"1000\": (10, 0),"
+        },
+        {
+          "line": 103,
+          "pattern": "\\b1100\\b",
+          "content_preview": "\"1100\": (11, 0),"
+        },
+        {
+          "line": 104,
+          "pattern": "\\b1800\\b",
+          "content_preview": "\"1800\": (18, 0),"
+        },
+        {
+          "line": 105,
+          "pattern": "\\b2300\\b",
+          "content_preview": "\"2300\": (23, 0),"
+        },
+        {
+          "line": 106,
+          "pattern": "\\b0030\\b",
+          "content_preview": "\"0030\": (0, 30),"
+        },
+        {
+          "line": 288,
+          "pattern": "\\b1000\\b",
+          "content_preview": "OpportunityType.ACTIVE_BREAKOUT: 1000,"
+        }
+      ]
+    },
+    "trading_app\\market_scanner.py": {
+      "total": 40,
+      "violations": [
+        {
+          "line": 12,
+          "pattern": "\\b0900\\b",
+          "content_preview": "- \"0900 ORB: SKIP (conditions unfavorable)\""
+        },
+        {
+          "line": 13,
+          "pattern": "\\b1100\\b",
+          "content_preview": "- \"1100 ORB: TAKE (high confidence setup)\""
+        },
+        {
+          "line": 42,
+          "pattern": "\\b0900\\b",
+          "content_preview": "'0900': {'mean': 0.10, 'std': 0.04},"
+        },
+        {
+          "line": 43,
+          "pattern": "\\b1000\\b",
+          "content_preview": "'1000': {'mean': 0.08, 'std': 0.03},"
+        },
+        {
+          "line": 44,
+          "pattern": "\\b1100\\b",
+          "content_preview": "'1100': {'mean': 0.09, 'std': 0.04},"
+        },
+        {
+          "line": 45,
+          "pattern": "\\b1800\\b",
+          "content_preview": "'1800': {'mean': 0.12, 'std': 0.05},"
+        },
+        {
+          "line": 46,
+          "pattern": "\\b2300\\b",
+          "content_preview": "'2300': {'mean': 0.15, 'std': 0.06},"
+        },
+        {
+          "line": 47,
+          "pattern": "\\b0030\\b",
+          "content_preview": "'0030': {'mean': 0.13, 'std': 0.05},"
+        },
+        {
+          "line": 61,
+          "pattern": "\\b0900\\b",
+          "content_preview": "for orb_time in ['0900', '1000', '1100', '1800', '2300', '0030']:"
+        },
+        {
+          "line": 61,
+          "pattern": "\\b1000\\b",
+          "content_preview": "for orb_time in ['0900', '1000', '1100', '1800', '2300', '0030']:"
+        },
+        {
+          "line": 61,
+          "pattern": "\\b1100\\b",
+          "content_preview": "for orb_time in ['0900', '1000', '1100', '1800', '2300', '0030']:"
+        },
+        {
+          "line": 61,
+          "pattern": "\\b1800\\b",
+          "content_preview": "for orb_time in ['0900', '1000', '1100', '1800', '2300', '0030']:"
+        },
+        {
+          "line": 61,
+          "pattern": "\\b2300\\b",
+          "content_preview": "for orb_time in ['0900', '1000', '1100', '1800', '2300', '0030']:"
+        },
+        {
+          "line": 61,
+          "pattern": "\\b0030\\b",
+          "content_preview": "for orb_time in ['0900', '1000', '1100', '1800', '2300', '0030']:"
+        },
+        {
+          "line": 89,
+          "pattern": "\\b0900\\b",
+          "content_preview": "for orb_time in ['0900', '1000', '1100', '1800', '2300', '0030']:"
+        },
+        {
+          "line": 89,
+          "pattern": "\\b1000\\b",
+          "content_preview": "for orb_time in ['0900', '1000', '1100', '1800', '2300', '0030']:"
+        },
+        {
+          "line": 89,
+          "pattern": "\\b1100\\b",
+          "content_preview": "for orb_time in ['0900', '1000', '1100', '1800', '2300', '0030']:"
+        },
+        {
+          "line": 89,
+          "pattern": "\\b1800\\b",
+          "content_preview": "for orb_time in ['0900', '1000', '1100', '1800', '2300', '0030']:"
+        },
+        {
+          "line": 89,
+          "pattern": "\\b2300\\b",
+          "content_preview": "for orb_time in ['0900', '1000', '1100', '1800', '2300', '0030']:"
+        },
+        {
+          "line": 89,
+          "pattern": "\\b0030\\b",
+          "content_preview": "for orb_time in ['0900', '1000', '1100', '1800', '2300', '0030']:"
+        },
+        {
+          "line": 165,
+          "pattern": "\\b0900\\b",
+          "content_preview": "orb_times = ['0900', '1000', '1100', '1800', '2300', '0030']"
+        },
+        {
+          "line": 165,
+          "pattern": "\\b1000\\b",
+          "content_preview": "orb_times = ['0900', '1000', '1100', '1800', '2300', '0030']"
+        },
+        {
+          "line": 165,
+          "pattern": "\\b1100\\b",
+          "content_preview": "orb_times = ['0900', '1000', '1100', '1800', '2300', '0030']"
+        },
+        {
+          "line": 165,
+          "pattern": "\\b1800\\b",
+          "content_preview": "orb_times = ['0900', '1000', '1100', '1800', '2300', '0030']"
+        },
+        {
+          "line": 165,
+          "pattern": "\\b2300\\b",
+          "content_preview": "orb_times = ['0900', '1000', '1100', '1800', '2300', '0030']"
+        },
+        {
+          "line": 165,
+          "pattern": "\\b0030\\b",
+          "content_preview": "orb_times = ['0900', '1000', '1100', '1800', '2300', '0030']"
+        },
+        {
+          "line": 168,
+          "pattern": "\\b0900\\b",
+          "content_preview": "'0900': result[8] if len(result) > 8 else None,"
+        },
+        {
+          "line": 169,
+          "pattern": "\\b1000\\b",
+          "content_preview": "'1000': result[9] if len(result) > 9 else None,"
+        },
+        {
+          "line": 170,
+          "pattern": "\\b1100\\b",
+          "content_preview": "'1100': result[10] if len(result) > 10 else None,"
+        },
+        {
+          "line": 171,
+          "pattern": "\\b1800\\b",
+          "content_preview": "'1800': result[11] if len(result) > 11 else None,"
+        },
+        {
+          "line": 172,
+          "pattern": "\\b2300\\b",
+          "content_preview": "'2300': result[12] if len(result) > 12 else None,"
+        },
+        {
+          "line": 173,
+          "pattern": "\\b0030\\b",
+          "content_preview": "'0030': result[13] if len(result) > 13 else None,"
+        },
+        {
+          "line": 176,
+          "pattern": "\\b0900\\b",
+          "content_preview": "'0900': result[14] != 'NONE' if len(result) > 14 and result[14] else False,"
+        },
+        {
+          "line": 177,
+          "pattern": "\\b1000\\b",
+          "content_preview": "'1000': result[15] != 'NONE' if len(result) > 15 and result[15] else False,"
+        },
+        {
+          "line": 178,
+          "pattern": "\\b1100\\b",
+          "content_preview": "'1100': result[16] != 'NONE' if len(result) > 16 and result[16] else False,"
+        },
+        {
+          "line": 179,
+          "pattern": "\\b1800\\b",
+          "content_preview": "'1800': result[17] != 'NONE' if len(result) > 17 and result[17] else False,"
+        },
+        {
+          "line": 180,
+          "pattern": "\\b2300\\b",
+          "content_preview": "'2300': result[18] != 'NONE' if len(result) > 18 and result[18] else False,"
+        },
+        {
+          "line": 181,
+          "pattern": "\\b0030\\b",
+          "content_preview": "'0030': result[19] != 'NONE' if len(result) > 19 and result[19] else False,"
+        },
+        {
+          "line": 707,
+          "pattern": "\\b1100\\b",
+          "content_preview": "print(\"\\n\\nDETAILED CHECK: 1100 ORB\")"
+        },
+        {
+          "line": 709,
+          "pattern": "\\b1100\\b",
+          "content_preview": "validation = scanner.validate_setup('1100')"
+        }
+      ]
+    },
+    "trading_app\\memory.py": {
+      "total": 8,
+      "violations": [
+        {
+          "line": 18,
+          "pattern": "\\b0900\\b",
+          "content_preview": "orb_time='0900',"
+        },
+        {
+          "line": 83,
+          "pattern": "\\b0900\\b",
+          "content_preview": "memory.store_trade({'date_local': '2026-01-15', 'orb_time': '0900', ...})"
+        },
+        {
+          "line": 84,
+          "pattern": "\\b0900\\b",
+          "content_preview": "memory.store_trade(date_local='2026-01-15', orb_time='0900', ...)"
+        },
+        {
+          "line": 89,
+          "pattern": "\\b0900\\b",
+          "content_preview": "orb_time: ORB time (0900, 1000, 1100, etc.)"
+        },
+        {
+          "line": 89,
+          "pattern": "\\b1000\\b",
+          "content_preview": "orb_time: ORB time (0900, 1000, 1100, etc.)"
+        },
+        {
+          "line": 89,
+          "pattern": "\\b1100\\b",
+          "content_preview": "orb_time: ORB time (0900, 1000, 1100, etc.)"
+        },
+        {
+          "line": 749,
+          "pattern": "\\b0900\\b",
+          "content_preview": "orb_time='0900',"
+        },
+        {
+          "line": 760,
+          "pattern": "\\b0900\\b",
+          "content_preview": "trades = memory.query_trades(orb_time='0900', days_back=30, limit=5)"
+        }
+      ]
+    },
+    "trading_app\\memory_integration.py": {
+      "total": 3,
+      "violations": [
+        {
+          "line": 78,
+          "pattern": "\\b1000\\b",
+          "content_preview": "setup_name: str | None = None          # e.g., \"1000 ORB MGC RR=1.5\""
+        },
+        {
+          "line": 1153,
+          "pattern": "\\b1000\\b",
+          "content_preview": "context={'setup_name': '1000 ORB MGC RR=1.5'}"
+        },
+        {
+          "line": 1161,
+          "pattern": "\\b1000\\b",
+          "content_preview": "current_context={'setup_name': '1000 ORB MGC RR=1.5'}"
+        }
+      ]
+    },
+    "trading_app\\mobile_ui.py": {
+      "total": 19,
+      "violations": [
+        {
+          "line": 96,
+          "pattern": "\\b1000\\b",
+          "content_preview": "z-index: 1000;"
+        },
+        {
+          "line": 549,
+          "pattern": "\\b0900\\b",
+          "content_preview": "orb_time: e.g., '0900', '1000', '1100'"
+        },
+        {
+          "line": 549,
+          "pattern": "\\b1000\\b",
+          "content_preview": "orb_time: e.g., '0900', '1000', '1100'"
+        },
+        {
+          "line": 549,
+          "pattern": "\\b1100\\b",
+          "content_preview": "orb_time: e.g., '0900', '1000', '1100'"
+        },
+        {
+          "line": 739,
+          "pattern": "\\b0900\\b",
+          "content_preview": "\"0900\": (9, 0, 5),"
+        },
+        {
+          "line": 740,
+          "pattern": "\\b1000\\b",
+          "content_preview": "\"1000\": (10, 0, 5),"
+        },
+        {
+          "line": 741,
+          "pattern": "\\b1100\\b",
+          "content_preview": "\"1100\": (11, 0, 5),"
+        },
+        {
+          "line": 742,
+          "pattern": "\\b1800\\b",
+          "content_preview": "\"1800\": (18, 0, 5),"
+        },
+        {
+          "line": 743,
+          "pattern": "\\b2300\\b",
+          "content_preview": "\"2300\": (23, 0, 5),"
+        },
+        {
+          "line": 744,
+          "pattern": "\\b0030\\b",
+          "content_preview": "\"0030\": (0, 30, 35),"
+        },
+        {
+          "line": 1161,
+          "pattern": "\\b0900\\b",
+          "content_preview": "orb_name = state.active_orb_name if hasattr(state, 'active_orb_name') else \"0900"
+        },
+        {
+          "line": 1276,
+          "pattern": "\\b1100\\b",
+          "content_preview": "if orb_name == \"1100\":"
+        },
+        {
+          "line": 1282,
+          "pattern": "\\b1100\\b",
+          "content_preview": "orb_time=\"1100\","
+        },
+        {
+          "line": 1555,
+          "pattern": "\\b0900\\b",
+          "content_preview": "**Best Results:** At least 24 hours of data with ORB windows (0900, 1000, 1100, "
+        },
+        {
+          "line": 1555,
+          "pattern": "\\b1000\\b",
+          "content_preview": "**Best Results:** At least 24 hours of data with ORB windows (0900, 1000, 1100, "
+        },
+        {
+          "line": 1555,
+          "pattern": "\\b1100\\b",
+          "content_preview": "**Best Results:** At least 24 hours of data with ORB windows (0900, 1000, 1100, "
+        },
+        {
+          "line": 1555,
+          "pattern": "\\b1800\\b",
+          "content_preview": "**Best Results:** At least 24 hours of data with ORB windows (0900, 1000, 1100, "
+        },
+        {
+          "line": 1555,
+          "pattern": "\\b2300\\b",
+          "content_preview": "**Best Results:** At least 24 hours of data with ORB windows (0900, 1000, 1100, "
+        },
+        {
+          "line": 1555,
+          "pattern": "\\b0030\\b",
+          "content_preview": "**Best Results:** At least 24 hours of data with ORB windows (0900, 1000, 1100, "
+        }
+      ]
+    },
+    "trading_app\\orb_0030_visual.py": {
+      "total": 6,
+      "violations": [
+        {
+          "line": 2,
+          "pattern": "\\b0030\\b",
+          "content_preview": "0030 NY OPEN ORB - VISUAL TRADING DASHBOARD"
+        },
+        {
+          "line": 4,
+          "pattern": "\\b0030\\b",
+          "content_preview": "Quick visual reference for trading the 0030 ORB."
+        },
+        {
+          "line": 15,
+          "pattern": "\\b0030\\b",
+          "content_preview": "st.set_page_config(page_title=\"0030 ORB Visual\", layout=\"wide\")"
+        },
+        {
+          "line": 17,
+          "pattern": "\\b0030\\b",
+          "content_preview": "st.title(\"\ud83d\udcca 0030 NY OPEN ORB - VISUAL TRADING DASHBOARD\")"
+        },
+        {
+          "line": 177,
+          "pattern": "\\b0030\\b",
+          "content_preview": "title=f\"{instrument} 0030 ORB Visual Reference\","
+        },
+        {
+          "line": 250,
+          "pattern": "\\b0030\\b",
+          "content_preview": "**0030 ORB Rules:**"
+        }
+      ]
+    },
+    "trading_app\\orb_time_logic.py": {
+      "total": 8,
+      "violations": [
+        {
+          "line": 152,
+          "pattern": "\\b0900\\b",
+          "content_preview": "return '0900', 0"
+        },
+        {
+          "line": 196,
+          "pattern": "\\b1000\\b",
+          "content_preview": "time(10, 30),  # 10:30 AM - should be ACTIVE (1000 ORB)"
+        },
+        {
+          "line": 197,
+          "pattern": "\\b1100\\b",
+          "content_preview": "time(10, 55),  # 10:55 AM - should be UPCOMING (1100 ORB)"
+        },
+        {
+          "line": 198,
+          "pattern": "\\b1100\\b",
+          "content_preview": "time(11, 10),  # 11:10 AM - should be ACTIVE (1100 ORB)"
+        },
+        {
+          "line": 199,
+          "pattern": "\\b0900\\b",
+          "content_preview": "time(9, 0),    # 09:00 AM - should be UPCOMING (0900 ORB, forms in 5 min)"
+        },
+        {
+          "line": 199,
+          "pattern": "time\\(\\s*9\\s*,\\s*0\\s*\\)",
+          "content_preview": "time(9, 0),    # 09:00 AM - should be UPCOMING (0900 ORB, forms in 5 min)"
+        },
+        {
+          "line": 200,
+          "pattern": "\\b2300\\b",
+          "content_preview": "time(23, 10),  # 23:10 PM - should be ACTIVE (2300 ORB)"
+        },
+        {
+          "line": 201,
+          "pattern": "\\b0030\\b",
+          "content_preview": "time(0, 40),   # 00:40 AM - should be ACTIVE (0030 ORB)"
+        }
+      ]
+    },
+    "trading_app\\position_calculator.py": {
+      "total": 2,
+      "violations": [
+        {
+          "line": 57,
+          "pattern": "\\b1000\\b",
+          "content_preview": "min_value=1000.0,"
+        },
+        {
+          "line": 60,
+          "pattern": "\\b1000\\b",
+          "content_preview": "step=1000.0,"
+        }
+      ]
+    },
+    "trading_app\\priority_engine.py": {
+      "total": 2,
+      "violations": [
+        {
+          "line": 313,
+          "pattern": "\\b1000\\b",
+          "content_preview": "'orb_time': '1000',"
+        },
+        {
+          "line": 320,
+          "pattern": "\\b1000\\b",
+          "content_preview": "print(f\"  ORB: 1000, RR: 2.0, Filters: none\")"
+        }
+      ]
+    },
+    "trading_app\\research_runner.py": {
+      "total": 2,
+      "violations": [
+        {
+          "line": 154,
+          "pattern": "\\b0900\\b",
+          "content_preview": "orb_time = filter_spec.get('orb_time', '0900')"
+        },
+        {
+          "line": 340,
+          "pattern": "\\b0900\\b",
+          "content_preview": "orb_time = filter_spec.get('orb_time', '0900')"
+        }
+      ]
+    },
+    "trading_app\\research_workbench.py": {
+      "total": 6,
+      "violations": [
+        {
+          "line": 143,
+          "pattern": "\\b0900\\b",
+          "content_preview": "[\"0900\", \"1000\", \"1100\", \"1800\", \"2300\", \"0030\"],"
+        },
+        {
+          "line": 143,
+          "pattern": "\\b1000\\b",
+          "content_preview": "[\"0900\", \"1000\", \"1100\", \"1800\", \"2300\", \"0030\"],"
+        },
+        {
+          "line": 143,
+          "pattern": "\\b1100\\b",
+          "content_preview": "[\"0900\", \"1000\", \"1100\", \"1800\", \"2300\", \"0030\"],"
+        },
+        {
+          "line": 143,
+          "pattern": "\\b1800\\b",
+          "content_preview": "[\"0900\", \"1000\", \"1100\", \"1800\", \"2300\", \"0030\"],"
+        },
+        {
+          "line": 143,
+          "pattern": "\\b2300\\b",
+          "content_preview": "[\"0900\", \"1000\", \"1100\", \"1800\", \"2300\", \"0030\"],"
+        },
+        {
+          "line": 143,
+          "pattern": "\\b0030\\b",
+          "content_preview": "[\"0900\", \"1000\", \"1100\", \"1800\", \"2300\", \"0030\"],"
+        }
+      ]
+    },
+    "trading_app\\rule_engine.py": {
+      "total": 6,
+      "violations": [
+        {
+          "line": 27,
+          "pattern": "\\b1800\\b",
+          "content_preview": "today_profit=1800.0,"
+        },
+        {
+          "line": 28,
+          "pattern": "\\b1000\\b",
+          "content_preview": "daily_loss_limit=1000.0,"
+        },
+        {
+          "line": 507,
+          "pattern": "\\b1800\\b",
+          "content_preview": "Scenario: Total profit $3000, today profit $1800 (60% - VIOLATION)"
+        },
+        {
+          "line": 512,
+          "pattern": "\\b1800\\b",
+          "content_preview": "today_profit=1800.0,  # 60% of total - VIOLATES 50% rule"
+        },
+        {
+          "line": 550,
+          "pattern": "\\b1000\\b",
+          "content_preview": "Scenario: Daily loss limit $1000, current loss $950 (95% - WARNING)"
+        },
+        {
+          "line": 557,
+          "pattern": "\\b1000\\b",
+          "content_preview": "daily_loss_limit=1000.0,"
+        }
+      ]
+    },
+    "trading_app\\scheduled_update.py": {
+      "total": 6,
+      "violations": [
+        {
+          "line": 10,
+          "pattern": "\\b0900\\b",
+          "content_preview": "- 08:30 (30min before 0900 ORB)"
+        },
+        {
+          "line": 11,
+          "pattern": "\\b1000\\b",
+          "content_preview": "- 09:30 (30min before 1000 ORB)"
+        },
+        {
+          "line": 12,
+          "pattern": "\\b1100\\b",
+          "content_preview": "- 10:30 (30min before 1100 ORB)"
+        },
+        {
+          "line": 13,
+          "pattern": "\\b1800\\b",
+          "content_preview": "- 17:30 (30min before 1800 ORB)"
+        },
+        {
+          "line": 14,
+          "pattern": "\\b2300\\b",
+          "content_preview": "- 22:30 (30min before 2300 ORB)"
+        },
+        {
+          "line": 15,
+          "pattern": "\\b0030\\b",
+          "content_preview": "- 00:00 (30min before 0030 ORB)"
+        }
+      ]
+    },
+    "trading_app\\session_timing_helper.py": {
+      "total": 10,
+      "violations": [
+        {
+          "line": 58,
+          "pattern": "\\b0900\\b",
+          "content_preview": "tradable_setups = ['0900 ORB', '1000 ORB'] if instrument == 'MGC' else []"
+        },
+        {
+          "line": 58,
+          "pattern": "\\b1000\\b",
+          "content_preview": "tradable_setups = ['0900 ORB', '1000 ORB'] if instrument == 'MGC' else []"
+        },
+        {
+          "line": 116,
+          "pattern": "\\b1000\\b",
+          "content_preview": "If YES \u2192 Trade 1000 ORB setups"
+        },
+        {
+          "line": 117,
+          "pattern": "\\b1000\\b",
+          "content_preview": "If NO \u2192 Skip 1000 ORB"
+        },
+        {
+          "line": 148,
+          "pattern": "\\b0900\\b",
+          "content_preview": "st.error(\"**L4-dependent setups NOT tradable today** (skip 0900/1000 ORB)\")"
+        },
+        {
+          "line": 148,
+          "pattern": "\\b1000\\b",
+          "content_preview": "st.error(\"**L4-dependent setups NOT tradable today** (skip 0900/1000 ORB)\")"
+        },
+        {
+          "line": 167,
+          "pattern": "\\b0900\\b",
+          "content_preview": "summary = f\"\u2705 L4 MET ({l4_status['check_date']}) - 0900/1000 ORB tradable\""
+        },
+        {
+          "line": 167,
+          "pattern": "\\b1000\\b",
+          "content_preview": "summary = f\"\u2705 L4 MET ({l4_status['check_date']}) - 0900/1000 ORB tradable\""
+        },
+        {
+          "line": 169,
+          "pattern": "\\b0900\\b",
+          "content_preview": "summary = f\"\u274c L4 NOT MET ({l4_status['check_date']}) - Skip 0900/1000 ORB\""
+        },
+        {
+          "line": 169,
+          "pattern": "\\b1000\\b",
+          "content_preview": "summary = f\"\u274c L4 NOT MET ({l4_status['check_date']}) - Skip 0900/1000 ORB\""
+        }
+      ]
+    },
+    "trading_app\\setup_detector.py": {
+      "total": 7,
+      "violations": [
+        {
+          "line": 6,
+          "pattern": "\\b1100\\b",
+          "content_preview": "- 1100 ORB (90% WR, only 31 trades/year)"
+        },
+        {
+          "line": 7,
+          "pattern": "\\b2300\\b",
+          "content_preview": "- 2300 ORB with filters (72% WR)"
+        },
+        {
+          "line": 8,
+          "pattern": "\\b1000\\b",
+          "content_preview": "- 1000 RR=3.0 with 2 confirmations (29% WR but +0.158R)"
+        },
+        {
+          "line": 391,
+          "pattern": "\\b1100\\b",
+          "content_preview": "print(\"\\nTest 1: 1100 ORB, size=3.0, ATR=40.0\")"
+        },
+        {
+          "line": 392,
+          "pattern": "\\b1100\\b",
+          "content_preview": "matches = detector.check_orb_setup(\"MGC\", \"1100\", 3.0, 40.0, datetime.now())"
+        },
+        {
+          "line": 400,
+          "pattern": "\\b1100\\b",
+          "content_preview": "print(\"\\nTest 2: 1100 ORB, size=6.0, ATR=40.0 (too large)\")"
+        },
+        {
+          "line": 401,
+          "pattern": "\\b1100\\b",
+          "content_preview": "matches = detector.check_orb_setup(\"MGC\", \"1100\", 6.0, 40.0, datetime.now())"
+        }
+      ]
+    },
+    "trading_app\\setup_scanner.py": {
+      "total": 7,
+      "violations": [
+        {
+          "line": 40,
+          "pattern": "\\b0900\\b",
+          "content_preview": "\"0900\": (9, 0, 5),"
+        },
+        {
+          "line": 41,
+          "pattern": "\\b1000\\b",
+          "content_preview": "\"1000\": (10, 0, 5),"
+        },
+        {
+          "line": 42,
+          "pattern": "\\b1100\\b",
+          "content_preview": "\"1100\": (11, 0, 5),"
+        },
+        {
+          "line": 43,
+          "pattern": "\\b1800\\b",
+          "content_preview": "\"1800\": (18, 0, 5),"
+        },
+        {
+          "line": 44,
+          "pattern": "\\b2300\\b",
+          "content_preview": "\"2300\": (23, 0, 5),"
+        },
+        {
+          "line": 45,
+          "pattern": "\\b0030\\b",
+          "content_preview": "\"0030\": (0, 30, 5),"
+        },
+        {
+          "line": 77,
+          "pattern": "\\b0900\\b",
+          "content_preview": "orb_name: ORB identifier (e.g., \"0900\")"
+        }
+      ]
+    },
+    "trading_app\\strategy_discovery.py": {
+      "total": 8,
+      "violations": [
+        {
+          "line": 20,
+          "pattern": "\\b0900\\b",
+          "content_preview": "orb_time: str    # 0900, 1000, 1100, 1800, 2300, 0030"
+        },
+        {
+          "line": 20,
+          "pattern": "\\b1000\\b",
+          "content_preview": "orb_time: str    # 0900, 1000, 1100, 1800, 2300, 0030"
+        },
+        {
+          "line": 20,
+          "pattern": "\\b1100\\b",
+          "content_preview": "orb_time: str    # 0900, 1000, 1100, 1800, 2300, 0030"
+        },
+        {
+          "line": 20,
+          "pattern": "\\b1800\\b",
+          "content_preview": "orb_time: str    # 0900, 1000, 1100, 1800, 2300, 0030"
+        },
+        {
+          "line": 20,
+          "pattern": "\\b2300\\b",
+          "content_preview": "orb_time: str    # 0900, 1000, 1100, 1800, 2300, 0030"
+        },
+        {
+          "line": 20,
+          "pattern": "\\b0030\\b",
+          "content_preview": "orb_time: str    # 0900, 1000, 1100, 1800, 2300, 0030"
+        },
+        {
+          "line": 373,
+          "pattern": "\\b2300\\b",
+          "content_preview": "if result.config.orb_time in ['2300', '0030']:"
+        },
+        {
+          "line": 373,
+          "pattern": "\\b0030\\b",
+          "content_preview": "if result.config.orb_time in ['2300', '0030']:"
+        }
+      ]
+    },
+    "trading_app\\strategy_engine.py": {
+      "total": 25,
+      "violations": [
+        {
+          "line": 51,
+          "pattern": "\\b1000\\b",
+          "content_preview": "setup_name: Optional[str] = None          # Specific setup: \"2300 ORB HALF\", \"10"
+        },
+        {
+          "line": 51,
+          "pattern": "\\b2300\\b",
+          "content_preview": "setup_name: Optional[str] = None          # Specific setup: \"2300 ORB HALF\", \"10"
+        },
+        {
+          "line": 456,
+          "pattern": "\\b0030\\b",
+          "content_preview": "orb_result = self._check_orb(\"0030\")"
+        },
+        {
+          "line": 462,
+          "pattern": "\\b2300\\b",
+          "content_preview": "orb_result = self._check_orb(\"2300\")"
+        },
+        {
+          "line": 633,
+          "pattern": "\\b0900\\b",
+          "content_preview": "for orb_name in [\"0900\", \"1000\", \"1100\"]:"
+        },
+        {
+          "line": 633,
+          "pattern": "\\b1000\\b",
+          "content_preview": "for orb_name in [\"0900\", \"1000\", \"1100\"]:"
+        },
+        {
+          "line": 633,
+          "pattern": "\\b1100\\b",
+          "content_preview": "for orb_name in [\"0900\", \"1000\", \"1100\"]:"
+        },
+        {
+          "line": 733,
+          "pattern": "\\b0900\\b",
+          "content_preview": "orb_name: \"0900\", \"1000\", \"1100\", \"2300\", \"0030\""
+        },
+        {
+          "line": 733,
+          "pattern": "\\b1000\\b",
+          "content_preview": "orb_name: \"0900\", \"1000\", \"1100\", \"2300\", \"0030\""
+        },
+        {
+          "line": 733,
+          "pattern": "\\b1100\\b",
+          "content_preview": "orb_name: \"0900\", \"1000\", \"1100\", \"2300\", \"0030\""
+        },
+        {
+          "line": 733,
+          "pattern": "\\b2300\\b",
+          "content_preview": "orb_name: \"0900\", \"1000\", \"1100\", \"2300\", \"0030\""
+        },
+        {
+          "line": 733,
+          "pattern": "\\b0030\\b",
+          "content_preview": "orb_name: \"0900\", \"1000\", \"1100\", \"2300\", \"0030\""
+        },
+        {
+          "line": 748,
+          "pattern": "\\b2300\\b",
+          "content_preview": "priority=2 if orb_name in [\"2300\", \"0030\"] else 4,"
+        },
+        {
+          "line": 748,
+          "pattern": "\\b0030\\b",
+          "content_preview": "priority=2 if orb_name in [\"2300\", \"0030\"] else 4,"
+        },
+        {
+          "line": 1006,
+          "pattern": "\\b0900\\b",
+          "content_preview": "orb_name: ORB time (\"0900\", \"1000\", \"1100\", \"2300\", \"0030\")"
+        },
+        {
+          "line": 1006,
+          "pattern": "\\b1000\\b",
+          "content_preview": "orb_name: ORB time (\"0900\", \"1000\", \"1100\", \"2300\", \"0030\")"
+        },
+        {
+          "line": 1006,
+          "pattern": "\\b1100\\b",
+          "content_preview": "orb_name: ORB time (\"0900\", \"1000\", \"1100\", \"2300\", \"0030\")"
+        },
+        {
+          "line": 1006,
+          "pattern": "\\b2300\\b",
+          "content_preview": "orb_name: ORB time (\"0900\", \"1000\", \"1100\", \"2300\", \"0030\")"
+        },
+        {
+          "line": 1006,
+          "pattern": "\\b0030\\b",
+          "content_preview": "orb_name: ORB time (\"0900\", \"1000\", \"1100\", \"2300\", \"0030\")"
+        },
+        {
+          "line": 1078,
+          "pattern": "\\b0900\\b",
+          "content_preview": "current_orb_time = \"0900\""
+        },
+        {
+          "line": 1080,
+          "pattern": "\\b1000\\b",
+          "content_preview": "current_orb_time = \"1000\""
+        },
+        {
+          "line": 1082,
+          "pattern": "\\b1100\\b",
+          "content_preview": "current_orb_time = \"1100\""
+        },
+        {
+          "line": 1084,
+          "pattern": "\\b1800\\b",
+          "content_preview": "current_orb_time = \"1800\""
+        },
+        {
+          "line": 1086,
+          "pattern": "\\b2300\\b",
+          "content_preview": "current_orb_time = \"2300\""
+        },
+        {
+          "line": 1088,
+          "pattern": "\\b0030\\b",
+          "content_preview": "current_orb_time = \"0030\""
+        }
+      ]
+    },
+    "trading_app\\strategy_recommender.py": {
+      "total": 9,
+      "violations": [
+        {
+          "line": 40,
+          "pattern": "\\b0900\\b",
+          "content_preview": "if orb_name == \"0900\":"
+        },
+        {
+          "line": 47,
+          "pattern": "\\b1000\\b",
+          "content_preview": "elif orb_name == \"1000\":"
+        },
+        {
+          "line": 61,
+          "pattern": "\\b1100\\b",
+          "content_preview": "elif orb_name == \"1100\":"
+        },
+        {
+          "line": 68,
+          "pattern": "\\b1800\\b",
+          "content_preview": "elif orb_name == \"1800\":"
+        },
+        {
+          "line": 75,
+          "pattern": "\\b2300\\b",
+          "content_preview": "elif orb_name == \"2300\":"
+        },
+        {
+          "line": 82,
+          "pattern": "\\b0030\\b",
+          "content_preview": "elif orb_name == \"0030\":"
+        },
+        {
+          "line": 111,
+          "pattern": "\\b1100\\b",
+          "content_preview": "if orb_name == \"1100\" and result['recommendation'] == 'TRADE':"
+        },
+        {
+          "line": 116,
+          "pattern": "\\b2300\\b",
+          "content_preview": "if orb_name == \"2300\":"
+        },
+        {
+          "line": 123,
+          "pattern": "\\b0030\\b",
+          "content_preview": "if orb_name == \"0030\":"
+        }
+      ]
+    },
+    "trading_app\\test_database_connections.py": {
+      "total": 2,
+      "violations": [
+        {
+          "line": 102,
+          "pattern": "\\b0900\\b",
+          "content_preview": "result = discovery.get_existing_setups(\"MGC\", \"0900\")"
+        },
+        {
+          "line": 122,
+          "pattern": "\\b1100\\b",
+          "content_preview": "bias = detector.get_directional_bias(\"MGC\", \"1100\", 2700.0, 2695.0, datetime.now"
+        }
+      ]
+    },
+    "trading_app\\test_dual_instruments.py": {
+      "total": 3,
+      "violations": [
+        {
+          "line": 73,
+          "pattern": "\\b1000\\b",
+          "content_preview": "test_orb_high = 1000.0"
+        },
+        {
+          "line": 74,
+          "pattern": "\\b1000\\b",
+          "content_preview": "test_orb_low = 1000.0 - (atr * 0.05)  # 5% of ATR"
+        },
+        {
+          "line": 75,
+          "pattern": "\\b0900\\b",
+          "content_preview": "result = loader.check_orb_size_filter(test_orb_high, test_orb_low, \"0900\")"
+        }
+      ]
+    },
+    "trading_app\\test_validation_comprehensive.py": {
+      "total": 1,
+      "violations": [
+        {
+          "line": 63,
+          "pattern": "\\b1000\\b",
+          "content_preview": "orb_time='1000',"
+        }
+      ]
+    },
+    "trading_app\\time_decay_engine.py": {
+      "total": 14,
+      "violations": [
+        {
+          "line": 192,
+          "pattern": "\\b0900\\b",
+          "content_preview": "- Primary ORBs (0900, 1000, 1100) \u2192 Tighter thresholds (high liquidity)"
+        },
+        {
+          "line": 192,
+          "pattern": "\\b1000\\b",
+          "content_preview": "- Primary ORBs (0900, 1000, 1100) \u2192 Tighter thresholds (high liquidity)"
+        },
+        {
+          "line": 192,
+          "pattern": "\\b1100\\b",
+          "content_preview": "- Primary ORBs (0900, 1000, 1100) \u2192 Tighter thresholds (high liquidity)"
+        },
+        {
+          "line": 193,
+          "pattern": "\\b1800\\b",
+          "content_preview": "- Secondary ORBs (1800, 2300, 0030) \u2192 Looser thresholds (lower liquidity)"
+        },
+        {
+          "line": 193,
+          "pattern": "\\b2300\\b",
+          "content_preview": "- Secondary ORBs (1800, 2300, 0030) \u2192 Looser thresholds (lower liquidity)"
+        },
+        {
+          "line": 193,
+          "pattern": "\\b0030\\b",
+          "content_preview": "- Secondary ORBs (1800, 2300, 0030) \u2192 Looser thresholds (lower liquidity)"
+        },
+        {
+          "line": 198,
+          "pattern": "\\b0900\\b",
+          "content_preview": "if orb_time in ['0900', '1000', '1100']:"
+        },
+        {
+          "line": 198,
+          "pattern": "\\b1000\\b",
+          "content_preview": "if orb_time in ['0900', '1000', '1100']:"
+        },
+        {
+          "line": 198,
+          "pattern": "\\b1100\\b",
+          "content_preview": "if orb_time in ['0900', '1000', '1100']:"
+        },
+        {
+          "line": 414,
+          "pattern": "\\b0900\\b",
+          "content_preview": "('0900', 2.0),  # Primary ORB, medium RR"
+        },
+        {
+          "line": 415,
+          "pattern": "\\b1000\\b",
+          "content_preview": "('1000', 8.0),  # Primary ORB, high RR"
+        },
+        {
+          "line": 416,
+          "pattern": "\\b1100\\b",
+          "content_preview": "('1100', 1.5),  # Primary ORB, low RR"
+        },
+        {
+          "line": 417,
+          "pattern": "\\b1800\\b",
+          "content_preview": "('1800', 2.0),  # Secondary ORB, medium RR"
+        },
+        {
+          "line": 418,
+          "pattern": "\\b0030\\b",
+          "content_preview": "('0030', 5.0),  # Secondary ORB, high RR"
+        }
+      ]
+    },
+    "trading_app\\tradovate_integration.py": {
+      "total": 8,
+      "violations": [
+        {
+          "line": 171,
+          "pattern": "\\b1000\\b",
+          "content_preview": "start_timestamp = int(start_time.timestamp() * 1000)"
+        },
+        {
+          "line": 204,
+          "pattern": "\\b1000\\b",
+          "content_preview": "timestamp = datetime.fromtimestamp(fill.get('timestamp', 0) / 1000)"
+        },
+        {
+          "line": 350,
+          "pattern": "\\b0900\\b",
+          "content_preview": "orb_time = '0900'"
+        },
+        {
+          "line": 352,
+          "pattern": "\\b1000\\b",
+          "content_preview": "orb_time = '1000'"
+        },
+        {
+          "line": 354,
+          "pattern": "\\b1100\\b",
+          "content_preview": "orb_time = '1100'"
+        },
+        {
+          "line": 356,
+          "pattern": "\\b1800\\b",
+          "content_preview": "orb_time = '1800'"
+        },
+        {
+          "line": 358,
+          "pattern": "\\b2300\\b",
+          "content_preview": "orb_time = '2300'"
+        },
+        {
+          "line": 360,
+          "pattern": "\\b0030\\b",
+          "content_preview": "orb_time = '0030'"
+        }
+      ]
+    },
+    "pipeline\\cost_model.py": {
+      "total": 2,
+      "violations": [
+        {
+          "line": 565,
+          "pattern": "\\b1000\\b",
+          "content_preview": "print(\"TEST: MGC 1000 ORB RR=1.5 (Normal Conditions)\")"
+        },
+        {
+          "line": 571,
+          "pattern": "\\b1000\\b",
+          "content_preview": "stop_distance_points=2.824,  # Avg 1000 ORB size"
+        }
+      ]
+    },
+    "pipeline\\create_edge_registry.py": {
+      "total": 6,
+      "violations": [
+        {
+          "line": 39,
+          "pattern": "\\b0900\\b",
+          "content_preview": "orb_time VARCHAR NOT NULL,  -- 0900, 1000, 1100, 1800, 2300, 0030"
+        },
+        {
+          "line": 39,
+          "pattern": "\\b1000\\b",
+          "content_preview": "orb_time VARCHAR NOT NULL,  -- 0900, 1000, 1100, 1800, 2300, 0030"
+        },
+        {
+          "line": 39,
+          "pattern": "\\b1100\\b",
+          "content_preview": "orb_time VARCHAR NOT NULL,  -- 0900, 1000, 1100, 1800, 2300, 0030"
+        },
+        {
+          "line": 39,
+          "pattern": "\\b1800\\b",
+          "content_preview": "orb_time VARCHAR NOT NULL,  -- 0900, 1000, 1100, 1800, 2300, 0030"
+        },
+        {
+          "line": 39,
+          "pattern": "\\b2300\\b",
+          "content_preview": "orb_time VARCHAR NOT NULL,  -- 0900, 1000, 1100, 1800, 2300, 0030"
+        },
+        {
+          "line": 39,
+          "pattern": "\\b0030\\b",
+          "content_preview": "orb_time VARCHAR NOT NULL,  -- 0900, 1000, 1100, 1800, 2300, 0030"
+        }
+      ]
+    },
+    "pipeline\\migrate_add_edge_candidates.py": {
+      "total": 4,
+      "violations": [
+        {
+          "line": 65,
+          "pattern": "\\b1000\\b",
+          "content_preview": "name VARCHAR NOT NULL,                          -- Human-readable name (e.g., \"1"
+        },
+        {
+          "line": 127,
+          "pattern": "\\b1000\\b",
+          "content_preview": "'EXAMPLE: 1000 ORB Ultra-Tight Filter',"
+        },
+        {
+          "line": 128,
+          "pattern": "\\b1000\\b",
+          "content_preview": "'Hypothesis: 1000 ORB works better with tighter filter (<0.03\u00d7ATR) during high v"
+        },
+        {
+          "line": 130,
+          "pattern": "\\b1000\\b",
+          "content_preview": "\"orb_time\": \"1000\","
+        }
+      ]
+    },
+    "pipeline\\populate_tradeable_metrics.py": {
+      "total": 13,
+      "violations": [
+        {
+          "line": 111,
+          "pattern": "\\b0030\\b",
+          "content_preview": "if orb_time == \"0030\":"
+        },
+        {
+          "line": 322,
+          "pattern": "\\b0900\\b",
+          "content_preview": "(\"0900\", row[0], row[1]),"
+        },
+        {
+          "line": 323,
+          "pattern": "\\b1000\\b",
+          "content_preview": "(\"1000\", row[2], row[3]),"
+        },
+        {
+          "line": 324,
+          "pattern": "\\b1100\\b",
+          "content_preview": "(\"1100\", row[4], row[5]),"
+        },
+        {
+          "line": 325,
+          "pattern": "\\b1800\\b",
+          "content_preview": "(\"1800\", row[6], row[7]),"
+        },
+        {
+          "line": 326,
+          "pattern": "\\b2300\\b",
+          "content_preview": "(\"2300\", row[8], row[9]),"
+        },
+        {
+          "line": 327,
+          "pattern": "\\b0030\\b",
+          "content_preview": "(\"0030\", row[10], row[11])"
+        },
+        {
+          "line": 415,
+          "pattern": "\\b0900\\b",
+          "content_preview": "results[\"0900\"].get(\"entry_price\"), results[\"0900\"].get(\"stop_price\"), results[\""
+        },
+        {
+          "line": 416,
+          "pattern": "\\b1000\\b",
+          "content_preview": "results[\"1000\"].get(\"entry_price\"), results[\"1000\"].get(\"stop_price\"), results[\""
+        },
+        {
+          "line": 417,
+          "pattern": "\\b1100\\b",
+          "content_preview": "results[\"1100\"].get(\"entry_price\"), results[\"1100\"].get(\"stop_price\"), results[\""
+        },
+        {
+          "line": 418,
+          "pattern": "\\b1800\\b",
+          "content_preview": "results[\"1800\"].get(\"entry_price\"), results[\"1800\"].get(\"stop_price\"), results[\""
+        },
+        {
+          "line": 419,
+          "pattern": "\\b2300\\b",
+          "content_preview": "results[\"2300\"].get(\"entry_price\"), results[\"2300\"].get(\"stop_price\"), results[\""
+        },
+        {
+          "line": 420,
+          "pattern": "\\b0030\\b",
+          "content_preview": "results[\"0030\"].get(\"entry_price\"), results[\"0030\"].get(\"stop_price\"), results[\""
+        }
+      ]
+    },
+    "pipeline\\populate_validated_trades.py": {
+      "total": 15,
+      "violations": [
+        {
+          "line": 14,
+          "pattern": "\\b1000\\b",
+          "content_preview": "- Supports multiple RR values per ORB time (e.g., 1000 ORB: RR=1.5/2.0/2.5/3.0)"
+        },
+        {
+          "line": 289,
+          "pattern": "\\b0900\\b",
+          "content_preview": "'0900': (row[0], row[1]),"
+        },
+        {
+          "line": 290,
+          "pattern": "\\b1000\\b",
+          "content_preview": "'1000': (row[2], row[3]),"
+        },
+        {
+          "line": 291,
+          "pattern": "\\b1100\\b",
+          "content_preview": "'1100': (row[4], row[5]),"
+        },
+        {
+          "line": 292,
+          "pattern": "\\b1800\\b",
+          "content_preview": "'1800': (row[6], row[7]),"
+        },
+        {
+          "line": 293,
+          "pattern": "\\b2300\\b",
+          "content_preview": "'2300': (row[8], row[9]),"
+        },
+        {
+          "line": 294,
+          "pattern": "\\b0030\\b",
+          "content_preview": "'0030': (row[10], row[11])"
+        },
+        {
+          "line": 299,
+          "pattern": "\\b0900\\b",
+          "content_preview": "'0900': (18, 0),   # 09:00 ORB scans until 18:00"
+        },
+        {
+          "line": 300,
+          "pattern": "\\b1000\\b",
+          "content_preview": "'1000': (18, 0),   # 10:00 ORB scans until 18:00"
+        },
+        {
+          "line": 301,
+          "pattern": "\\b1100\\b",
+          "content_preview": "'1100': (18, 0),   # 11:00 ORB scans until 18:00"
+        },
+        {
+          "line": 302,
+          "pattern": "\\b1800\\b",
+          "content_preview": "'1800': (23, 0),   # 18:00 ORB scans until 23:00"
+        },
+        {
+          "line": 303,
+          "pattern": "\\b2300\\b",
+          "content_preview": "'2300': (2, 0),    # 23:00 ORB scans until 02:00 next day"
+        },
+        {
+          "line": 304,
+          "pattern": "\\b0030\\b",
+          "content_preview": "'0030': (9, 0)     # 00:30 ORB scans until 09:00 same day"
+        },
+        {
+          "line": 324,
+          "pattern": "\\b2300\\b",
+          "content_preview": "if scan_hh < 9:  # Next day (for 2300/0030 ORBs)"
+        },
+        {
+          "line": 324,
+          "pattern": "\\b0030\\b",
+          "content_preview": "if scan_hh < 9:  # Next day (for 2300/0030 ORBs)"
+        }
+      ]
+    },
+    "pipeline\\populate_validated_trades_with_filter.py": {
+      "total": 12,
+      "violations": [
+        {
+          "line": 309,
+          "pattern": "\\b0900\\b",
+          "content_preview": "'0900': (row[0], row[1]),"
+        },
+        {
+          "line": 310,
+          "pattern": "\\b1000\\b",
+          "content_preview": "'1000': (row[2], row[3]),"
+        },
+        {
+          "line": 311,
+          "pattern": "\\b1100\\b",
+          "content_preview": "'1100': (row[4], row[5]),"
+        },
+        {
+          "line": 312,
+          "pattern": "\\b1800\\b",
+          "content_preview": "'1800': (row[6], row[7]),"
+        },
+        {
+          "line": 313,
+          "pattern": "\\b2300\\b",
+          "content_preview": "'2300': (row[8], row[9]),"
+        },
+        {
+          "line": 314,
+          "pattern": "\\b0030\\b",
+          "content_preview": "'0030': (row[10], row[11])"
+        },
+        {
+          "line": 319,
+          "pattern": "\\b0900\\b",
+          "content_preview": "'0900': (18, 0),"
+        },
+        {
+          "line": 320,
+          "pattern": "\\b1000\\b",
+          "content_preview": "'1000': (18, 0),"
+        },
+        {
+          "line": 321,
+          "pattern": "\\b1100\\b",
+          "content_preview": "'1100': (18, 0),"
+        },
+        {
+          "line": 322,
+          "pattern": "\\b1800\\b",
+          "content_preview": "'1800': (23, 0),"
+        },
+        {
+          "line": 323,
+          "pattern": "\\b2300\\b",
+          "content_preview": "'2300': (2, 0),"
+        },
+        {
+          "line": 324,
+          "pattern": "\\b0030\\b",
+          "content_preview": "'0030': (9, 0)"
+        }
+      ]
+    },
+    "pipeline\\walkforward_config.py": {
+      "total": 20,
+      "violations": [
+        {
+          "line": 126,
+          "pattern": "\\b0900\\b",
+          "content_preview": "- ORB_L4 (0900, 1000) \u2192 L4_CONSOLIDATION filter only"
+        },
+        {
+          "line": 126,
+          "pattern": "\\b1000\\b",
+          "content_preview": "- ORB_L4 (0900, 1000) \u2192 L4_CONSOLIDATION filter only"
+        },
+        {
+          "line": 127,
+          "pattern": "\\b1100\\b",
+          "content_preview": "- ORB_BOTH_LOST (1100) \u2192 BOTH_LOST filter only"
+        },
+        {
+          "line": 128,
+          "pattern": "\\b1800\\b",
+          "content_preview": "- ORB_RSI (1800) \u2192 RSI filter only"
+        },
+        {
+          "line": 129,
+          "pattern": "\\b2300\\b",
+          "content_preview": "- ORB_NIGHT (2300, 0030) \u2192 RESEARCH ONLY"
+        },
+        {
+          "line": 129,
+          "pattern": "\\b0030\\b",
+          "content_preview": "- ORB_NIGHT (2300, 0030) \u2192 RESEARCH ONLY"
+        },
+        {
+          "line": 139,
+          "pattern": "\\b2300\\b",
+          "content_preview": "if orb_time in ['2300', '0030']:"
+        },
+        {
+          "line": 139,
+          "pattern": "\\b0030\\b",
+          "content_preview": "if orb_time in ['2300', '0030']:"
+        },
+        {
+          "line": 147,
+          "pattern": "\\b0900\\b",
+          "content_preview": "if orb_time in ['0900', '1000']:"
+        },
+        {
+          "line": 147,
+          "pattern": "\\b1000\\b",
+          "content_preview": "if orb_time in ['0900', '1000']:"
+        },
+        {
+          "line": 149,
+          "pattern": "\\b1100\\b",
+          "content_preview": "elif orb_time == '1100':"
+        },
+        {
+          "line": 151,
+          "pattern": "\\b1800\\b",
+          "content_preview": "elif orb_time == '1800':"
+        },
+        {
+          "line": 165,
+          "pattern": "\\b0900\\b",
+          "content_preview": "if orb_time in ['0900', '1000']:"
+        },
+        {
+          "line": 165,
+          "pattern": "\\b1000\\b",
+          "content_preview": "if orb_time in ['0900', '1000']:"
+        },
+        {
+          "line": 174,
+          "pattern": "\\b1100\\b",
+          "content_preview": "elif orb_time == '1100':"
+        },
+        {
+          "line": 183,
+          "pattern": "\\b1800\\b",
+          "content_preview": "elif orb_time == '1800':"
+        },
+        {
+          "line": 355,
+          "pattern": "\\b0900\\b",
+          "content_preview": "for orb_time in ['0900', '1000', '1100', '1800']:"
+        },
+        {
+          "line": 355,
+          "pattern": "\\b1000\\b",
+          "content_preview": "for orb_time in ['0900', '1000', '1100', '1800']:"
+        },
+        {
+          "line": 355,
+          "pattern": "\\b1100\\b",
+          "content_preview": "for orb_time in ['0900', '1000', '1100', '1800']:"
+        },
+        {
+          "line": 355,
+          "pattern": "\\b1800\\b",
+          "content_preview": "for orb_time in ['0900', '1000', '1100', '1800']:"
+        }
+      ]
+    },
+    "strategies\\execution_engine.py": {
+      "total": 11,
+      "violations": [
+        {
+          "line": 20,
+          "pattern": "\\b1000\\b",
+          "content_preview": "orb=\"1000\","
+        },
+        {
+          "line": 74,
+          "pattern": "\\b0900\\b",
+          "content_preview": "\"0900\": (9, 0),"
+        },
+        {
+          "line": 75,
+          "pattern": "\\b1000\\b",
+          "content_preview": "\"1000\": (10, 0),"
+        },
+        {
+          "line": 76,
+          "pattern": "\\b1100\\b",
+          "content_preview": "\"1100\": (11, 0),"
+        },
+        {
+          "line": 77,
+          "pattern": "\\b1800\\b",
+          "content_preview": "\"1800\": (18, 0),"
+        },
+        {
+          "line": 78,
+          "pattern": "\\b2300\\b",
+          "content_preview": "\"2300\": (23, 0),"
+        },
+        {
+          "line": 79,
+          "pattern": "\\b0030\\b",
+          "content_preview": "\"0030\": (0, 30),"
+        },
+        {
+          "line": 114,
+          "pattern": "\\b0900\\b",
+          "content_preview": "return orb in (\"0900\", \"1000\", \"1100\")"
+        },
+        {
+          "line": 114,
+          "pattern": "\\b1000\\b",
+          "content_preview": "return orb in (\"0900\", \"1000\", \"1100\")"
+        },
+        {
+          "line": 114,
+          "pattern": "\\b1100\\b",
+          "content_preview": "return orb in (\"0900\", \"1000\", \"1100\")"
+        },
+        {
+          "line": 279,
+          "pattern": "\\b0030\\b",
+          "content_preview": "start_date = date_local + timedelta(days=1) if orb == \"0030\" else date_local"
+        }
+      ]
+    },
+    "strategies\\populate_realized_from_phase1.py": {
+      "total": 6,
+      "violations": [
+        {
+          "line": 20,
+          "pattern": "\\b0900\\b",
+          "content_preview": "('MGC', '0900', 1.5): {"
+        },
+        {
+          "line": 28,
+          "pattern": "\\b1000\\b",
+          "content_preview": "('MGC', '1000', 1.5): {"
+        },
+        {
+          "line": 36,
+          "pattern": "\\b1000\\b",
+          "content_preview": "('MGC', '1000', 2.0): {"
+        },
+        {
+          "line": 44,
+          "pattern": "\\b1000\\b",
+          "content_preview": "('MGC', '1000', 2.5): {"
+        },
+        {
+          "line": 52,
+          "pattern": "\\b1000\\b",
+          "content_preview": "('MGC', '1000', 3.0): {"
+        },
+        {
+          "line": 60,
+          "pattern": "\\b1800\\b",
+          "content_preview": "('MGC', '1800', 1.5): {"
+        }
+      ]
+    },
+    "strategies\\populate_realized_metrics.py": {
+      "total": 6,
+      "violations": [
+        {
+          "line": 40,
+          "pattern": "\\b0900\\b",
+          "content_preview": "orb_time: '0900', '1000', '1100', '1800', '2300', '0030'"
+        },
+        {
+          "line": 40,
+          "pattern": "\\b1000\\b",
+          "content_preview": "orb_time: '0900', '1000', '1100', '1800', '2300', '0030'"
+        },
+        {
+          "line": 40,
+          "pattern": "\\b1100\\b",
+          "content_preview": "orb_time: '0900', '1000', '1100', '1800', '2300', '0030'"
+        },
+        {
+          "line": 40,
+          "pattern": "\\b1800\\b",
+          "content_preview": "orb_time: '0900', '1000', '1100', '1800', '2300', '0030'"
+        },
+        {
+          "line": 40,
+          "pattern": "\\b2300\\b",
+          "content_preview": "orb_time: '0900', '1000', '1100', '1800', '2300', '0030'"
+        },
+        {
+          "line": 40,
+          "pattern": "\\b0030\\b",
+          "content_preview": "orb_time: '0900', '1000', '1100', '1800', '2300', '0030'"
+        }
+      ]
+    },
+    "analysis\\ai_query.py": {
+      "total": 27,
+      "violations": [
+        {
+          "line": 187,
+          "pattern": "\\b0900\\b",
+          "content_preview": "\"nine\": \"0900\", \"9am\": \"0900\", \"9:00\": \"0900\","
+        },
+        {
+          "line": 188,
+          "pattern": "\\b1000\\b",
+          "content_preview": "\"ten\": \"1000\", \"10am\": \"1000\", \"10:00\": \"1000\","
+        },
+        {
+          "line": 189,
+          "pattern": "\\b1100\\b",
+          "content_preview": "\"eleven\": \"1100\", \"11am\": \"1100\", \"11:00\": \"1100\","
+        },
+        {
+          "line": 190,
+          "pattern": "\\b1800\\b",
+          "content_preview": "\"eighteen\": \"1800\", \"6pm\": \"1800\", \"18:00\": \"1800\","
+        },
+        {
+          "line": 191,
+          "pattern": "\\b2300\\b",
+          "content_preview": "\"twenty-three\": \"2300\", \"23:00\": \"2300\", \"11pm\": \"2300\","
+        },
+        {
+          "line": 192,
+          "pattern": "\\b0030\\b",
+          "content_preview": "\"midnight\": \"0030\", \"00:30\": \"0030\", \"12:30am\": \"0030\","
+        },
+        {
+          "line": 256,
+          "pattern": "\\b0900\\b",
+          "content_preview": "SELECT '0900' as orb, orb_0900_break_dir as dir, orb_0900_outcome as outcome, or"
+        },
+        {
+          "line": 257,
+          "pattern": "\\b1000\\b",
+          "content_preview": "UNION ALL SELECT '1000', orb_1000_break_dir, orb_1000_outcome, orb_1000_r_multip"
+        },
+        {
+          "line": 258,
+          "pattern": "\\b1100\\b",
+          "content_preview": "UNION ALL SELECT '1100', orb_1100_break_dir, orb_1100_outcome, orb_1100_r_multip"
+        },
+        {
+          "line": 259,
+          "pattern": "\\b1800\\b",
+          "content_preview": "UNION ALL SELECT '1800', orb_1800_break_dir, orb_1800_outcome, orb_1800_r_multip"
+        },
+        {
+          "line": 260,
+          "pattern": "\\b2300\\b",
+          "content_preview": "UNION ALL SELECT '2300', orb_2300_break_dir, orb_2300_outcome, orb_2300_r_multip"
+        },
+        {
+          "line": 261,
+          "pattern": "\\b0030\\b",
+          "content_preview": "UNION ALL SELECT '0030', orb_0030_break_dir, orb_0030_outcome, orb_0030_r_multip"
+        },
+        {
+          "line": 291,
+          "pattern": "\\b0900\\b",
+          "content_preview": "SELECT '0900' as orb, orb_0900_break_dir as dir, orb_0900_outcome as outcome, or"
+        },
+        {
+          "line": 292,
+          "pattern": "\\b1000\\b",
+          "content_preview": "UNION ALL SELECT '1000', orb_1000_break_dir, orb_1000_outcome, orb_1000_r_multip"
+        },
+        {
+          "line": 293,
+          "pattern": "\\b1100\\b",
+          "content_preview": "UNION ALL SELECT '1100', orb_1100_break_dir, orb_1100_outcome, orb_1100_r_multip"
+        },
+        {
+          "line": 294,
+          "pattern": "\\b1800\\b",
+          "content_preview": "UNION ALL SELECT '1800', orb_1800_break_dir, orb_1800_outcome, orb_1800_r_multip"
+        },
+        {
+          "line": 295,
+          "pattern": "\\b2300\\b",
+          "content_preview": "UNION ALL SELECT '2300', orb_2300_break_dir, orb_2300_outcome, orb_2300_r_multip"
+        },
+        {
+          "line": 296,
+          "pattern": "\\b0030\\b",
+          "content_preview": "UNION ALL SELECT '0030', orb_0030_break_dir, orb_0030_outcome, orb_0030_r_multip"
+        },
+        {
+          "line": 359,
+          "pattern": "\\b0900\\b",
+          "content_preview": "SELECT '0900' as orb, orb_0900_outcome as outcome, orb_0900_r_multiple as r FROM"
+        },
+        {
+          "line": 360,
+          "pattern": "\\b1000\\b",
+          "content_preview": "UNION ALL SELECT '1000', orb_1000_outcome, orb_1000_r_multiple FROM {table_name}"
+        },
+        {
+          "line": 361,
+          "pattern": "\\b1100\\b",
+          "content_preview": "UNION ALL SELECT '1100', orb_1100_outcome, orb_1100_r_multiple FROM {table_name}"
+        },
+        {
+          "line": 362,
+          "pattern": "\\b1800\\b",
+          "content_preview": "UNION ALL SELECT '1800', orb_1800_outcome, orb_1800_r_multiple FROM {table_name}"
+        },
+        {
+          "line": 363,
+          "pattern": "\\b2300\\b",
+          "content_preview": "UNION ALL SELECT '2300', orb_2300_outcome, orb_2300_r_multiple FROM {table_name}"
+        },
+        {
+          "line": 364,
+          "pattern": "\\b0030\\b",
+          "content_preview": "UNION ALL SELECT '0030', orb_0030_outcome, orb_0030_r_multiple FROM {table_name}"
+        },
+        {
+          "line": 512,
+          "pattern": "\\b1100\\b",
+          "content_preview": "response += \"  - \\\"What was the win rate for 1100 UP?\\\"\\n\""
+        },
+        {
+          "line": 515,
+          "pattern": "\\b1100\\b",
+          "content_preview": "response += \"  - \\\"Compare 1100 vs 1800\\\"\\n\""
+        },
+        {
+          "line": 515,
+          "pattern": "\\b1800\\b",
+          "content_preview": "response += \"  - \\\"Compare 1100 vs 1800\\\"\\n\""
+        }
+      ]
+    },
+    "analysis\\analyze_orb_v2.py": {
+      "total": 23,
+      "violations": [
+        {
+          "line": 88,
+          "pattern": "\\b0900\\b",
+          "content_preview": "\"0900\": \"09:00 (Asia Open)\","
+        },
+        {
+          "line": 89,
+          "pattern": "\\b1000\\b",
+          "content_preview": "\"1000\": \"10:00 (Asia Mid)\","
+        },
+        {
+          "line": 90,
+          "pattern": "\\b1100\\b",
+          "content_preview": "\"1100\": \"11:00 (Asia Late)\","
+        },
+        {
+          "line": 91,
+          "pattern": "\\b1800\\b",
+          "content_preview": "\"1800\": \"18:00 (London Open)\","
+        },
+        {
+          "line": 92,
+          "pattern": "\\b2300\\b",
+          "content_preview": "\"2300\": \"23:00 (NY Futures)\","
+        },
+        {
+          "line": 93,
+          "pattern": "\\b0030\\b",
+          "content_preview": "\"0030\": \"00:30 (NYSE Cash)\","
+        },
+        {
+          "line": 252,
+          "pattern": "\\b0900\\b",
+          "content_preview": "(\"0900\", \"UP\", \"orb_0900_break_dir = 'UP'\", \"09:00 UP\"),"
+        },
+        {
+          "line": 253,
+          "pattern": "\\b0900\\b",
+          "content_preview": "(\"0900\", \"DOWN\", \"orb_0900_break_dir = 'DOWN'\", \"09:00 DOWN\"),"
+        },
+        {
+          "line": 254,
+          "pattern": "\\b1000\\b",
+          "content_preview": "(\"1000\", \"UP\", \"orb_1000_break_dir = 'UP'\", \"10:00 UP\"),"
+        },
+        {
+          "line": 255,
+          "pattern": "\\b1000\\b",
+          "content_preview": "(\"1000\", \"DOWN\", \"orb_1000_break_dir = 'DOWN'\", \"10:00 DOWN\"),"
+        },
+        {
+          "line": 256,
+          "pattern": "\\b1100\\b",
+          "content_preview": "(\"1100\", \"UP\", \"orb_1100_break_dir = 'UP'\", \"11:00 UP\"),"
+        },
+        {
+          "line": 257,
+          "pattern": "\\b1100\\b",
+          "content_preview": "(\"1100\", \"DOWN\", \"orb_1100_break_dir = 'DOWN'\", \"11:00 DOWN\"),"
+        },
+        {
+          "line": 258,
+          "pattern": "\\b1800\\b",
+          "content_preview": "(\"1800\", \"UP\", \"orb_1800_break_dir = 'UP'\", \"18:00 UP\"),"
+        },
+        {
+          "line": 259,
+          "pattern": "\\b1800\\b",
+          "content_preview": "(\"1800\", \"DOWN\", \"orb_1800_break_dir = 'DOWN'\", \"18:00 DOWN\"),"
+        },
+        {
+          "line": 262,
+          "pattern": "\\b1100\\b",
+          "content_preview": "(\"1100\", \"UP\", \"orb_1100_break_dir = 'UP' AND (pre_asia_range / 0.1) > 50\","
+        },
+        {
+          "line": 264,
+          "pattern": "\\b1800\\b",
+          "content_preview": "(\"1800\", \"UP\", \"orb_1800_break_dir = 'UP' AND (pre_london_range / 0.1) < 20\","
+        },
+        {
+          "line": 266,
+          "pattern": "\\b1800\\b",
+          "content_preview": "(\"1800\", \"DOWN\", \"orb_1800_break_dir = 'DOWN' AND (pre_london_range / 0.1) < 20 "
+        },
+        {
+          "line": 299,
+          "pattern": "\\b0900\\b",
+          "content_preview": "\"0900\": \"09:00 (Asia Open)\","
+        },
+        {
+          "line": 300,
+          "pattern": "\\b1000\\b",
+          "content_preview": "\"1000\": \"10:00 (Asia Mid)\","
+        },
+        {
+          "line": 301,
+          "pattern": "\\b1100\\b",
+          "content_preview": "\"1100\": \"11:00 (Asia Late)\","
+        },
+        {
+          "line": 302,
+          "pattern": "\\b1800\\b",
+          "content_preview": "\"1800\": \"18:00 (London Open)\","
+        },
+        {
+          "line": 303,
+          "pattern": "\\b2300\\b",
+          "content_preview": "\"2300\": \"23:00 (NY Futures)\","
+        },
+        {
+          "line": 304,
+          "pattern": "\\b0030\\b",
+          "content_preview": "\"0030\": \"00:30 (NYSE Cash)\","
+        }
+      ]
+    },
+    "analysis\\brutal_stress_test_night_orbs.py": {
+      "total": 9,
+      "violations": [
+        {
+          "line": 15,
+          "pattern": "\\b1000\\b",
+          "content_preview": "8. Monte Carlo simulation (1000 random permutations - worst case?)"
+        },
+        {
+          "line": 42,
+          "pattern": "\\b2300\\b",
+          "content_preview": "print(\"Testing 2300 ORB and 0030 ORB with EXTREME prejudice\")"
+        },
+        {
+          "line": 42,
+          "pattern": "\\b0030\\b",
+          "content_preview": "print(\"Testing 2300 ORB and 0030 ORB with EXTREME prejudice\")"
+        },
+        {
+          "line": 310,
+          "pattern": "\\b1000\\b",
+          "content_preview": "print(\"\\nTEST 7: Monte Carlo Simulation (1000 permutations)\")"
+        },
+        {
+          "line": 340,
+          "pattern": "\\b1000\\b",
+          "content_preview": "for i in range(1000):"
+        },
+        {
+          "line": 415,
+          "pattern": "\\b2300\\b",
+          "content_preview": "result_2300 = stress_test_strategy('2300 ORB RR=3.0', orb_2300, rr=3.0)"
+        },
+        {
+          "line": 416,
+          "pattern": "\\b0030\\b",
+          "content_preview": "result_0030 = stress_test_strategy('0030 ORB RR=3.0', orb_0030, rr=3.0)"
+        },
+        {
+          "line": 423,
+          "pattern": "\\b2300\\b",
+          "content_preview": "print(f\"2300 ORB RR=3.0: {result_2300}\")"
+        },
+        {
+          "line": 424,
+          "pattern": "\\b0030\\b",
+          "content_preview": "print(f\"0030 ORB RR=3.0: {result_0030}\")"
+        }
+      ]
+    },
+    "analysis\\discover_advanced_strategies.py": {
+      "total": 18,
+      "violations": [
+        {
+          "line": 26,
+          "pattern": "\\b0900\\b",
+          "content_preview": "orb_times = ['0900', '1000', '1100', '1800']"
+        },
+        {
+          "line": 26,
+          "pattern": "\\b1000\\b",
+          "content_preview": "orb_times = ['0900', '1000', '1100', '1800']"
+        },
+        {
+          "line": 26,
+          "pattern": "\\b1100\\b",
+          "content_preview": "orb_times = ['0900', '1000', '1100', '1800']"
+        },
+        {
+          "line": 26,
+          "pattern": "\\b1800\\b",
+          "content_preview": "orb_times = ['0900', '1000', '1100', '1800']"
+        },
+        {
+          "line": 48,
+          "pattern": "\\b0900\\b",
+          "content_preview": "if orb_time in ['0900', '1000', '1100']:"
+        },
+        {
+          "line": 48,
+          "pattern": "\\b1000\\b",
+          "content_preview": "if orb_time in ['0900', '1000', '1100']:"
+        },
+        {
+          "line": 48,
+          "pattern": "\\b1100\\b",
+          "content_preview": "if orb_time in ['0900', '1000', '1100']:"
+        },
+        {
+          "line": 115,
+          "pattern": "\\b0900\\b",
+          "content_preview": "orb_times = ['0900', '1000', '1100', '1800']"
+        },
+        {
+          "line": 115,
+          "pattern": "\\b1000\\b",
+          "content_preview": "orb_times = ['0900', '1000', '1100', '1800']"
+        },
+        {
+          "line": 115,
+          "pattern": "\\b1100\\b",
+          "content_preview": "orb_times = ['0900', '1000', '1100', '1800']"
+        },
+        {
+          "line": 115,
+          "pattern": "\\b1800\\b",
+          "content_preview": "orb_times = ['0900', '1000', '1100', '1800']"
+        },
+        {
+          "line": 142,
+          "pattern": "\\b0900\\b",
+          "content_preview": "if orb_time in ['0900', '1000']:"
+        },
+        {
+          "line": 142,
+          "pattern": "\\b1000\\b",
+          "content_preview": "if orb_time in ['0900', '1000']:"
+        },
+        {
+          "line": 167,
+          "pattern": "\\b1100\\b",
+          "content_preview": "elif orb_time == '1100':"
+        },
+        {
+          "line": 234,
+          "pattern": "\\b0900\\b",
+          "content_preview": "orb_times = ['0900', '1000', '1100', '1800']"
+        },
+        {
+          "line": 234,
+          "pattern": "\\b1000\\b",
+          "content_preview": "orb_times = ['0900', '1000', '1100', '1800']"
+        },
+        {
+          "line": 234,
+          "pattern": "\\b1100\\b",
+          "content_preview": "orb_times = ['0900', '1000', '1100', '1800']"
+        },
+        {
+          "line": 234,
+          "pattern": "\\b1800\\b",
+          "content_preview": "orb_times = ['0900', '1000', '1100', '1800']"
+        }
+      ]
+    },
+    "analysis\\discover_best_strategies_comprehensive.py": {
+      "total": 12,
+      "violations": [
+        {
+          "line": 6,
+          "pattern": "\\b0900\\b",
+          "content_preview": "- ORB times (0900/1000/1100/1800/2300/0030)"
+        },
+        {
+          "line": 6,
+          "pattern": "\\b1000\\b",
+          "content_preview": "- ORB times (0900/1000/1100/1800/2300/0030)"
+        },
+        {
+          "line": 6,
+          "pattern": "\\b1100\\b",
+          "content_preview": "- ORB times (0900/1000/1100/1800/2300/0030)"
+        },
+        {
+          "line": 6,
+          "pattern": "\\b1800\\b",
+          "content_preview": "- ORB times (0900/1000/1100/1800/2300/0030)"
+        },
+        {
+          "line": 6,
+          "pattern": "\\b2300\\b",
+          "content_preview": "- ORB times (0900/1000/1100/1800/2300/0030)"
+        },
+        {
+          "line": 6,
+          "pattern": "\\b0030\\b",
+          "content_preview": "- ORB times (0900/1000/1100/1800/2300/0030)"
+        },
+        {
+          "line": 27,
+          "pattern": "\\b0900\\b",
+          "content_preview": "orb_times = ['0900', '1000', '1100', '1800', '2300', '0030']"
+        },
+        {
+          "line": 27,
+          "pattern": "\\b1000\\b",
+          "content_preview": "orb_times = ['0900', '1000', '1100', '1800', '2300', '0030']"
+        },
+        {
+          "line": 27,
+          "pattern": "\\b1100\\b",
+          "content_preview": "orb_times = ['0900', '1000', '1100', '1800', '2300', '0030']"
+        },
+        {
+          "line": 27,
+          "pattern": "\\b1800\\b",
+          "content_preview": "orb_times = ['0900', '1000', '1100', '1800', '2300', '0030']"
+        },
+        {
+          "line": 27,
+          "pattern": "\\b2300\\b",
+          "content_preview": "orb_times = ['0900', '1000', '1100', '1800', '2300', '0030']"
+        },
+        {
+          "line": 27,
+          "pattern": "\\b0030\\b",
+          "content_preview": "orb_times = ['0900', '1000', '1100', '1800', '2300', '0030']"
+        }
+      ]
+    },
+    "analysis\\discover_final_edges.py": {
+      "total": 23,
+      "violations": [
+        {
+          "line": 23,
+          "pattern": "\\b0900\\b",
+          "content_preview": "orb_times = ['0900', '1000', '1100', '1800']"
+        },
+        {
+          "line": 23,
+          "pattern": "\\b1000\\b",
+          "content_preview": "orb_times = ['0900', '1000', '1100', '1800']"
+        },
+        {
+          "line": 23,
+          "pattern": "\\b1100\\b",
+          "content_preview": "orb_times = ['0900', '1000', '1100', '1800']"
+        },
+        {
+          "line": 23,
+          "pattern": "\\b1800\\b",
+          "content_preview": "orb_times = ['0900', '1000', '1100', '1800']"
+        },
+        {
+          "line": 51,
+          "pattern": "\\b1000\\b",
+          "content_preview": "WHERE vs.orb_time = '1000'"
+        },
+        {
+          "line": 59,
+          "pattern": "\\b1000\\b",
+          "content_preview": "'1000' as orb_time,"
+        },
+        {
+          "line": 95,
+          "pattern": "\\b1000\\b",
+          "content_preview": "WHERE vs.orb_time = '1000'"
+        },
+        {
+          "line": 102,
+          "pattern": "\\b1000\\b",
+          "content_preview": "'1000' as orb_time,"
+        },
+        {
+          "line": 133,
+          "pattern": "\\b0900\\b",
+          "content_preview": "orb_times = ['0900', '1000', '1100', '1800']"
+        },
+        {
+          "line": 133,
+          "pattern": "\\b1000\\b",
+          "content_preview": "orb_times = ['0900', '1000', '1100', '1800']"
+        },
+        {
+          "line": 133,
+          "pattern": "\\b1100\\b",
+          "content_preview": "orb_times = ['0900', '1000', '1100', '1800']"
+        },
+        {
+          "line": 133,
+          "pattern": "\\b1800\\b",
+          "content_preview": "orb_times = ['0900', '1000', '1100', '1800']"
+        },
+        {
+          "line": 197,
+          "pattern": "\\b0900\\b",
+          "content_preview": "orb_times = ['0900', '1000', '1100']"
+        },
+        {
+          "line": 197,
+          "pattern": "\\b1000\\b",
+          "content_preview": "orb_times = ['0900', '1000', '1100']"
+        },
+        {
+          "line": 197,
+          "pattern": "\\b1100\\b",
+          "content_preview": "orb_times = ['0900', '1000', '1100']"
+        },
+        {
+          "line": 216,
+          "pattern": "\\b0900\\b",
+          "content_preview": "if orb_time in ['0900', '1000']:"
+        },
+        {
+          "line": 216,
+          "pattern": "\\b1000\\b",
+          "content_preview": "if orb_time in ['0900', '1000']:"
+        },
+        {
+          "line": 279,
+          "pattern": "\\b0900\\b",
+          "content_preview": "orb_times = ['0900', '1000', '1100']"
+        },
+        {
+          "line": 279,
+          "pattern": "\\b1000\\b",
+          "content_preview": "orb_times = ['0900', '1000', '1100']"
+        },
+        {
+          "line": 279,
+          "pattern": "\\b1100\\b",
+          "content_preview": "orb_times = ['0900', '1000', '1100']"
+        },
+        {
+          "line": 298,
+          "pattern": "\\b0900\\b",
+          "content_preview": "if orb_time in ['0900', '1000']:"
+        },
+        {
+          "line": 298,
+          "pattern": "\\b1000\\b",
+          "content_preview": "if orb_time in ['0900', '1000']:"
+        },
+        {
+          "line": 321,
+          "pattern": "\\b1100\\b",
+          "content_preview": "else:  # 1100"
+        }
+      ]
+    },
+    "analysis\\discover_general_edge_pattern.py": {
+      "total": 21,
+      "violations": [
+        {
+          "line": 6,
+          "pattern": "\\b1000\\b",
+          "content_preview": "Identify whether the GENERAL IDEA behind our proven edge (1000 ORB + L4)"
+        },
+        {
+          "line": 11,
+          "pattern": "\\b1000\\b",
+          "content_preview": "1. Characterize the \"winning pattern\" from 1000 ORB + L4"
+        },
+        {
+          "line": 52,
+          "pattern": "\\b1000\\b",
+          "content_preview": "print(\"STEP 1: CHARACTERIZE PROVEN EDGE (1000 ORB + L4)\")"
+        },
+        {
+          "line": 90,
+          "pattern": "\\b1000\\b",
+          "content_preview": "print(f\"1000 ORB + L4 trades: {len(df_winner)}\")"
+        },
+        {
+          "line": 134,
+          "pattern": "\\b1000\\b",
+          "content_preview": "print(\"   - 1000 ORB = 3 hours after L4 formation (optimal)\")"
+        },
+        {
+          "line": 321,
+          "pattern": "\\b1800\\b",
+          "content_preview": "print(f\"Asia compressed + 1800 ORB: N={n}, WR={wr:.1f}%, Exp={exp:+.3f}R, Edge={"
+        },
+        {
+          "line": 347,
+          "pattern": "\\b1800\\b",
+          "content_preview": "print(f\"London compressed + 1800 ORB: N={n}, WR={wr:.1f}%, Exp={exp:+.3f}R, Edge"
+        },
+        {
+          "line": 373,
+          "pattern": "\\b0900\\b",
+          "content_preview": "print(f\"Multi-compressed + 0900 ORB: N={n}, WR={wr:.1f}%, Exp={exp:+.3f}R, Edge="
+        },
+        {
+          "line": 399,
+          "pattern": "\\b1000\\b",
+          "content_preview": "print(f\"Multi-compressed + 1000 ORB: N={n}, WR={wr:.1f}%, Exp={exp:+.3f}R, Edge="
+        },
+        {
+          "line": 425,
+          "pattern": "\\b1100\\b",
+          "content_preview": "print(f\"Multi-compressed + 1100 ORB: N={n}, WR={wr:.1f}%, Exp={exp:+.3f}R, Edge="
+        },
+        {
+          "line": 451,
+          "pattern": "\\b1000\\b",
+          "content_preview": "print(f\"L4 + 1000 ORB (PROVEN): N={n}, WR={wr:.1f}%, Exp={exp:+.3f}R, Edge={edge"
+        },
+        {
+          "line": 477,
+          "pattern": "\\b1000\\b",
+          "content_preview": "print(\"RESULT: No new edges discovered beyond L4 + 1000 ORB.\")"
+        },
+        {
+          "line": 582,
+          "pattern": "\\b1000\\b",
+          "content_preview": "summary_lines.append(\"Identify whether the GENERAL IDEA behind 1000 ORB + L4 can"
+        },
+        {
+          "line": 586,
+          "pattern": "\\b1000\\b",
+          "content_preview": "summary_lines.append(\"**1000 ORB + L4 Consolidation:**\")"
+        },
+        {
+          "line": 633,
+          "pattern": "\\b1000\\b",
+          "content_preview": "summary_lines.append(\"1. **No new edges discovered beyond L4 + 1000 ORB**\")"
+        },
+        {
+          "line": 635,
+          "pattern": "\\b0900\\b",
+          "content_preview": "summary_lines.append(\"   - Tested various triggers (0900/1000/1100/1800 ORBs)\")"
+        },
+        {
+          "line": 635,
+          "pattern": "\\b1000\\b",
+          "content_preview": "summary_lines.append(\"   - Tested various triggers (0900/1000/1100/1800 ORBs)\")"
+        },
+        {
+          "line": 635,
+          "pattern": "\\b1100\\b",
+          "content_preview": "summary_lines.append(\"   - Tested various triggers (0900/1000/1100/1800 ORBs)\")"
+        },
+        {
+          "line": 635,
+          "pattern": "\\b1800\\b",
+          "content_preview": "summary_lines.append(\"   - Tested various triggers (0900/1000/1100/1800 ORBs)\")"
+        },
+        {
+          "line": 645,
+          "pattern": "\\b1000\\b",
+          "content_preview": "summary_lines.append(\"   - Focus resources on proven edge (1000 ORB + L4)\")"
+        },
+        {
+          "line": 677,
+          "pattern": "\\b1000\\b",
+          "content_preview": "print(\"RESULT: No new edges beyond L4 + 1000 ORB. This is a valid outcome.\")"
+        }
+      ]
+    },
+    "analysis\\export_v2_edges.py": {
+      "total": 30,
+      "violations": [
+        {
+          "line": 99,
+          "pattern": "\\b0900\\b",
+          "content_preview": "for orb_time in [\"0900\", \"1000\", \"1100\", \"1800\", \"2300\", \"0030\"]:"
+        },
+        {
+          "line": 99,
+          "pattern": "\\b1000\\b",
+          "content_preview": "for orb_time in [\"0900\", \"1000\", \"1100\", \"1800\", \"2300\", \"0030\"]:"
+        },
+        {
+          "line": 99,
+          "pattern": "\\b1100\\b",
+          "content_preview": "for orb_time in [\"0900\", \"1000\", \"1100\", \"1800\", \"2300\", \"0030\"]:"
+        },
+        {
+          "line": 99,
+          "pattern": "\\b1800\\b",
+          "content_preview": "for orb_time in [\"0900\", \"1000\", \"1100\", \"1800\", \"2300\", \"0030\"]:"
+        },
+        {
+          "line": 99,
+          "pattern": "\\b2300\\b",
+          "content_preview": "for orb_time in [\"0900\", \"1000\", \"1100\", \"1800\", \"2300\", \"0030\"]:"
+        },
+        {
+          "line": 99,
+          "pattern": "\\b0030\\b",
+          "content_preview": "for orb_time in [\"0900\", \"1000\", \"1100\", \"1800\", \"2300\", \"0030\"]:"
+        },
+        {
+          "line": 137,
+          "pattern": "\\b0900\\b",
+          "content_preview": "\"0900\","
+        },
+        {
+          "line": 143,
+          "pattern": "\\b0900\\b",
+          "content_preview": "setup=f\"0900 PRE_ASIA {op_str} {threshold}t\","
+        },
+        {
+          "line": 144,
+          "pattern": "\\b0900\\b",
+          "content_preview": "orb_time=\"0900\","
+        },
+        {
+          "line": 153,
+          "pattern": "\\b1100\\b",
+          "content_preview": "\"1100\","
+        },
+        {
+          "line": 159,
+          "pattern": "\\b1100\\b",
+          "content_preview": "setup=\"1100 UP PRE_ASIA > 50t\","
+        },
+        {
+          "line": 160,
+          "pattern": "\\b1100\\b",
+          "content_preview": "orb_time=\"1100\","
+        },
+        {
+          "line": 169,
+          "pattern": "\\b1100\\b",
+          "content_preview": "\"1100\","
+        },
+        {
+          "line": 175,
+          "pattern": "\\b1100\\b",
+          "content_preview": "setup=\"1100 DOWN PRE_ASIA > 50t\","
+        },
+        {
+          "line": 176,
+          "pattern": "\\b1100\\b",
+          "content_preview": "orb_time=\"1100\","
+        },
+        {
+          "line": 186,
+          "pattern": "\\b1800\\b",
+          "content_preview": "\"1800\","
+        },
+        {
+          "line": 192,
+          "pattern": "\\b1800\\b",
+          "content_preview": "setup=f\"1800 {direction} PRE_LONDON > 40t\","
+        },
+        {
+          "line": 193,
+          "pattern": "\\b1800\\b",
+          "content_preview": "orb_time=\"1800\","
+        },
+        {
+          "line": 203,
+          "pattern": "\\b0030\\b",
+          "content_preview": "\"0030\","
+        },
+        {
+          "line": 209,
+          "pattern": "\\b0030\\b",
+          "content_preview": "setup=f\"0030 {direction} PRE_NY > 40t\","
+        },
+        {
+          "line": 210,
+          "pattern": "\\b0030\\b",
+          "content_preview": "orb_time=\"0030\","
+        },
+        {
+          "line": 225,
+          "pattern": "\\b1000\\b",
+          "content_preview": "\"1000\","
+        },
+        {
+          "line": 231,
+          "pattern": "\\b0900\\b",
+          "content_preview": "setup=f\"1000 {direction} after 0900 {prev_outcome}\","
+        },
+        {
+          "line": 231,
+          "pattern": "\\b1000\\b",
+          "content_preview": "setup=f\"1000 {direction} after 0900 {prev_outcome}\","
+        },
+        {
+          "line": 232,
+          "pattern": "\\b1000\\b",
+          "content_preview": "orb_time=\"1000\","
+        },
+        {
+          "line": 244,
+          "pattern": "\\b1100\\b",
+          "content_preview": "\"1100\","
+        },
+        {
+          "line": 250,
+          "pattern": "\\b0900\\b",
+          "content_preview": "setup=f\"1100 {direction} after 0900 {orb_09} + 1000 {orb_10}\","
+        },
+        {
+          "line": 250,
+          "pattern": "\\b1000\\b",
+          "content_preview": "setup=f\"1100 {direction} after 0900 {orb_09} + 1000 {orb_10}\","
+        },
+        {
+          "line": 250,
+          "pattern": "\\b1100\\b",
+          "content_preview": "setup=f\"1100 {direction} after 0900 {orb_09} + 1000 {orb_10}\","
+        },
+        {
+          "line": 251,
+          "pattern": "\\b1100\\b",
+          "content_preview": "orb_time=\"1100\","
+        }
+      ]
+    },
+    "analysis\\investigate_l4_edge_structure.py": {
+      "total": 51,
+      "violations": [
+        {
+          "line": 7,
+          "pattern": "\\b1000\\b",
+          "content_preview": "2. Root cause ablation (1000 only)"
+        },
+        {
+          "line": 149,
+          "pattern": "\\b0900\\b",
+          "content_preview": "'0900': (9, 0),"
+        },
+        {
+          "line": 150,
+          "pattern": "\\b1000\\b",
+          "content_preview": "'1000': (10, 0),"
+        },
+        {
+          "line": 151,
+          "pattern": "\\b1100\\b",
+          "content_preview": "'1100': (11, 0),"
+        },
+        {
+          "line": 152,
+          "pattern": "\\b1800\\b",
+          "content_preview": "'1800': (18, 0),"
+        },
+        {
+          "line": 153,
+          "pattern": "\\b2300\\b",
+          "content_preview": "'2300': (23, 0),"
+        },
+        {
+          "line": 154,
+          "pattern": "\\b0030\\b",
+          "content_preview": "'0030': (0, 30)"
+        },
+        {
+          "line": 174,
+          "pattern": "\\b0030\\b",
+          "content_preview": "if hour == 0:  # 0030 is next day"
+        },
+        {
+          "line": 215,
+          "pattern": "\\b0900\\b",
+          "content_preview": "for orb in ['0900', '1000', '1100', '1800', '2300', '0030']:"
+        },
+        {
+          "line": 215,
+          "pattern": "\\b1000\\b",
+          "content_preview": "for orb in ['0900', '1000', '1100', '1800', '2300', '0030']:"
+        },
+        {
+          "line": 215,
+          "pattern": "\\b1100\\b",
+          "content_preview": "for orb in ['0900', '1000', '1100', '1800', '2300', '0030']:"
+        },
+        {
+          "line": 215,
+          "pattern": "\\b1800\\b",
+          "content_preview": "for orb in ['0900', '1000', '1100', '1800', '2300', '0030']:"
+        },
+        {
+          "line": 215,
+          "pattern": "\\b2300\\b",
+          "content_preview": "for orb in ['0900', '1000', '1100', '1800', '2300', '0030']:"
+        },
+        {
+          "line": 215,
+          "pattern": "\\b0030\\b",
+          "content_preview": "for orb in ['0900', '1000', '1100', '1800', '2300', '0030']:"
+        },
+        {
+          "line": 227,
+          "pattern": "\\b1000\\b",
+          "content_preview": "print(\"TASK 2: ROOT CAUSE ABLATION (1000 ORB)\")"
+        },
+        {
+          "line": 377,
+          "pattern": "\\b0900\\b",
+          "content_preview": "'0900': 2,"
+        },
+        {
+          "line": 378,
+          "pattern": "\\b1000\\b",
+          "content_preview": "'1000': 3,"
+        },
+        {
+          "line": 379,
+          "pattern": "\\b1100\\b",
+          "content_preview": "'1100': 4,"
+        },
+        {
+          "line": 380,
+          "pattern": "\\b1800\\b",
+          "content_preview": "'1800': 11,"
+        },
+        {
+          "line": 381,
+          "pattern": "\\b2300\\b",
+          "content_preview": "'2300': 16,"
+        },
+        {
+          "line": 382,
+          "pattern": "\\b0030\\b",
+          "content_preview": "'0030': 17.5"
+        },
+        {
+          "line": 439,
+          "pattern": "\\b1000\\b",
+          "content_preview": "print(\"\\nDefining '1000 L4' structure fingerprint...\")"
+        },
+        {
+          "line": 451,
+          "pattern": "\\b1000\\b",
+          "content_preview": "print(\"1000 L4 Fingerprint (mean \u00b1 std):\")"
+        },
+        {
+          "line": 456,
+          "pattern": "\\b1000\\b",
+          "content_preview": "print(\"\\nSearching for 1000-like structure at other ORBs...\")"
+        },
+        {
+          "line": 460,
+          "pattern": "\\b0900\\b",
+          "content_preview": "for orb_name in ['0900', '1100', '1800', '2300', '0030']:"
+        },
+        {
+          "line": 460,
+          "pattern": "\\b1100\\b",
+          "content_preview": "for orb_name in ['0900', '1100', '1800', '2300', '0030']:"
+        },
+        {
+          "line": 460,
+          "pattern": "\\b1800\\b",
+          "content_preview": "for orb_name in ['0900', '1100', '1800', '2300', '0030']:"
+        },
+        {
+          "line": 460,
+          "pattern": "\\b2300\\b",
+          "content_preview": "for orb_name in ['0900', '1100', '1800', '2300', '0030']:"
+        },
+        {
+          "line": 460,
+          "pattern": "\\b0030\\b",
+          "content_preview": "for orb_name in ['0900', '1100', '1800', '2300', '0030']:"
+        },
+        {
+          "line": 463,
+          "pattern": "\\b0900\\b",
+          "content_preview": "'0900': 'orb_0900',"
+        },
+        {
+          "line": 464,
+          "pattern": "\\b1100\\b",
+          "content_preview": "'1100': 'orb_1100',"
+        },
+        {
+          "line": 465,
+          "pattern": "\\b1800\\b",
+          "content_preview": "'1800': 'orb_1800',"
+        },
+        {
+          "line": 466,
+          "pattern": "\\b2300\\b",
+          "content_preview": "'2300': 'orb_2300',"
+        },
+        {
+          "line": 467,
+          "pattern": "\\b0030\\b",
+          "content_preview": "'0030': 'orb_0030'"
+        },
+        {
+          "line": 514,
+          "pattern": "\\b1000\\b",
+          "content_preview": "print(\"\\nNo other ORBs found with 1000-like structure that beats random.\")"
+        },
+        {
+          "line": 540,
+          "pattern": "\\b1000\\b",
+          "content_preview": "- 1000 ORB baseline: +0.107R edge vs random"
+        },
+        {
+          "line": 541,
+          "pattern": "\\b1000\\b",
+          "content_preview": "- 1000 ORB + L4: **+0.357R edge vs random** (primary driver)"
+        },
+        {
+          "line": 542,
+          "pattern": "\\b1000\\b",
+          "content_preview": "- 1000 ORB + L4 + High Vol: +0.465R edge vs random (best)"
+        },
+        {
+          "line": 545,
+          "pattern": "\\b0900\\b",
+          "content_preview": "- Fresh (<4 hours): WORKS (0900, 1000, 1100 may work)"
+        },
+        {
+          "line": 545,
+          "pattern": "\\b1000\\b",
+          "content_preview": "- Fresh (<4 hours): WORKS (0900, 1000, 1100 may work)"
+        },
+        {
+          "line": 545,
+          "pattern": "\\b1100\\b",
+          "content_preview": "- Fresh (<4 hours): WORKS (0900, 1000, 1100 may work)"
+        },
+        {
+          "line": 546,
+          "pattern": "\\b1800\\b",
+          "content_preview": "- Stale (>10 hours): FAILS (1800, 2300, 0030 fail)"
+        },
+        {
+          "line": 546,
+          "pattern": "\\b2300\\b",
+          "content_preview": "- Stale (>10 hours): FAILS (1800, 2300, 0030 fail)"
+        },
+        {
+          "line": 546,
+          "pattern": "\\b0030\\b",
+          "content_preview": "- Stale (>10 hours): FAILS (1800, 2300, 0030 fail)"
+        },
+        {
+          "line": 550,
+          "pattern": "\\b2300\\b",
+          "content_preview": "- 2300 ORB + L4: Negative edge vs random \u2717"
+        },
+        {
+          "line": 551,
+          "pattern": "\\b0030\\b",
+          "content_preview": "- 0030 ORB + L4: Negative edge vs random \u2717"
+        },
+        {
+          "line": 552,
+          "pattern": "\\b0030\\b",
+          "content_preview": "- Even during NY cash hours (0030 = 09:30-10:30 NY)"
+        },
+        {
+          "line": 570,
+          "pattern": "\\b1000\\b",
+          "content_preview": "**1000 ORB Family:**"
+        },
+        {
+          "line": 577,
+          "pattern": "\\b1000\\b",
+          "content_preview": "- 1000 ORB + L4 + High Volatility (RR=3.0): +{ablation_df[(ablation_df['conditio"
+        },
+        {
+          "line": 583,
+          "pattern": "\\b2300\\b",
+          "content_preview": "All night ORBs (2300, 0030) REJECTED due to:"
+        },
+        {
+          "line": 583,
+          "pattern": "\\b0030\\b",
+          "content_preview": "All night ORBs (2300, 0030) REJECTED due to:"
+        }
+      ]
+    },
+    "analysis\\investigate_orb_edge_sources.py": {
+      "total": 39,
+      "violations": [
+        {
+          "line": 2,
+          "pattern": "\\b1000\\b",
+          "content_preview": "INVESTIGATION: WHY 1000 ORB BEATS RANDOM, BUT NIGHT ORBS FAIL"
+        },
+        {
+          "line": 7,
+          "pattern": "\\b1000\\b",
+          "content_preview": "2. Decompose 1000 ORB edge via ablations (L4, volatility, directional bias)"
+        },
+        {
+          "line": 8,
+          "pattern": "\\b1000\\b",
+          "content_preview": "3. Find \"1000-like\" states at 2300/0030 ORBs"
+        },
+        {
+          "line": 8,
+          "pattern": "\\b2300\\b",
+          "content_preview": "3. Find \"1000-like\" states at 2300/0030 ORBs"
+        },
+        {
+          "line": 8,
+          "pattern": "\\b0030\\b",
+          "content_preview": "3. Find \"1000-like\" states at 2300/0030 ORBs"
+        },
+        {
+          "line": 274,
+          "pattern": "\\b0900\\b",
+          "content_preview": "-- ORB 0900"
+        },
+        {
+          "line": 279,
+          "pattern": "\\b1000\\b",
+          "content_preview": "-- ORB 1000"
+        },
+        {
+          "line": 284,
+          "pattern": "\\b2300\\b",
+          "content_preview": "-- ORB 2300"
+        },
+        {
+          "line": 289,
+          "pattern": "\\b0030\\b",
+          "content_preview": "-- ORB 0030"
+        },
+        {
+          "line": 316,
+          "pattern": "\\b1000\\b",
+          "content_preview": "print(\"TASK 2: DECOMPOSE 1000 ORB EDGE\")"
+        },
+        {
+          "line": 339,
+          "pattern": "\\b1000\\b",
+          "content_preview": "print(\"BASELINE: 1000 ORB (No Filters)\")"
+        },
+        {
+          "line": 523,
+          "pattern": "\\b2300\\b",
+          "content_preview": "print(\"2300 ORB BASELINE\")"
+        },
+        {
+          "line": 545,
+          "pattern": "\\b0030\\b",
+          "content_preview": "print(\"0030 ORB BASELINE\")"
+        },
+        {
+          "line": 568,
+          "pattern": "\\b2300\\b",
+          "content_preview": "print(\"2300 ORB + L4_CONSOLIDATION\")"
+        },
+        {
+          "line": 591,
+          "pattern": "\\b0030\\b",
+          "content_preview": "print(\"0030 ORB + L4_CONSOLIDATION\")"
+        },
+        {
+          "line": 620,
+          "pattern": "\\b1000\\b",
+          "content_preview": "print(\"TASK 4: FIND '1000-LIKE' STATES AT NIGHT ORBs\")"
+        },
+        {
+          "line": 624,
+          "pattern": "\\b1000\\b",
+          "content_preview": "print(\"1000-LIKE STATE DEFINITION (from ablation study above):\")"
+        },
+        {
+          "line": 625,
+          "pattern": "\\b1000\\b",
+          "content_preview": "print(\"- Best performer at 1000 ORB was identified in ablation study\")"
+        },
+        {
+          "line": 626,
+          "pattern": "\\b2300\\b",
+          "content_preview": "print(\"- Now testing if same conditions work at 2300/0030 ORBs\")"
+        },
+        {
+          "line": 626,
+          "pattern": "\\b0030\\b",
+          "content_preview": "print(\"- Now testing if same conditions work at 2300/0030 ORBs\")"
+        },
+        {
+          "line": 633,
+          "pattern": "\\b1000\\b",
+          "content_preview": "print(f\"Best 1000 ORB condition: {best_ablation['condition']}\")"
+        },
+        {
+          "line": 638,
+          "pattern": "\\b1000\\b",
+          "content_preview": "print(\"REPRODUCING '1000-LIKE' CONDITIONS AT NIGHT ORBs:\")"
+        },
+        {
+          "line": 642,
+          "pattern": "\\b2300\\b",
+          "content_preview": "(\"2300 ORB + L4\", orb_2300_l4_exp, orb_2300_l4_random, orb_2300_l4_n),"
+        },
+        {
+          "line": 643,
+          "pattern": "\\b0030\\b",
+          "content_preview": "(\"0030 ORB + L4\", orb_0030_l4_exp, orb_0030_l4_random, orb_0030_l4_n),"
+        },
+        {
+          "line": 672,
+          "pattern": "\\b1000\\b",
+          "content_preview": "print(\"2. 1000 ORB EDGE SOURCE:\")"
+        },
+        {
+          "line": 674,
+          "pattern": "\\b1000\\b",
+          "content_preview": "print(f\"   [PASS] 1000 ORB BEATS random baseline by {baseline_exp - random_exp:+"
+        },
+        {
+          "line": 678,
+          "pattern": "\\b1000\\b",
+          "content_preview": "print(f\"   [FAIL] 1000 ORB FAILS vs random baseline\")"
+        },
+        {
+          "line": 684,
+          "pattern": "\\b1000\\b",
+          "content_preview": "print(f\"   [PASS] L4 filter at 1000 ORB BEATS random by {l4_yes_exp - l4_yes_ran"
+        },
+        {
+          "line": 687,
+          "pattern": "\\b1000\\b",
+          "content_preview": "print(f\"   [FAIL] L4 filter at 1000 ORB FAILS vs random\")"
+        },
+        {
+          "line": 691,
+          "pattern": "\\b2300\\b",
+          "content_preview": "print(\"4. NIGHT ORBs (2300, 0030):\")"
+        },
+        {
+          "line": 691,
+          "pattern": "\\b0030\\b",
+          "content_preview": "print(\"4. NIGHT ORBs (2300, 0030):\")"
+        },
+        {
+          "line": 693,
+          "pattern": "\\b2300\\b",
+          "content_preview": "print(f\"   [PASS] 2300 ORB BEATS random by {orb_2300_exp - orb_2300_random:+.3f}"
+        },
+        {
+          "line": 695,
+          "pattern": "\\b2300\\b",
+          "content_preview": "print(f\"   [FAIL] 2300 ORB FAILS vs random (edge = {orb_2300_exp - orb_2300_rand"
+        },
+        {
+          "line": 698,
+          "pattern": "\\b0030\\b",
+          "content_preview": "print(f\"   [PASS] 0030 ORB BEATS random by {orb_0030_exp - orb_0030_random:+.3f}"
+        },
+        {
+          "line": 700,
+          "pattern": "\\b0030\\b",
+          "content_preview": "print(f\"   [FAIL] 0030 ORB FAILS vs random (edge = {orb_0030_exp - orb_0030_rand"
+        },
+        {
+          "line": 706,
+          "pattern": "\\b2300\\b",
+          "content_preview": "print(f\"   [PASS] 2300 ORB + L4 BEATS random by {orb_2300_l4_exp - orb_2300_l4_r"
+        },
+        {
+          "line": 708,
+          "pattern": "\\b2300\\b",
+          "content_preview": "print(f\"   [FAIL] 2300 ORB + L4 FAILS vs random (edge = {orb_2300_l4_exp - orb_2"
+        },
+        {
+          "line": 711,
+          "pattern": "\\b0030\\b",
+          "content_preview": "print(f\"   [PASS] 0030 ORB + L4 BEATS random by {orb_0030_l4_exp - orb_0030_l4_r"
+        },
+        {
+          "line": 713,
+          "pattern": "\\b0030\\b",
+          "content_preview": "print(f\"   [FAIL] 0030 ORB + L4 FAILS vs random (edge = {orb_0030_l4_exp - orb_0"
+        }
+      ]
+    },
+    "analysis\\query_engine.py": {
+      "total": 42,
+      "violations": [
+        {
+          "line": 27,
+          "pattern": "\\b0900\\b",
+          "content_preview": "ORB_TIMES: Tuple[str, ...] = (\"0900\", \"1000\", \"1100\", \"1800\", \"2300\", \"0030\")"
+        },
+        {
+          "line": 27,
+          "pattern": "\\b1000\\b",
+          "content_preview": "ORB_TIMES: Tuple[str, ...] = (\"0900\", \"1000\", \"1100\", \"1800\", \"2300\", \"0030\")"
+        },
+        {
+          "line": 27,
+          "pattern": "\\b1100\\b",
+          "content_preview": "ORB_TIMES: Tuple[str, ...] = (\"0900\", \"1000\", \"1100\", \"1800\", \"2300\", \"0030\")"
+        },
+        {
+          "line": 27,
+          "pattern": "\\b1800\\b",
+          "content_preview": "ORB_TIMES: Tuple[str, ...] = (\"0900\", \"1000\", \"1100\", \"1800\", \"2300\", \"0030\")"
+        },
+        {
+          "line": 27,
+          "pattern": "\\b2300\\b",
+          "content_preview": "ORB_TIMES: Tuple[str, ...] = (\"0900\", \"1000\", \"1100\", \"1800\", \"2300\", \"0030\")"
+        },
+        {
+          "line": 27,
+          "pattern": "\\b0030\\b",
+          "content_preview": "ORB_TIMES: Tuple[str, ...] = (\"0900\", \"1000\", \"1100\", \"1800\", \"2300\", \"0030\")"
+        },
+        {
+          "line": 417,
+          "pattern": "\\b0900\\b",
+          "content_preview": "WHEN '0900' THEN df.orb_0900_high"
+        },
+        {
+          "line": 418,
+          "pattern": "\\b1000\\b",
+          "content_preview": "WHEN '1000' THEN df.orb_1000_high"
+        },
+        {
+          "line": 419,
+          "pattern": "\\b1100\\b",
+          "content_preview": "WHEN '1100' THEN df.orb_1100_high"
+        },
+        {
+          "line": 420,
+          "pattern": "\\b1800\\b",
+          "content_preview": "WHEN '1800' THEN df.orb_1800_high"
+        },
+        {
+          "line": 421,
+          "pattern": "\\b2300\\b",
+          "content_preview": "WHEN '2300' THEN df.orb_2300_high"
+        },
+        {
+          "line": 422,
+          "pattern": "\\b0030\\b",
+          "content_preview": "WHEN '0030' THEN df.orb_0030_high"
+        },
+        {
+          "line": 425,
+          "pattern": "\\b0900\\b",
+          "content_preview": "WHEN '0900' THEN df.orb_0900_low"
+        },
+        {
+          "line": 426,
+          "pattern": "\\b1000\\b",
+          "content_preview": "WHEN '1000' THEN df.orb_1000_low"
+        },
+        {
+          "line": 427,
+          "pattern": "\\b1100\\b",
+          "content_preview": "WHEN '1100' THEN df.orb_1100_low"
+        },
+        {
+          "line": 428,
+          "pattern": "\\b1800\\b",
+          "content_preview": "WHEN '1800' THEN df.orb_1800_low"
+        },
+        {
+          "line": 429,
+          "pattern": "\\b2300\\b",
+          "content_preview": "WHEN '2300' THEN df.orb_2300_low"
+        },
+        {
+          "line": 430,
+          "pattern": "\\b0030\\b",
+          "content_preview": "WHEN '0030' THEN df.orb_0030_low"
+        },
+        {
+          "line": 433,
+          "pattern": "\\b0900\\b",
+          "content_preview": "WHEN '0900' THEN df.orb_0900_size"
+        },
+        {
+          "line": 434,
+          "pattern": "\\b1000\\b",
+          "content_preview": "WHEN '1000' THEN df.orb_1000_size"
+        },
+        {
+          "line": 435,
+          "pattern": "\\b1100\\b",
+          "content_preview": "WHEN '1100' THEN df.orb_1100_size"
+        },
+        {
+          "line": 436,
+          "pattern": "\\b1800\\b",
+          "content_preview": "WHEN '1800' THEN df.orb_1800_size"
+        },
+        {
+          "line": 437,
+          "pattern": "\\b2300\\b",
+          "content_preview": "WHEN '2300' THEN df.orb_2300_size"
+        },
+        {
+          "line": 438,
+          "pattern": "\\b0030\\b",
+          "content_preview": "WHEN '0030' THEN df.orb_0030_size"
+        },
+        {
+          "line": 468,
+          "pattern": "\\b0900\\b",
+          "content_preview": "WHEN '0900' THEN df.orb_0900_high"
+        },
+        {
+          "line": 469,
+          "pattern": "\\b1000\\b",
+          "content_preview": "WHEN '1000' THEN df.orb_1000_high"
+        },
+        {
+          "line": 470,
+          "pattern": "\\b1100\\b",
+          "content_preview": "WHEN '1100' THEN df.orb_1100_high"
+        },
+        {
+          "line": 471,
+          "pattern": "\\b1800\\b",
+          "content_preview": "WHEN '1800' THEN df.orb_1800_high"
+        },
+        {
+          "line": 472,
+          "pattern": "\\b2300\\b",
+          "content_preview": "WHEN '2300' THEN df.orb_2300_high"
+        },
+        {
+          "line": 473,
+          "pattern": "\\b0030\\b",
+          "content_preview": "WHEN '0030' THEN df.orb_0030_high"
+        },
+        {
+          "line": 476,
+          "pattern": "\\b0900\\b",
+          "content_preview": "WHEN '0900' THEN df.orb_0900_low"
+        },
+        {
+          "line": 477,
+          "pattern": "\\b1000\\b",
+          "content_preview": "WHEN '1000' THEN df.orb_1000_low"
+        },
+        {
+          "line": 478,
+          "pattern": "\\b1100\\b",
+          "content_preview": "WHEN '1100' THEN df.orb_1100_low"
+        },
+        {
+          "line": 479,
+          "pattern": "\\b1800\\b",
+          "content_preview": "WHEN '1800' THEN df.orb_1800_low"
+        },
+        {
+          "line": 480,
+          "pattern": "\\b2300\\b",
+          "content_preview": "WHEN '2300' THEN df.orb_2300_low"
+        },
+        {
+          "line": 481,
+          "pattern": "\\b0030\\b",
+          "content_preview": "WHEN '0030' THEN df.orb_0030_low"
+        },
+        {
+          "line": 484,
+          "pattern": "\\b0900\\b",
+          "content_preview": "WHEN '0900' THEN df.orb_0900_size"
+        },
+        {
+          "line": 485,
+          "pattern": "\\b1000\\b",
+          "content_preview": "WHEN '1000' THEN df.orb_1000_size"
+        },
+        {
+          "line": 486,
+          "pattern": "\\b1100\\b",
+          "content_preview": "WHEN '1100' THEN df.orb_1100_size"
+        },
+        {
+          "line": 487,
+          "pattern": "\\b1800\\b",
+          "content_preview": "WHEN '1800' THEN df.orb_1800_size"
+        },
+        {
+          "line": 488,
+          "pattern": "\\b2300\\b",
+          "content_preview": "WHEN '2300' THEN df.orb_2300_size"
+        },
+        {
+          "line": 489,
+          "pattern": "\\b0030\\b",
+          "content_preview": "WHEN '0030' THEN df.orb_0030_size"
+        }
+      ]
+    },
+    "analysis\\research_5min_confirmation_filter.py": {
+      "total": 4,
+      "violations": [
+        {
+          "line": 20,
+          "pattern": "\\b0900\\b",
+          "content_preview": "- Test on L4_CONSOLIDATION trades (0900, 1000 ORB)"
+        },
+        {
+          "line": 20,
+          "pattern": "\\b1000\\b",
+          "content_preview": "- Test on L4_CONSOLIDATION trades (0900, 1000 ORB)"
+        },
+        {
+          "line": 49,
+          "pattern": "\\b0900\\b",
+          "content_preview": "ORB_TIMES = ['0900', '1000']"
+        },
+        {
+          "line": 49,
+          "pattern": "\\b1000\\b",
+          "content_preview": "ORB_TIMES = ['0900', '1000']"
+        }
+      ]
+    },
+    "analysis\\research_5min_filter_phase1_robustness.py": {
+      "total": 10,
+      "violations": [
+        {
+          "line": 8,
+          "pattern": "\\b1100\\b",
+          "content_preview": "- Test on 1100 ORB (BOTH_LOST filter)"
+        },
+        {
+          "line": 9,
+          "pattern": "\\b1800\\b",
+          "content_preview": "- Test on 1800 ORB (RSI > 70 filter)"
+        },
+        {
+          "line": 10,
+          "pattern": "\\b0900\\b",
+          "content_preview": "- Compare to L4_CONSOLIDATION results (0900, 1000 ORB)"
+        },
+        {
+          "line": 10,
+          "pattern": "\\b1000\\b",
+          "content_preview": "- Compare to L4_CONSOLIDATION results (0900, 1000 ORB)"
+        },
+        {
+          "line": 99,
+          "pattern": "\\b1100\\b",
+          "content_preview": "'name': '1100 ORB (BOTH_LOST)',"
+        },
+        {
+          "line": 100,
+          "pattern": "\\b1100\\b",
+          "content_preview": "'orb_time': '1100',"
+        },
+        {
+          "line": 102,
+          "pattern": "\\b1100\\b",
+          "content_preview": "'rr_values': [1.5],  # Only RR=1.5 validated for 1100"
+        },
+        {
+          "line": 106,
+          "pattern": "\\b1800\\b",
+          "content_preview": "'name': '1800 ORB (RSI > 70)',"
+        },
+        {
+          "line": 107,
+          "pattern": "\\b1800\\b",
+          "content_preview": "'orb_time': '1800',"
+        },
+        {
+          "line": 109,
+          "pattern": "\\b1800\\b",
+          "content_preview": "'rr_values': [1.5],  # Only RR=1.5 validated for 1800"
+        }
+      ]
+    },
+    "analysis\\research_5min_filter_phase2_walkforward.py": {
+      "total": 6,
+      "violations": [
+        {
+          "line": 183,
+          "pattern": "\\b0900\\b",
+          "content_preview": "'name': '0900 ORB (L4_CONSOLIDATION)',"
+        },
+        {
+          "line": 184,
+          "pattern": "\\b0900\\b",
+          "content_preview": "'orb_time': '0900',"
+        },
+        {
+          "line": 189,
+          "pattern": "\\b1000\\b",
+          "content_preview": "'name': '1000 ORB (L4_CONSOLIDATION)',"
+        },
+        {
+          "line": 190,
+          "pattern": "\\b1000\\b",
+          "content_preview": "'orb_time': '1000',"
+        },
+        {
+          "line": 195,
+          "pattern": "\\b1100\\b",
+          "content_preview": "'name': '1100 ORB (BOTH_LOST)',"
+        },
+        {
+          "line": 196,
+          "pattern": "\\b1100\\b",
+          "content_preview": "'orb_time': '1100',"
+        }
+      ]
+    },
+    "analysis\\research_night_orb_comprehensive.py": {
+      "total": 26,
+      "violations": [
+        {
+          "line": 2,
+          "pattern": "\\b2300\\b",
+          "content_preview": "COMPREHENSIVE NIGHT ORB RESEARCH (2300, 0030)"
+        },
+        {
+          "line": 2,
+          "pattern": "\\b0030\\b",
+          "content_preview": "COMPREHENSIVE NIGHT ORB RESEARCH (2300, 0030)"
+        },
+        {
+          "line": 5,
+          "pattern": "\\b2300\\b",
+          "content_preview": "User Request: \"I dont feel like we have searched 2300 or 0030 properly for edges"
+        },
+        {
+          "line": 5,
+          "pattern": "\\b0030\\b",
+          "content_preview": "User Request: \"I dont feel like we have searched 2300 or 0030 properly for edges"
+        },
+        {
+          "line": 36,
+          "pattern": "\\b2300\\b",
+          "content_preview": "print(\"COMPREHENSIVE NIGHT ORB RESEARCH (2300, 0030)\")"
+        },
+        {
+          "line": 36,
+          "pattern": "\\b0030\\b",
+          "content_preview": "print(\"COMPREHENSIVE NIGHT ORB RESEARCH (2300, 0030)\")"
+        },
+        {
+          "line": 70,
+          "pattern": "\\b2300\\b",
+          "content_preview": "-- 2300 ORB"
+        },
+        {
+          "line": 74,
+          "pattern": "\\b0030\\b",
+          "content_preview": "-- 0030 ORB"
+        },
+        {
+          "line": 109,
+          "pattern": "\\b2300\\b",
+          "content_preview": "print(f\"Valid 2300 ORBs: {valid_2300}\")"
+        },
+        {
+          "line": 110,
+          "pattern": "\\b0030\\b",
+          "content_preview": "print(f\"Valid 0030 ORBs: {valid_0030}\")"
+        },
+        {
+          "line": 497,
+          "pattern": "\\b2300\\b",
+          "content_preview": "print(\"TESTING 2300 ORB\")"
+        },
+        {
+          "line": 509,
+          "pattern": "\\b2300\\b",
+          "content_preview": "all_results.extend(test_baseline(orb_2300_data, '2300', RR_LEVELS))"
+        },
+        {
+          "line": 512,
+          "pattern": "\\b2300\\b",
+          "content_preview": "all_results.extend(test_session_filters(orb_2300_data, '2300', RR_LEVELS))"
+        },
+        {
+          "line": 515,
+          "pattern": "\\b2300\\b",
+          "content_preview": "all_results.extend(test_regime_filters(orb_2300_data, '2300', RR_LEVELS))"
+        },
+        {
+          "line": 518,
+          "pattern": "\\b2300\\b",
+          "content_preview": "all_results.extend(test_sequential_filters(orb_2300_data, '2300', RR_LEVELS))"
+        },
+        {
+          "line": 521,
+          "pattern": "\\b2300\\b",
+          "content_preview": "all_results.extend(test_indicator_filters(orb_2300_data, '2300', RR_LEVELS))"
+        },
+        {
+          "line": 524,
+          "pattern": "\\b2300\\b",
+          "content_preview": "ml_feature_importance(orb_2300_data, '2300')"
+        },
+        {
+          "line": 525,
+          "pattern": "\\b2300\\b",
+          "content_preview": "ml_clustering(orb_2300_data, '2300')"
+        },
+        {
+          "line": 532,
+          "pattern": "\\b0030\\b",
+          "content_preview": "print(\"TESTING 0030 ORB\")"
+        },
+        {
+          "line": 544,
+          "pattern": "\\b0030\\b",
+          "content_preview": "all_results.extend(test_baseline(orb_0030_data, '0030', RR_LEVELS))"
+        },
+        {
+          "line": 547,
+          "pattern": "\\b0030\\b",
+          "content_preview": "all_results.extend(test_session_filters(orb_0030_data, '0030', RR_LEVELS))"
+        },
+        {
+          "line": 550,
+          "pattern": "\\b0030\\b",
+          "content_preview": "all_results.extend(test_regime_filters(orb_0030_data, '0030', RR_LEVELS))"
+        },
+        {
+          "line": 553,
+          "pattern": "\\b0030\\b",
+          "content_preview": "all_results.extend(test_sequential_filters(orb_0030_data, '0030', RR_LEVELS))"
+        },
+        {
+          "line": 556,
+          "pattern": "\\b0030\\b",
+          "content_preview": "all_results.extend(test_indicator_filters(orb_0030_data, '0030', RR_LEVELS))"
+        },
+        {
+          "line": 559,
+          "pattern": "\\b0030\\b",
+          "content_preview": "ml_feature_importance(orb_0030_data, '0030')"
+        },
+        {
+          "line": 560,
+          "pattern": "\\b0030\\b",
+          "content_preview": "ml_clustering(orb_0030_data, '0030')"
+        }
+      ]
+    },
+    "analysis\\test_honest_filters.py": {
+      "total": 19,
+      "violations": [
+        {
+          "line": 5,
+          "pattern": "\\b1100\\b",
+          "content_preview": "Tests if 1100/1800 filters work using ONLY information available at signal time."
+        },
+        {
+          "line": 5,
+          "pattern": "\\b1800\\b",
+          "content_preview": "Tests if 1100/1800 filters work using ONLY information available at signal time."
+        },
+        {
+          "line": 7,
+          "pattern": "\\b1100\\b",
+          "content_preview": "For 1100 ORB (11:00):"
+        },
+        {
+          "line": 12,
+          "pattern": "\\b1800\\b",
+          "content_preview": "For 1800 ORB (18:00):"
+        },
+        {
+          "line": 29,
+          "pattern": "\\b1100\\b",
+          "content_preview": "print('TEST 1: 1100 ORB + SMALL ORB SIZE (<15% ATR)')"
+        },
+        {
+          "line": 43,
+          "pattern": "\\b1100\\b",
+          "content_preview": "WHERE vs.orb_time = '1100'"
+        },
+        {
+          "line": 58,
+          "pattern": "\\b1100\\b",
+          "content_preview": "print('TEST 2: 1100 ORB + PREVIOUS DAY A2_EXPANDED')"
+        },
+        {
+          "line": 72,
+          "pattern": "\\b1100\\b",
+          "content_preview": "WHERE vs.orb_time = '1100'"
+        },
+        {
+          "line": 87,
+          "pattern": "\\b1100\\b",
+          "content_preview": "print('TEST 3: 1100 ORB + PREVIOUS DAY L2_SWEEP_LOW')"
+        },
+        {
+          "line": 101,
+          "pattern": "\\b1100\\b",
+          "content_preview": "WHERE vs.orb_time = '1100'"
+        },
+        {
+          "line": 123,
+          "pattern": "\\b1800\\b",
+          "content_preview": "print('TEST 4: 1800 ORB + SAME DAY A2_EXPANDED')"
+        },
+        {
+          "line": 135,
+          "pattern": "\\b1800\\b",
+          "content_preview": "WHERE vs.orb_time = '1800'"
+        },
+        {
+          "line": 150,
+          "pattern": "\\b1800\\b",
+          "content_preview": "print('TEST 5: 1800 ORB + SMALL ORB SIZE (<15% ATR)')"
+        },
+        {
+          "line": 162,
+          "pattern": "\\b1800\\b",
+          "content_preview": "WHERE vs.orb_time = '1800'"
+        },
+        {
+          "line": 188,
+          "pattern": "\\b1100\\b",
+          "content_preview": "print('  - 1100 + SMALL_ORB: Should show positive expectancy')"
+        },
+        {
+          "line": 189,
+          "pattern": "\\b1100\\b",
+          "content_preview": "print('  - 1100 + PREV_A2: Will show if previous day patterns predict')"
+        },
+        {
+          "line": 190,
+          "pattern": "\\b1100\\b",
+          "content_preview": "print('  - 1100 + PREV_L2: Will show if previous day patterns predict')"
+        },
+        {
+          "line": 191,
+          "pattern": "\\b1800\\b",
+          "content_preview": "print('  - 1800 + SAME_A2: Should work (Asia complete before ORB)')"
+        },
+        {
+          "line": 192,
+          "pattern": "\\b1800\\b",
+          "content_preview": "print('  - 1800 + SMALL_ORB: Should show if size filter helps')"
+        }
+      ]
+    },
+    "analysis\\validate_night_orb_baselines.py": {
+      "total": 8,
+      "violations": [
+        {
+          "line": 7,
+          "pattern": "\\b2300\\b",
+          "content_preview": "- Phase 2: Hypothesis distillation (DONE - identified 2300/0030 baselines)"
+        },
+        {
+          "line": 7,
+          "pattern": "\\b0030\\b",
+          "content_preview": "- Phase 2: Hypothesis distillation (DONE - identified 2300/0030 baselines)"
+        },
+        {
+          "line": 12,
+          "pattern": "\\b2300\\b",
+          "content_preview": "1. 2300 ORB RR=3.0 (no filters)"
+        },
+        {
+          "line": 13,
+          "pattern": "\\b0030\\b",
+          "content_preview": "2. 0030 ORB RR=3.0 (no filters)"
+        },
+        {
+          "line": 261,
+          "pattern": "\\b2300\\b",
+          "content_preview": "result_2300 = validate_baseline('2300', orb_2300, rr=3.0, friction=FRICTION)"
+        },
+        {
+          "line": 271,
+          "pattern": "\\b0030\\b",
+          "content_preview": "result_0030 = validate_baseline('0030', orb_0030, rr=3.0, friction=FRICTION)"
+        },
+        {
+          "line": 278,
+          "pattern": "\\b2300\\b",
+          "content_preview": "print(f\"2300 ORB RR=3.0: {result_2300['classification']}\")"
+        },
+        {
+          "line": 287,
+          "pattern": "\\b0030\\b",
+          "content_preview": "print(f\"0030 ORB RR=3.0: {result_0030['classification']}\")"
+        }
+      ]
+    },
+    "analysis\\what_if_engine.py": {
+      "total": 2,
+      "violations": [
+        {
+          "line": 21,
+          "pattern": "\\b1000\\b",
+          "content_preview": "orb_time='1000',"
+        },
+        {
+          "line": 584,
+          "pattern": "\\b1000\\b",
+          "content_preview": "orb_time='1000',"
+        }
+      ]
+    },
+    "analysis\\what_if_snapshots.py": {
+      "total": 3,
+      "violations": [
+        {
+          "line": 323,
+          "pattern": "\\b1000\\b",
+          "content_preview": "orb_time: Filter by ORB time ('1000', '1800', etc.)"
+        },
+        {
+          "line": 323,
+          "pattern": "\\b1800\\b",
+          "content_preview": "orb_time: Filter by ORB time ('1000', '1800', etc.)"
+        },
+        {
+          "line": 561,
+          "pattern": "\\b1000\\b",
+          "content_preview": "orb_time='1000',"
+        }
+      ]
+    }
+  }
+}

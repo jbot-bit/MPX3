@@ -347,7 +347,7 @@ def promote_candidate_to_validated_setups(candidate_id: int, actor: str) -> str:
 # =============================================================================
 
 def create_edge_candidate(
-    name: str,
+    name: Optional[str],
     instrument: str,
     hypothesis_text: str,
     filter_spec: Dict,
@@ -362,7 +362,7 @@ def create_edge_candidate(
     Create a new edge candidate in DRAFT status.
 
     Args:
-        name: Human-readable setup name
+        name: Human-readable setup name (auto-generated if None)
         instrument: MGC, NQ, MPL, etc.
         hypothesis_text: Description of the edge hypothesis
         filter_spec: Dict with orb_size_filter, sl_mode
@@ -376,6 +376,25 @@ def create_edge_candidate(
     Returns:
         candidate_id: ID of newly created candidate
     """
+    # Auto-generate name if not provided
+    if name is None or name.strip() == "":
+        from edge_utils import generate_strategy_name
+
+        orb_time = metrics.get('orb_time', 'UNKNOWN')
+        direction = 'LONG'  # Default (could be extracted from filter_spec if available)
+        entry_rule = '1ST'  # Default entry rule
+        sl_mode = filter_spec.get('sl_mode', 'ORB_LOW')
+        version = 1  # Default version
+
+        name = generate_strategy_name(
+            instrument=instrument,
+            orb_time=orb_time,
+            direction=direction,
+            entry_rule=entry_rule,
+            sl_mode=sl_mode,
+            version=version
+        )
+
     conn = get_database_connection(read_only=False)
 
     try:

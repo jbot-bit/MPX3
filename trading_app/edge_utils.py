@@ -59,6 +59,66 @@ def generate_edge_id(
     return edge_id
 
 
+def generate_strategy_name(
+    instrument: str,
+    orb_time: str,
+    direction: str,
+    entry_rule: str,
+    sl_mode: str,
+    version: int = 1
+) -> str:
+    """
+    Generate human-readable strategy name following naming policy.
+
+    Format: {INSTRUMENT}_{ORB}_{DIR}_{ENTRY}_{STOP}_v{VER}
+
+    Args:
+        instrument: 3-letter code (MGC, NQ, MPL)
+        orb_time: 4-digit ORB time (0900, 1000, etc.)
+        direction: LONG, SHORT, or BOTH
+        entry_rule: Entry type (LIMIT, 1ST, 2ND, 5M)
+        sl_mode: Stop mode (ORB_LOW, ATR_05, FIXED, etc.)
+        version: Version number (default 1)
+
+    Returns:
+        name: Human-readable strategy name
+
+    Examples:
+        >>> generate_strategy_name("MGC", "1000", "LONG", "1ST", "ORB_LOW", 1)
+        "MGC_1000_LONG_1ST_ORB_LOW_v1"
+    """
+    # Normalize entry rule to short form
+    entry_map = {
+        '1st_close_outside': '1ST',
+        '2nd_close_outside': '2ND',
+        '5m_close_outside': '5M',
+        'limit_at_orb': 'LIMIT',
+        '1ST': '1ST',
+        '2ND': '2ND',
+        '5M': '5M',
+        'LIMIT': 'LIMIT'
+    }
+    entry_short = entry_map.get(entry_rule, entry_rule.upper())
+
+    # Normalize stop mode to short form
+    sl_map = {
+        'orb_low': 'ORB_LOW',
+        'orb_high': 'ORB_HIGH',
+        'atr_0.5': 'ATR_05',
+        'fixed': 'FIXED',
+        'ORB_LOW': 'ORB_LOW',
+        'ORB_HIGH': 'ORB_HIGH',
+        'ATR_05': 'ATR_05',
+        'FIXED': 'FIXED'
+    }
+    sl_short = sl_map.get(sl_mode, sl_mode.upper())
+
+    # Build name
+    name = f"{instrument}_{orb_time}_{direction.upper()}_{entry_short}_{sl_short}_v{version}"
+
+    return name
+
+
 def create_candidate(
     db_connection: duckdb.DuckDBPyConnection,
     instrument: str,
