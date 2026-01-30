@@ -1131,19 +1131,56 @@ For RR-specific win rates, use `validated_setups` or run a full backtest.
 
                         # Define callback function
                         def mark_for_validation():
-                            """Mark candidates as ready for validation"""
-                            # For now, just log this action (actual validation happens in Validation Gate tab)
-                            logger.info(f"Marked {len(selected_candidates)} candidates for validation")
-                            st.session_state['candidates_for_validation'] = selected_candidates
-                            st.session_state['validation_run_id'] = results['run_id']
+                            """Enqueue candidates to validation_queue (DB-BACKED - UPDATE19a)"""
+                            import json
+
+                            enqueued_count = 0
+                            skipped_count = 0
+
+                            for candidate in selected_candidates:
+                                # Check if already enqueued (dedup protection)
+                                existing = app_state.db_connection.execute("""
+                                    SELECT queue_id FROM validation_queue
+                                    WHERE source = 'auto_search'
+                                    AND source_id = ?
+                                    AND status = 'PENDING'
+                                """, [str(candidate.get('candidate_id', ''))]).fetchone()
+
+                                if existing:
+                                    logger.info(f"Skipping candidate {candidate.get('candidate_id')} (already in validation queue)")
+                                    skipped_count += 1
+                                    continue
+
+                                # Insert into validation_queue
+                                app_state.db_connection.execute("""
+                                    INSERT INTO validation_queue (
+                                        source, source_id, instrument, orb_time, rr_target,
+                                        filters_json, score_proxy, sample_size, status, notes
+                                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'PENDING', ?)
+                                """, [
+                                    'auto_search',
+                                    str(candidate.get('candidate_id', '')),
+                                    candidate.get('instrument', 'MGC'),
+                                    candidate.get('orb_time', ''),
+                                    candidate.get('rr', 0.0),
+                                    json.dumps(candidate.get('filters', {})),
+                                    candidate.get('score_proxy'),
+                                    candidate.get('sample_size'),
+                                    f"Auto-search run {results['run_id']}: {candidate.get('name', 'Unknown')}"
+                                ])
+                                enqueued_count += 1
+
+                            app_state.db_connection.commit()
+                            logger.info(f"Enqueued {enqueued_count} candidates to validation_queue (skipped {skipped_count} duplicates)")
 
                         # Use write safety wrapper (MANDATORY)
                         if attempt_write_action(
                             "Send Candidates to Validation",
                             mark_for_validation
                         ):
-                            st.success(f"✅ Sent {len(selected_candidates)} candidates to Validation Gate")
+                            st.success(f"✅ Enqueued {len(selected_candidates)} candidates to Validation Queue (DB-backed)")
                             st.info("📋 **Next**: Go to **Validation Gate** tab to run stress tests")
+                            st.caption("💾 Candidates persisted in validation_queue table (survives refresh)")
 
                 else:
                     st.info("No candidates found")
@@ -1377,6 +1414,44 @@ with tab_validation:
     - ✓ +25% cost stress (WEAK threshold)
     - ✓ +50% cost stress (PASS threshold)
     """)
+
+    st.divider()
+
+    # ========================================================================
+    # VALIDATION QUEUE (DB-BACKED - UPDATE19a)
+    # ========================================================================
+    st.markdown("### 📥 Validation Queue (Auto Search)")
+
+    try:
+        # Query validation_queue for PENDING candidates (DB-backed, survives refresh)
+        queue_candidates = app_state.db_connection.execute("""
+            SELECT
+                queue_id, source, source_id, instrument, orb_time, rr_target,
+                score_proxy, sample_size, enqueued_at, notes
+            FROM validation_queue
+            WHERE status = 'PENDING'
+            ORDER BY enqueued_at DESC
+        """).fetchall()
+
+        if queue_candidates:
+            st.success(f"✅ Found {len(queue_candidates)} candidate(s) in validation queue (DB-backed)")
+
+            # Show queue table
+            import pandas as pd
+            queue_df = pd.DataFrame(queue_candidates, columns=[
+                'queue_id', 'source', 'source_id', 'instrument', 'orb_time', 'rr_target',
+                'score_proxy', 'sample_size', 'enqueued_at', 'notes'
+            ])
+            st.dataframe(queue_df[['instrument', 'orb_time', 'rr_target', 'score_proxy', 'sample_size', 'enqueued_at']], use_container_width=True)
+
+            st.caption("💾 **DB-backed queue**: Candidates persist across page refreshes (not session_state)")
+            st.info("👉 Click candidate below to begin validation (stress tests)")
+        else:
+            st.info("📭 Validation queue empty. Send candidates from Research Lab first.")
+
+    except Exception as e:
+        st.error(f"❌ Failed to load validation queue: {e}")
+        logger.error(f"Validation queue error: {e}", exc_info=True)
 
     st.divider()
 
