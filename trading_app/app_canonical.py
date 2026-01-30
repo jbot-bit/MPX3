@@ -1155,85 +1155,8 @@ For RR-specific win rates, use `validated_setups` or run a full backtest.
                 st.error(f"❌ Search failed: {e}")
                 logger.error(f"Auto search error: {e}")
 
-        # Show recent candidates from last run
-        if 'last_search_run_id' in st.session_state:
-            st.divider()
-            st.subheader("Send to Validation Queue")
-
-            try:
-                from auto_search_engine import AutoSearchEngine
-                engine = AutoSearchEngine(app_state.db_connection)
-                recent_candidates = engine.get_recent_candidates(
-                    st.session_state['last_search_run_id'],
-                    limit=20
-                )
-
-                if recent_candidates:
-                    # Pre-select if candidate was clicked from card
-                    default_idx = 0
-                    if 'selected_candidate_for_queue' in st.session_state:
-                        selected_card = st.session_state['selected_candidate_for_queue']
-                        for i, c in enumerate(recent_candidates):
-                            if (c['orb_time'] == selected_card['orb_time'] and
-                                c['rr_target'] == selected_card['rr_target']):
-                                default_idx = i
-                                break
-
-                    # Select candidate
-                    candidate_options = [
-                        f"{c['orb_time']} RR={c['rr_target']} ({c['score_proxy']:.3f}R, {c['sample_size']}N)"
-                        for c in recent_candidates
-                    ]
-
-                    selected_idx = st.selectbox(
-                        "Select candidate to enqueue",
-                        range(len(candidate_options)),
-                        format_func=lambda i: candidate_options[i],
-                        index=default_idx,
-                        key="selected_candidate_idx"
-                    )
-
-                    selected = recent_candidates[selected_idx]
-
-                    # Confirm
-                    confirm = st.checkbox("Confirm")
-
-                    if st.button("Send to Queue", type="primary", disabled=not confirm, use_container_width=True):
-                        try:
-                            # Insert into validation_queue
-                            app_state.db_connection.execute("""
-                                INSERT INTO validation_queue (
-                                    enqueued_at, source, source_id,
-                                    instrument, setup_family, orb_time, rr_target,
-                                    filters_json, score_proxy, sample_size, status, notes
-                                ) VALUES (
-                                    CURRENT_TIMESTAMP, 'AUTO_SEARCH', ?,
-                                    ?, 'ORB_BASELINE', ?, ?, '{}', ?, ?, 'PENDING', ?
-                                )
-                            """, [
-                                st.session_state['last_search_run_id'],
-                                search_instrument,
-                                selected['orb_time'],
-                                selected['rr_target'],
-                                selected['score_proxy'],
-                                selected['sample_size'],
-                                selected.get('notes', '')
-                            ])
-
-                            st.success("Sent to queue")
-
-                            # Clear selected candidate from session state
-                            if 'selected_candidate_for_queue' in st.session_state:
-                                del st.session_state['selected_candidate_for_queue']
-
-                        except Exception as e:
-                            st.error(f"Failed to enqueue: {e}")
-                            logger.error(f"Validation queue insert error: {e}")
-                else:
-                    st.info("No candidates from last search. Run a search first.")
-
-            except Exception as e:
-                st.caption(f"Could not load candidates: {e}")
+        # NOTE: "Send to Validation Queue" removed - candidates must be created in edge_candidates table directly
+        # Use the "New Candidate Draft" form below to create edge_candidates entries
 
     st.divider()
 
@@ -1332,7 +1255,7 @@ For RR-specific win rates, use `validated_setups` or run a full backtest.
                 st.error("❌ Trigger definition is required!")
             else:
                 try:
-                    # Save to edge_registry
+                    # Save to edge_candidates
                     edge_id, message = create_candidate(
                         db_connection=app_state.db_connection,
                         instrument=candidate_instrument,
@@ -1458,110 +1381,150 @@ with tab_validation:
     st.divider()
 
     # ========================================================================
-    # CANDIDATES PENDING VALIDATION
+    # CANDIDATES FROM EDGE_CANDIDATES TABLE
     # ========================================================================
     st.markdown("### 1️⃣ Select Candidate to Validate")
 
-    # Check if candidates were sent from Research Lab
-    candidates_from_research = st.session_state.get('candidates_for_validation', [])
+    try:
+        # Query edge_candidates for DRAFT/PENDING status
+        candidates = app_state.db_connection.execute("""
+            SELECT
+                candidate_id, name, instrument, status,
+                metrics_json, robustness_json,
+                filter_spec_json, test_window_start, test_window_end
+            FROM edge_candidates
+            WHERE status IN ('DRAFT', 'PENDING')
+            ORDER BY created_at_utc DESC
+        """).fetchall()
 
-    if candidates_from_research:
-        st.success(f"✅ {len(candidates_from_research)} candidate(s) sent from Research Lab")
+        if candidates:
+            st.success(f"✅ Found {len(candidates)} candidate(s) awaiting validation")
 
-        # Select candidate
-        candidate_options = []
-        for i, c in enumerate(candidates_from_research):
-            exp_r = c.expected_r_proxy if c.expected_r_proxy else c.score_proxy
-            label = f"{c.orb_time} RR={c.rr_target} (+{exp_r:.3f}R, N={c.sample_size})"
-            candidate_options.append(label)
+            # Build candidate options
+            candidate_options = []
+            for row in candidates:
+                cid, name, instrument, status, metrics_json, robustness_json, filter_spec, start_date, end_date = row
+                label = f"[{status}] {instrument} - {name} (ID: {cid})"
+                candidate_options.append((cid, label, row))
 
-        selected_idx = st.selectbox(
-            "Select Candidate",
-            range(len(candidate_options)),
-            format_func=lambda i: candidate_options[i],
-            key="validation_candidate_selector"
-        )
+            # Select candidate
+            selected_idx = st.selectbox(
+                "Select Candidate",
+                range(len(candidate_options)),
+                format_func=lambda i: candidate_options[i][1],
+                key="validation_candidate_selector"
+            )
 
-        selected_candidate = candidates_from_research[selected_idx]
+            # Extract selected candidate data
+            selected_cid, selected_label, selected_row = candidate_options[selected_idx]
+            cid, name, instrument, status, metrics_json, robustness_json, filter_spec, start_date, end_date = selected_row
 
-        # Show candidate details
-        with st.expander("📋 Candidate Details", expanded=False):
-            col1, col2 = st.columns(2)
-            with col1:
-                st.markdown(f"**ORB Time:** {selected_candidate.orb_time}")
-                st.markdown(f"**RR Target:** {selected_candidate.rr_target}")
-            with col2:
-                exp_r = selected_candidate.expected_r_proxy if selected_candidate.expected_r_proxy else selected_candidate.score_proxy
-                st.markdown(f"**Expected R:** +{exp_r:.3f}R")
-                st.markdown(f"**Sample Size:** {selected_candidate.sample_size} trades")
+            # Show candidate details
+            with st.expander("📋 Candidate Details", expanded=False):
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.markdown(f"**ID:** {cid}")
+                    st.markdown(f"**Name:** {name}")
+                    st.markdown(f"**Instrument:** {instrument}")
+                with col2:
+                    st.markdown(f"**Status:** {status}")
+                    st.markdown(f"**Test Window:** {start_date} to {end_date}")
 
-    else:
-        # No candidates from Research Lab
-        st.info("📭 No candidates pending validation. Send candidates from Research Lab first.")
+            selected_candidate = {
+                'candidate_id': cid,
+                'name': name,
+                'instrument': instrument,
+                'status': status,
+                'metrics_json': metrics_json,
+                'robustness_json': robustness_json
+            }
+
+        else:
+            st.info("📭 No candidates pending validation. Create candidates in Research Lab first.")
+            selected_candidate = None
+
+    except Exception as e:
+        st.error(f"❌ Failed to load candidates: {e}")
+        logger.error(f"Candidate query error: {e}", exc_info=True)
         selected_candidate = None
 
     st.divider()
 
     # ========================================================================
-    # STRESS TESTING (If candidate selected)
+    # DERIVE VALIDATION STATUS FROM EDGE_CANDIDATES DATA
     # ========================================================================
     if 'selected_candidate' in locals() and selected_candidate is not None:
-        st.markdown("### 2️⃣ Run Stress Tests")
+        st.markdown("### 2️⃣ Validation Status")
 
-        st.caption("Test if candidate survives increased trading costs (+25%, +50%)")
+        st.caption("Status derived from metrics_json and robustness_json")
 
-        # Query actual validation data from database
+        # Parse JSON data with error handling
         try:
-            # Check if candidate has robustness data in edge_registry
-            validation_data = app_state.db_connection.execute("""
-                SELECT er.*,
-                       em.metrics as metrics_json,
-                       em.status as test_status
-                FROM edge_registry er
-                LEFT JOIN experiment_metrics em ON er.edge_id = em.edge_id
-                WHERE er.instrument = ?
-                  AND er.orb_time = ?
-                  AND er.rr = ?
-                ORDER BY er.updated_at DESC
-                LIMIT 1
-            """, [
-                selected_candidate.get('instrument', selected_candidate.get('instrument', 'MGC')),
-                selected_candidate.get('orb_time', selected_candidate['orb_time']),
-                selected_candidate.get('rr_target', selected_candidate.get('rr', 1.5))
-            ]).fetchone()
+            # Parse metrics_json
+            metrics_raw = selected_candidate.get('metrics_json')
+            if metrics_raw:
+                if isinstance(metrics_raw, str):
+                    import json
+                    metrics = json.loads(metrics_raw)
+                else:
+                    metrics = metrics_raw
+            else:
+                metrics = None
 
-            if validation_data and validation_data[10]:  # metrics_json exists
-                # Parse metrics
-                import json
-                metrics = json.loads(validation_data[10]) if isinstance(validation_data[10], str) else validation_data[10]
+            # Parse robustness_json
+            robustness_raw = selected_candidate.get('robustness_json')
+            if robustness_raw:
+                if isinstance(robustness_raw, str):
+                    import json
+                    robustness = json.loads(robustness_raw)
+                else:
+                    robustness = robustness_raw
+            else:
+                robustness = None
 
-                # Extract stress test results if they exist
-                stress_25_pass = metrics.get('stress_test_25') == 'PASS'
-                stress_50_pass = metrics.get('stress_test_50') == 'PASS'
-                baseline_exp_r = metrics.get('expected_r', 0.0)
+        except json.JSONDecodeError as e:
+            st.error(f"❌ Invalid JSON in candidate data: {e}")
+            logger.error(f"JSON parse error for candidate {selected_candidate['candidate_id']}: {e}")
+            metrics = None
+            robustness = None
+        except Exception as e:
+            st.error(f"❌ Failed to parse candidate data: {e}")
+            logger.error(f"Data parse error: {e}", exc_info=True)
+            metrics = None
+            robustness = None
+
+        # Check if validation data exists
+        validation_data_found = (metrics is not None and robustness is not None)
+
+        if validation_data_found:
+            # Extract metrics with NULL checks
+            try:
+                avg_r = float(metrics.get('avg_r', 0.0)) if metrics else 0.0
+                stress_25_pass = robustness.get('stress_25_pass', False) if robustness else False
+                stress_50_pass = robustness.get('stress_50_pass', False) if robustness else False
 
                 st.session_state['validation_data_found'] = True
                 st.session_state['stress_test_results'] = {
-                    'baseline_exp_r': baseline_exp_r,
+                    'baseline_exp_r': avg_r,
                     'stress_25_pass': stress_25_pass,
                     'stress_50_pass': stress_50_pass,
-                    'stress_25_exp_r': metrics.get('stress_25_exp_r', 0.0),
-                    'stress_50_exp_r': metrics.get('stress_50_exp_r', 0.0)
+                    'stress_25_exp_r': robustness.get('stress_25_exp_r', 0.0) if robustness else 0.0,
+                    'stress_50_exp_r': robustness.get('stress_50_exp_r', 0.0) if robustness else 0.0
                 }
-                st.success("✅ Found validation data from database")
-                st.rerun()
-            else:
-                # NO VALIDATION DATA - Block approval
+                st.success("✅ Validation data found in edge_candidates")
+
+            except (KeyError, ValueError, TypeError) as e:
+                st.error(f"❌ Incomplete or invalid metrics/robustness data: {e}")
+                logger.error(f"Data extraction error: {e}", exc_info=True)
                 st.session_state['validation_data_found'] = False
                 st.session_state['stress_test_results'] = None
-                st.error("❌ No validation data found for this candidate")
-                st.warning("⚠️ **BLOCKED**: Candidate must be validated before approval. Run full validation in legacy pipeline.")
 
-        except Exception as e:
-            st.error(f"❌ Failed to query validation data: {e}")
+        else:
+            # NO VALIDATION DATA - Block approval
             st.session_state['validation_data_found'] = False
             st.session_state['stress_test_results'] = None
-            logger.error(f"Validation data query error: {e}", exc_info=True)
+            st.error("❌ No validation data found (metrics_json or robustness_json is NULL)")
+            st.warning("⚠️ **BLOCKED**: Candidate must be validated before approval. Run validation tests first.")
 
         # Show validation results if available
         stress_results = st.session_state.get('stress_test_results')
@@ -1615,60 +1578,45 @@ with tab_validation:
                 if st.button("✅ Approve & Send to Production", type="primary", use_container_width=True, disabled=not can_approve):
                     def approve_candidate():
                         """Promote candidate to production (validated_setups)"""
+                        from trading_app.edge_pipeline import promote_candidate_to_validated_setups
+
                         try:
-                            # Extract candidate details
-                            instrument = selected_candidate.get('instrument', 'MGC')
-                            orb_time = selected_candidate.get('orb_time')
-                            rr = selected_candidate.get('rr_target', selected_candidate.get('rr', 1.5))
-                            sl_mode = 'orb_opposite'  # Default for ORB strategies
+                            candidate_id = selected_candidate['candidate_id']
 
-                            # Get validation metrics
-                            baseline_exp_r = stress_results['baseline_exp_r']
-
-                            # Calculate win rate from stress test data (estimate from ExpR)
-                            # This is conservative - real win rate should come from full validation
-                            win_rate = max(0.3, min(0.7, 0.5 + baseline_exp_r * 0.5))
-
-                            # Sample size (from candidate or default)
-                            sample_size = selected_candidate.get('sample_size', 30)
-
-                            # ORB size filter (if exists)
-                            filters_json = selected_candidate.get('filters_json', '{}')
-                            import json
-                            filters = json.loads(filters_json) if isinstance(filters_json, str) else filters_json
-                            orb_size_filter = filters.get('orb_size_filter')
-
-                            # Insert into validated_setups
+                            # First, update candidate status to APPROVED
                             app_state.db_connection.execute("""
-                                INSERT INTO validated_setups (
-                                    instrument, orb_time, rr, sl_mode,
-                                    orb_size_filter, win_rate, expected_r, sample_size,
-                                    notes
-                                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                            """, [
-                                instrument, orb_time, rr, sl_mode,
-                                orb_size_filter, win_rate, baseline_exp_r, sample_size,
-                                f"Approved via Validation Gate. Status: {status}. Stress +25%: {'PASS' if stress_results['stress_25_pass'] else 'FAIL'}, +50%: {'PASS' if stress_results['stress_50_pass'] else 'FAIL'}"
-                            ])
+                                UPDATE edge_candidates
+                                SET status = 'APPROVED',
+                                    approved_at = CURRENT_TIMESTAMP,
+                                    approved_by = ?
+                                WHERE candidate_id = ?
+                            """, ['ui_user', candidate_id])
 
-                            logger.info(f"Approved candidate for production: {instrument} {orb_time} RR={rr}")
-                            st.session_state['last_approval'] = selected_candidate
+                            # Then promote using edge_pipeline
+                            setup_id = promote_candidate_to_validated_setups(
+                                candidate_id=candidate_id,
+                                actor='ui_user'
+                            )
+
+                            logger.info(f"Approved and promoted candidate {candidate_id} to validated_setups (setup_id: {setup_id})")
 
                             # Clear validation state
                             st.session_state.pop('stress_test_results', None)
-                            st.session_state.pop('candidates_for_validation', None)
                             st.session_state.pop('validation_data_found', None)
 
+                        except ValueError as e:
+                            logger.error(f"Promotion failed (validation error): {e}", exc_info=True)
+                            raise Exception(f"Cannot promote candidate: {e}")
                         except Exception as e:
                             logger.error(f"Promotion failed: {e}", exc_info=True)
-                            raise Exception(f"Failed to write to validated_setups: {e}")
+                            raise Exception(f"Promotion error: {e}")
 
                     # Use write safety wrapper (MANDATORY)
                     if attempt_write_action(
                         "Approve Candidate for Production",
                         approve_candidate
                     ):
-                        st.success("✅ Candidate approved and sent to Production!")
+                        st.success("✅ Candidate approved and promoted to Production!")
                         st.info("📋 **Next**: Go to **Production** tab to monitor live strategies")
                         st.balloons()
 
@@ -1683,27 +1631,26 @@ with tab_validation:
                     def reject_candidate():
                         """Reject candidate (do not promote)"""
                         try:
-                            # Log rejection to database for audit trail
-                            # Note: We don't have a rejections table, so just log to application logs
-                            instrument = selected_candidate.get('instrument', 'MGC')
-                            orb_time = selected_candidate.get('orb_time')
-                            rr = selected_candidate.get('rr_target', selected_candidate.get('rr', 1.5))
-
+                            candidate_id = selected_candidate['candidate_id']
                             rejection_reason = f"Status: {status}. Stress +25%: {'PASS' if stress_results.get('stress_25_pass') else 'FAIL'}, +50%: {'PASS' if stress_results.get('stress_50_pass') else 'FAIL'}. ExpR: {stress_results.get('baseline_exp_r', 0):.3f}R"
 
-                            logger.warning(f"REJECTED: {instrument} {orb_time} RR={rr} - {rejection_reason}")
+                            # Update candidate status to REJECTED
+                            app_state.db_connection.execute("""
+                                UPDATE edge_candidates
+                                SET status = 'REJECTED',
+                                    notes = ?
+                                WHERE candidate_id = ?
+                            """, [rejection_reason, candidate_id])
+
+                            logger.warning(f"REJECTED candidate {candidate_id}: {rejection_reason}")
 
                             # Clear validation state
                             st.session_state.pop('stress_test_results', None)
-                            st.session_state.pop('candidates_for_validation', None)
                             st.session_state.pop('validation_data_found', None)
 
                         except Exception as e:
-                            logger.error(f"Rejection logging failed: {e}", exc_info=True)
-                            # Non-critical - still clear state
-                            st.session_state.pop('stress_test_results', None)
-                            st.session_state.pop('candidates_for_validation', None)
-                            st.session_state.pop('validation_data_found', None)
+                            logger.error(f"Rejection failed: {e}", exc_info=True)
+                            raise Exception(f"Failed to reject candidate: {e}")
 
                     # Use write safety wrapper (MANDATORY)
                     if attempt_write_action(
@@ -2314,13 +2261,14 @@ with tab_production:
                         exp_r_color = "#6c757d"
 
                     # Derive health indicator (HEALTHY/WATCH/FAILING)
-                    # For now, use mock data - TODO: integrate with actual trade history
+                    # NOTE: Health monitoring not yet implemented - always shows HEALTHY
+                    # To implement: Query daily_features for recent realized_rr and compare to baseline
                     from redesign_components import derive_strategy_health
                     strategy_for_health = {
                         'avg_r': expected_r,
                         'expected_r': expected_r
                     }
-                    recent_trades = None  # TODO: Query actual recent trades for this setup
+                    recent_trades = None  # Not implemented yet
                     health = derive_strategy_health(strategy_for_health, recent_trades)
 
                     # Health indicator emoji
