@@ -311,13 +311,16 @@ tab_live, tab_research, tab_validation, tab_production = st.tabs([
 # LIVE TRADING - WHAT TO DO RIGHT NOW
 # ============================================================================
 with tab_live:
+    # Next-step rail (no rail for LIVE - end of pipeline)
+    # render_next_step_rail("LIVE")  # Commented out - LIVE is the final zone
+
     st.markdown("""
     <div style="text-align: center; padding: 16px 0; margin-bottom: 20px;">
         <h2 style="margin: 0; font-size: 32px; font-weight: 700; color: #1a1a1a;">
             🚦 Live Trading Dashboard
         </h2>
         <p style="color: #666; font-size: 14px; margin-top: 8px;">
-            Real-time market analysis • Active setups • Current state
+            Real-time market analysis • Active setups • Position sizing
         </p>
     </div>
     """, unsafe_allow_html=True)
@@ -612,6 +615,19 @@ with tab_live:
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
+
+            st.divider()
+
+            # ================================================================
+            # POSITION SIZE CALCULATOR (Phase 5 integration)
+            # ================================================================
+            from position_calculator import render_position_calculator
+
+            st.markdown("### 💰 Position Size Calculator")
+            st.caption("Calculate position size based on risk tolerance for active setups")
+
+            # Pass active setups to position calculator
+            render_position_calculator(active_setups)
 
             st.divider()
 
