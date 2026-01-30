@@ -42,8 +42,14 @@ UI_ONLY_ALLOWED = [
     'trading_app/redesign_components.py',
     'trading_app/position_calculator.py',
     'trading_app/ui_contract.py',
+    'trading_app/sync_guard.py',  # Startup sync guard (C5 fix)
+    'trading_app/edge_utils.py',  # Naming/ID helpers (UPDATE21)
+    'trading_app/edge_pipeline.py',  # Auto-naming integration (UPDATE21)
+    'trading_app/time_spec.py',  # TSOT canonical source (parked)
+    'trading_app/orb_time_logic.py',  # TSOT integration (parked)
     'tests/',
     'scripts/check/',
+    'artifacts/',  # TSOT baseline and other artifacts
     'docs/',
     'WORKFLOW_GUARDRAILS.md',
     'GUARDIAN.md',

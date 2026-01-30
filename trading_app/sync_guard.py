@@ -97,25 +97,32 @@ def assert_sync_or_die(db_path: str = "data/db/gold.db") -> None:
             config_filters = MGC_ORB_SIZE_FILTERS.get(orb_time, [])
             db_filter_values = db_filters[orb_time]
 
+            # Filter out None values (placeholder filters = no constraint)
+            cfg = [x for x in config_filters if x is not None]
+
+            # If all filters are None, treat as "no constraint" and skip check
+            if len(cfg) == 0:
+                continue
+
             # Check if filters exist in both
-            if not config_filters and db_filter_values:
+            if not cfg and db_filter_values:
                 mismatches.append(
                     f"  {orb_time}: DB has filters {db_filter_values}, "
                     f"config has none"
                 )
                 continue
 
-            if config_filters and not db_filter_values:
+            if cfg and not db_filter_values:
                 mismatches.append(
-                    f"  {orb_time}: Config has filters {config_filters}, "
+                    f"  {orb_time}: Config has filters {cfg}, "
                     f"DB has none"
                 )
                 continue
 
             # Compare filter values (if both exist)
-            if config_filters and db_filter_values:
+            if cfg and db_filter_values:
                 # Take first filter from config (for fast check)
-                config_val = config_filters[0] if config_filters[0] is not None else None
+                config_val = cfg[0]
                 db_val = db_filter_values[0] if db_filter_values else None
 
                 if config_val is not None and db_val is not None:

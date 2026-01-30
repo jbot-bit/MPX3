@@ -8,43 +8,23 @@ Used by Production tab hero display to show time-aware setup recommendations.
 
 from datetime import datetime, time, timedelta
 from typing import Dict, Optional, Tuple
-from zoneinfo import ZoneInfo
 
-TZ_BRISBANE = ZoneInfo("Australia/Brisbane")
+# Import canonical time definitions
+try:
+    from trading_app.time_spec import (
+        TZ_LOCAL,
+        ORB_TRADING_WINDOWS as ORB_SCHEDULE,
+        ORBS
+    )
+except ModuleNotFoundError:
+    # Fallback for direct script execution
+    from time_spec import (
+        TZ_LOCAL,
+        ORB_TRADING_WINDOWS as ORB_SCHEDULE,
+        ORBS
+    )
 
-# ORB Schedule with trading windows
-ORB_SCHEDULE = {
-    '0900': {
-        'form_time': time(9, 5),   # ORB forms at 09:05
-        'end_time': time(9, 50),   # Stop trading at 09:50 (10 min before next ORB)
-        'window_minutes': 45
-    },
-    '1000': {
-        'form_time': time(10, 5),
-        'end_time': time(10, 50),
-        'window_minutes': 45
-    },
-    '1100': {
-        'form_time': time(11, 5),
-        'end_time': time(17, 50),  # Long window until 1800 ORB
-        'window_minutes': 405  # 6h 45m
-    },
-    '1800': {
-        'form_time': time(18, 5),
-        'end_time': time(22, 50),
-        'window_minutes': 285  # 4h 45m
-    },
-    '2300': {
-        'form_time': time(23, 5),
-        'end_time': time(0, 20),   # Next day
-        'window_minutes': 75  # 1h 15m
-    },
-    '0030': {
-        'form_time': time(0, 35),
-        'end_time': time(8, 50),
-        'window_minutes': 495  # 8h 15m
-    }
-}
+TZ_BRISBANE = TZ_LOCAL  # Alias for backward compatibility
 
 
 def get_current_orb_status(now: Optional[datetime] = None) -> Dict:
@@ -130,9 +110,8 @@ def get_current_orb_status(now: Optional[datetime] = None) -> Dict:
 
 def _get_next_orb(current_orb: str) -> str:
     """Get next ORB in sequence"""
-    sequence = ['0900', '1000', '1100', '1800', '2300', '0030']
-    idx = sequence.index(current_orb)
-    return sequence[(idx + 1) % len(sequence)]
+    idx = ORBS.index(current_orb)
+    return ORBS[(idx + 1) % len(ORBS)]
 
 
 def _find_next_orb(now: datetime) -> Tuple[str, int]:
