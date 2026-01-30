@@ -1,0 +1,631 @@
+================================================================================
+TIME LITERALS CHECKER (H1 Enforcement)
+================================================================================
+
+Repo root: C:\Users\sydne\OneDrive\Desktop\MPX3
+
+Scanning 137 Python files...
+
+[91m[FAIL][0m Found hardcoded time literals in 78 file(s)
+
+[91m[X][0m trading_app\ai_assistant.py
+  Line 413: "    theory_text='MGC 0900 ORB with 3.0 RR shows strong performance',\n"
+    Pattern: \b0900\b
+  Line 415: "    metadata={'orb_time': '0900', 'name': 'My Theory'}\n"
+    Pattern: \b0900\b
+
+[91m[X][0m trading_app\ai_chat.py
+  Line 16: response = assistant.ask("How did 0900 ORB perform last 30 days?")
+    Pattern: \b0900\b
+  Line 236: for orb in ['0900', '1000', '1100', '1800', '2300', '0030']:
+    Pattern: \b0900\b
+  Line 236: for orb in ['0900', '1000', '1100', '1800', '2300', '0030']:
+    Pattern: \b1000\b
+  Line 236: for orb in ['0900', '1000', '1100', '1800', '2300', '0030']:
+    Pattern: \b1100\b
+  Line 236: for orb in ['0900', '1000', '1100', '1800', '2300', '0030']:
+    Pattern: \b1800\b
+  Line 236: for orb in ['0900', '1000', '1100', '1800', '2300', '0030']:
+    Pattern: \b2300\b
+  Line 236: for orb in ['0900', '1000', '1100', '1800', '2300', '0030']:
+    Pattern: \b0030\b
+  Line 239: return "Please specify which ORB (e.g., '0900 ORB performance')"
+    Pattern: \b0900\b
+  Line 245: for orb in ['0900', '1000', '1100', '1800', '2300', '0030']:
+    Pattern: \b0900\b
+  Line 245: for orb in ['0900', '1000', '1100', '1800', '2300', '0030']:
+    Pattern: \b1000\b
+  Line 245: for orb in ['0900', '1000', '1100', '1800', '2300', '0030']:
+    Pattern: \b1100\b
+  Line 245: for orb in ['0900', '1000', '1100', '1800', '2300', '0030']:
+    Pattern: \b1800\b
+  Line 245: for orb in ['0900', '1000', '1100', '1800', '2300', '0030']:
+    Pattern: \b2300\b
+  Line 245: for orb in ['0900', '1000', '1100', '1800', '2300', '0030']:
+    Pattern: \b0030\b
+  Line 266: - "How did 0900 ORB perform recently?"
+    Pattern: \b0900\b
+  Line 267: - "Edge health for 1100 ORB"
+    Pattern: \b1100\b
+
+[91m[X][0m trading_app\app_canonical.py
+  Line 502: for orb_name in ['0900', '1000', '1100', '1800', '2300', '0030']:
+    Pattern: \b0900\b
+  Line 502: for orb_name in ['0900', '1000', '1100', '1800', '2300', '0030']:
+    Pattern: \b1000\b
+  Line 502: for orb_name in ['0900', '1000', '1100', '1800', '2300', '0030']:
+    Pattern: \b1100\b
+  Line 502: for orb_name in ['0900', '1000', '1100', '1800', '2300', '0030']:
+    Pattern: \b1800\b
+  Line 502: for orb_name in ['0900', '1000', '1100', '1800', '2300', '0030']:
+    Pattern: \b2300\b
+  Line 502: for orb_name in ['0900', '1000', '1100', '1800', '2300', '0030']:
+    Pattern: \b0030\b
+  Line 714: all_orbs = ['0900', '1000', '1100', '1800', '2300', '0030']
+    Pattern: \b0900\b
+  Line 714: all_orbs = ['0900', '1000', '1100', '1800', '2300', '0030']
+    Pattern: \b1000\b
+  Line 714: all_orbs = ['0900', '1000', '1100', '1800', '2300', '0030']
+    Pattern: \b1100\b
+  Line 714: all_orbs = ['0900', '1000', '1100', '1800', '2300', '0030']
+    Pattern: \b1800\b
+  Line 714: all_orbs = ['0900', '1000', '1100', '1800', '2300', '0030']
+    Pattern: \b2300\b
+  Line 714: all_orbs = ['0900', '1000', '1100', '1800', '2300', '0030']
+    Pattern: \b0030\b
+  Line 796: (col1, '0900'),
+    Pattern: \b0900\b
+  Line 797: (col2, '1000'),
+    Pattern: \b1000\b
+  Line 798: (col3, '1100'),
+    Pattern: \b1100\b
+  Line 799: (col4, '1800'),
+    Pattern: \b1800\b
+  Line 800: (col5, '2300'),
+    Pattern: \b2300\b
+  Line 801: (col6, '0030')
+    Pattern: \b0030\b
+  Line 1254: candidate_orb = st.selectbox("ORB Time", ["0900", "1000", "1100", "1800", "2300"
+    Pattern: \b0900\b
+  Line 1254: candidate_orb = st.selectbox("ORB Time", ["0900", "1000", "1100", "1800", "2300"
+    Pattern: \b1000\b
+  Line 1254: candidate_orb = st.selectbox("ORB Time", ["0900", "1000", "1100", "1800", "2300"
+    Pattern: \b1100\b
+  Line 1254: candidate_orb = st.selectbox("ORB Time", ["0900", "1000", "1100", "1800", "2300"
+    Pattern: \b1800\b
+  Line 1254: candidate_orb = st.selectbox("ORB Time", ["0900", "1000", "1100", "1800", "2300"
+    Pattern: \b2300\b
+  Line 1254: candidate_orb = st.selectbox("ORB Time", ["0900", "1000", "1100", "1800", "2300"
+    Pattern: \b0030\b
+
+[91m[X][0m trading_app\app_mobile.py
+  Line 173: daily_loss_dollars=1000.0,
+    Pattern: \b1000\b
+  Line 218: count = st_autorefresh(interval=refresh_interval * 1000, key="mobile_refresh")
+    Pattern: \b1000\b
+  Line 467: min_value=1000.0,
+    Pattern: \b1000\b
+  Line 470: step=1000.0,
+    Pattern: \b1000\b
+
+[91m[X][0m trading_app\app_research_lab.py
+  Line 165: ["0900", "1000", "1100", "1800", "2300", "0030"],
+    Pattern: \b0900\b
+  Line 165: ["0900", "1000", "1100", "1800", "2300", "0030"],
+    Pattern: \b1000\b
+  Line 165: ["0900", "1000", "1100", "1800", "2300", "0030"],
+    Pattern: \b1100\b
+  Line 165: ["0900", "1000", "1100", "1800", "2300", "0030"],
+    Pattern: \b1800\b
+  Line 165: ["0900", "1000", "1100", "1800", "2300", "0030"],
+    Pattern: \b2300\b
+  Line 165: ["0900", "1000", "1100", "1800", "2300", "0030"],
+    Pattern: \b0030\b
+  Line 166: default=["0900", "1000", "1100"],
+    Pattern: \b0900\b
+  Line 166: default=["0900", "1000", "1100"],
+    Pattern: \b1000\b
+  Line 166: default=["0900", "1000", "1100"],
+    Pattern: \b1100\b
+  Line 478: orb_time = st.selectbox("ORB TIME", ["0900", "1000", "1100", "1800", "2300", "00
+    Pattern: \b0900\b
+  Line 478: orb_time = st.selectbox("ORB TIME", ["0900", "1000", "1100", "1800", "2300", "00
+    Pattern: \b1000\b
+  Line 478: orb_time = st.selectbox("ORB TIME", ["0900", "1000", "1100", "1800", "2300", "00
+    Pattern: \b1100\b
+  Line 478: orb_time = st.selectbox("ORB TIME", ["0900", "1000", "1100", "1800", "2300", "00
+    Pattern: \b1800\b
+  Line 478: orb_time = st.selectbox("ORB TIME", ["0900", "1000", "1100", "1800", "2300", "00
+    Pattern: \b2300\b
+  Line 478: orb_time = st.selectbox("ORB TIME", ["0900", "1000", "1100", "1800", "2300", "00
+    Pattern: \b0030\b
+
+[91m[X][0m trading_app\app_simple.py
+  Line 233: placeholder="How did 0900 ORB perform last 30 days?"
+    Pattern: \b0900\b
+  Line 245: - "How did 0900 ORB perform recently?"
+    Pattern: \b0900\b
+  Line 246: - "1100 ORB performance last 60 days"
+    Pattern: \b1100\b
+  Line 249: - "Edge health for 0900 ORB"
+    Pattern: \b0900\b
+
+[91m[X][0m trading_app\app_trading_terminal.py
+  Line 710: <p>0900 ORB strategy performing well. 1000 ORB showing strong results in trendin
+    Pattern: \b0900\b
+  Line 710: <p>0900 ORB strategy performing well. 1000 ORB showing strong results in trendin
+    Pattern: \b1000\b
+
+[91m[X][0m trading_app\auto_search_engine.py
+  Line 48: orb_times: List[str] = None  # ['0900', '1000', '1100']
+    Pattern: \b0900\b
+  Line 48: orb_times: List[str] = None  # ['0900', '1000', '1100']
+    Pattern: \b1000\b
+  Line 48: orb_times: List[str] = None  # ['0900', '1000', '1100']
+    Pattern: \b1100\b
+  Line 60: self.orb_times = ['0900', '1000', '1100']
+    Pattern: \b0900\b
+  Line 60: self.orb_times = ['0900', '1000', '1100']
+    Pattern: \b1000\b
+  Line 60: self.orb_times = ['0900', '1000', '1100']
+    Pattern: \b1100\b
+  Line 721: max_count: int = 1000
+    Pattern: \b1000\b
+  Line 835: 'orb_time': '0900',
+    Pattern: \b0900\b
+  Line 852: 'orb_times': ['0900', '1000'],
+    Pattern: \b0900\b
+  Line 852: 'orb_times': ['0900', '1000'],
+    Pattern: \b1000\b
+
+[91m[X][0m trading_app\chart_analyzer.py
+  Line 308: if orb_time in ["0900", "1000", "1100"] and "ASIA" in session_from_analysis:
+    Pattern: \b0900\b
+  Line 308: if orb_time in ["0900", "1000", "1100"] and "ASIA" in session_from_analysis:
+    Pattern: \b1000\b
+  Line 308: if orb_time in ["0900", "1000", "1100"] and "ASIA" in session_from_analysis:
+    Pattern: \b1100\b
+  Line 310: elif orb_time == "1800" and "LONDON" in session_from_analysis:
+    Pattern: \b1800\b
+  Line 312: elif orb_time in ["2300", "0030"] and "NY" in session_from_analysis:
+    Pattern: \b2300\b
+  Line 312: elif orb_time in ["2300", "0030"] and "NY" in session_from_analysis:
+    Pattern: \b0030\b
+  Line 373: "ASIA": ["0900", "1000", "1100"],
+    Pattern: \b0900\b
+  Line 373: "ASIA": ["0900", "1000", "1100"],
+    Pattern: \b1000\b
+  Line 373: "ASIA": ["0900", "1000", "1100"],
+    Pattern: \b1100\b
+  Line 374: "LONDON": ["1800"],
+    Pattern: \b1800\b
+  Line 375: "NY": ["2300", "0030"]
+    Pattern: \b2300\b
+  Line 375: "NY": ["2300", "0030"]
+    Pattern: \b0030\b
+
+[91m[X][0m trading_app\cloud_mode.py
+  Line 262: "volume": 1000
+    Pattern: \b1000\b
+
+[91m[X][0m trading_app\config.py
+  Line 46: {"hour": 9, "min": 0, "name": "0900"},
+    Pattern: \b0900\b
+  Line 47: {"hour": 10, "min": 0, "name": "1000"},
+    Pattern: \b1000\b
+  Line 48: {"hour": 11, "min": 0, "name": "1100"},
+    Pattern: \b1100\b
+  Line 49: {"hour": 18, "min": 0, "name": "1800"},   # London open (Asia close)
+    Pattern: \b1800\b
+  Line 50: {"hour": 23, "min": 0, "name": "2300"},
+    Pattern: \b2300\b
+  Line 51: {"hour": 0, "min": 30, "name": "0030"},  # Next day
+    Pattern: \b0030\b
+
+[91m[X][0m trading_app\csv_chart_analyzer.py
+  Line 548: if orb_time in ["0900", "1000", "1100"] and session == "ASIA":
+    Pattern: \b0900\b
+  Line 548: if orb_time in ["0900", "1000", "1100"] and session == "ASIA":
+    Pattern: \b1000\b
+  Line 548: if orb_time in ["0900", "1000", "1100"] and session == "ASIA":
+    Pattern: \b1100\b
+  Line 550: elif orb_time == "1800" and session == "LONDON":
+    Pattern: \b1800\b
+  Line 552: elif orb_time in ["2300", "0030"] and session == "NY":
+    Pattern: \b2300\b
+  Line 552: elif orb_time in ["2300", "0030"] and session == "NY":
+    Pattern: \b0030\b
+
+[91m[X][0m trading_app\data_loader.py
+  Line 550: orb_name: ORB name ("0900", "1000", etc.)
+    Pattern: \b0900\b
+  Line 550: orb_name: ORB name ("0900", "1000", etc.)
+    Pattern: \b1000\b
+  Line 639: orb_name: ORB name ("0900", "1000", etc.)
+    Pattern: \b0900\b
+  Line 639: orb_name: ORB name ("0900", "1000", etc.)
+    Pattern: \b1000\b
+  Line 647: "2300": 1.15,  # 15% increase for filtered trades
+    Pattern: \b2300\b
+  Line 648: "0030": 1.61,  # 61% increase
+    Pattern: \b0030\b
+  Line 649: "1100": 1.78,  # 78% increase
+    Pattern: \b1100\b
+  Line 650: "1000": 1.23,  # 23% increase
+    Pattern: \b1000\b
+  Line 692: "volume": random.randint(100, 1000),
+    Pattern: \b1000\b
+
+[91m[X][0m trading_app\directional_bias.py
+  Line 84: orb_time: ORB time (e.g., "1100")
+    Pattern: \b1100\b
+  Line 94: if orb_time != "1100":
+    Pattern: \b1100\b
+
+[91m[X][0m trading_app\drawdown_engine.py
+  Line 396: < $1000: WARNING (caution zone)
+    Pattern: \b1000\b
+  Line 397: >= $1000: SAFE (comfortable cushion)
+    Pattern: \b1000\b
+  Line 409: elif distance_to_breach < 1000:
+    Pattern: \b1000\b
+
+[91m[X][0m trading_app\edge_memory_bridge.py
+  Line 35: orb_time: '0900', '1000', etc.
+    Pattern: \b0900\b
+  Line 35: orb_time: '0900', '1000', etc.
+    Pattern: \b1000\b
+  Line 187: orb_time: '0900', '1000', etc.
+    Pattern: \b0900\b
+  Line 187: orb_time: '0900', '1000', etc.
+    Pattern: \b1000\b
+
+[91m[X][0m trading_app\edge_tracker.py
+  Line 18: health = tracker.check_edge_health('0900', 'MGC')
+    Pattern: \b0900\b
+  Line 57: orb_time: ORB time (0900, 1000, etc.)
+    Pattern: \b0900\b
+  Line 57: orb_time: ORB time (0900, 1000, etc.)
+    Pattern: \b1000\b
+  Line 273: valid_orb_times = ('0030', '0900', '1000', '1100', '1800', '2300')
+    Pattern: \b0900\b
+  Line 273: valid_orb_times = ('0030', '0900', '1000', '1100', '1800', '2300')
+    Pattern: \b1000\b
+  Line 273: valid_orb_times = ('0030', '0900', '1000', '1100', '1800', '2300')
+    Pattern: \b1100\b
+  Line 273: valid_orb_times = ('0030', '0900', '1000', '1100', '1800', '2300')
+    Pattern: \b1800\b
+  Line 273: valid_orb_times = ('0030', '0900', '1000', '1100', '1800', '2300')
+    Pattern: \b2300\b
+  Line 273: valid_orb_times = ('0030', '0900', '1000', '1100', '1800', '2300')
+    Pattern: \b0030\b
+  Line 278: AND orb_time IN ('0030', '0900', '1000', '1100', '1800', '2300')
+    Pattern: \b0900\b
+  Line 278: AND orb_time IN ('0030', '0900', '1000', '1100', '1800', '2300')
+    Pattern: \b1000\b
+  Line 278: AND orb_time IN ('0030', '0900', '1000', '1100', '1800', '2300')
+    Pattern: \b1100\b
+  Line 278: AND orb_time IN ('0030', '0900', '1000', '1100', '1800', '2300')
+    Pattern: \b1800\b
+  Line 278: AND orb_time IN ('0030', '0900', '1000', '1100', '1800', '2300')
+    Pattern: \b2300\b
+  Line 278: AND orb_time IN ('0030', '0900', '1000', '1100', '1800', '2300')
+    Pattern: \b0030\b
+  Line 455: print("[2] Checking 0900 ORB health...")
+    Pattern: \b0900\b
+  Line 456: health = tracker.check_edge_health('0900')
+    Pattern: \b0900\b
+
+[91m[X][0m trading_app\edge_utils.py
+  Line 39: orb_time: 0900, 1000, etc.
+    Pattern: \b0900\b
+  Line 39: orb_time: 0900, 1000, etc.
+    Pattern: \b1000\b
+
+[91m[X][0m trading_app\entry_rules.py
+  Line 29: orb_time: Time string like "0900", "1000"
+    Pattern: \b0900\b
+  Line 29: orb_time: Time string like "0900", "1000"
+    Pattern: \b1000\b
+  Line 491: 'volume': [1000] * 20
+    Pattern: \b1000\b
+  Line 498: orb_time="1000",
+    Pattern: \b1000\b
+  Line 516: orb_time="1000",
+    Pattern: \b1000\b
+  Line 535: orb_time="1000",
+    Pattern: \b1000\b
+
+[91m[X][0m trading_app\execution_contract.py
+  Line 346: orb_time="1000",
+    Pattern: \b1000\b
+  Line 361: orb_time="1000",
+    Pattern: \b1000\b
+
+[91m[X][0m trading_app\execution_spec.py
+  Line 32: orb_time="1000",
+    Pattern: \b1000\b
+  Line 47: orb_time: str = "1000"  # Format: "0900", "1000", "1100", etc.
+    Pattern: \b0900\b
+  Line 47: orb_time: str = "1000"  # Format: "0900", "1000", "1100", etc.
+    Pattern: \b1000\b
+  Line 47: orb_time: str = "1000"  # Format: "0900", "1000", "1100", etc.
+    Pattern: \b1100\b
+  Line 80: f"orb_time must be 4 digits (e.g., '0900', '1000'), got: {self.orb_time}"
+    Pattern: \b0900\b
+  Line 80: f"orb_time must be 4 digits (e.g., '0900', '1000'), got: {self.orb_time}"
+    Pattern: \b1000\b
+  Line 201: orb_time="1000",
+    Pattern: \b1000\b
+  Line 208: description="MGC 1000 ORB, tradeable entry (1st close outside)"
+    Pattern: \b1000\b
+  Line 214: orb_time="1000",
+    Pattern: \b1000\b
+  Line 221: description="MGC 1000 ORB, limit order entry"
+    Pattern: \b1000\b
+  Line 227: orb_time="1000",
+    Pattern: \b1000\b
+  Line 234: description="MGC 1000 ORB, 5m close confirmation"
+    Pattern: \b1000\b
+  Line 272: orb_time="1000",
+    Pattern: \b1000\b
+  Line 291: orb_time="1000",
+    Pattern: \b1000\b
+
+[91m[X][0m trading_app\experimental_scanner.py
+  Line 192: - prev_0900_outcome: Previous trading day's 0900 ORB outcome
+    Pattern: \b0900\b
+  Line 249: '0900': orb_0900_size,
+    Pattern: \b0900\b
+  Line 250: '1000': orb_1000_size,
+    Pattern: \b1000\b
+  Line 251: '1100': orb_1100_size
+    Pattern: \b1100\b
+  Line 257: '0900': orb_0900_size / current_atr if orb_0900_size else None,
+    Pattern: \b0900\b
+  Line 258: '1000': orb_1000_size / current_atr if orb_1000_size else None,
+    Pattern: \b1000\b
+  Line 259: '1100': orb_1100_size / current_atr if orb_1100_size else None
+    Pattern: \b1100\b
+  Line 364: return (False, "No previous 0900 outcome data")
+    Pattern: \b0900\b
+  Line 367: if 'Previous day 0900 ORB failed' in filter_condition:
+    Pattern: \b0900\b
+  Line 369: return (True, "Previous 0900 ORB failed (mean reversion setup)")
+    Pattern: \b0900\b
+  Line 370: return (False, f"Previous 0900 was {prev_0900_outcome}, not LOSS")
+    Pattern: \b0900\b
+
+[91m[X][0m trading_app\live_chart_builder.py
+  Line 18: orb_name: str = "0900",
+    Pattern: \b0900\b
+  Line 37: orb_name: ORB name (e.g., "0900")
+    Pattern: \b0900\b
+
+[91m[X][0m trading_app\live_scanner.py
+  Line 47: '0900': time(9, 5),   # 09:00-09:05
+    Pattern: \b0900\b
+  Line 48: '1000': time(10, 5),  # 10:00-10:05
+    Pattern: \b1000\b
+  Line 49: '1100': time(11, 5),  # 11:00-11:05
+    Pattern: \b1100\b
+  Line 50: '1800': time(18, 5),  # 18:00-18:05
+    Pattern: \b1800\b
+  Line 51: '2300': time(23, 5),  # 23:00-23:05
+    Pattern: \b2300\b
+  Line 52: '0030': time(0, 35)   # 00:30-00:35
+    Pattern: \b0030\b
+  Line 87: ('0900', row[2], row[3], row[4], row[5], row[6], row[7], row[8]),
+    Pattern: \b0900\b
+  Line 88: ('1000', row[9], row[10], row[11], row[12], row[13], row[14], row[15]),
+    Pattern: \b1000\b
+  Line 89: ('1100', row[16], row[17], row[18], row[19], row[20], row[21], row[22]),
+    Pattern: \b1100\b
+  Line 90: ('1800', row[23], row[24], row[25], row[26], row[27], row[28], row[29]),
+    Pattern: \b1800\b
+  Line 91: ('2300', row[30], row[31], row[32], row[33], row[34], row[35], row[36]),
+    Pattern: \b2300\b
+  Line 92: ('0030', row[37], row[38], row[39], row[40], row[41], row[42], row[43])
+    Pattern: \b0030\b
+  Line 514: ('0900', row[2], row[3], row[4], row[5], row[6], row[7], row[8]),
+    Pattern: \b0900\b
+  Line 515: ('1000', row[9], row[10], row[11], row[12], row[13], row[14], row[15]),
+    Pattern: \b1000\b
+  Line 516: ('1100', row[16], row[17], row[18], row[19], row[20], row[21], row[22]),
+    Pattern: \b1100\b
+  Line 517: ('1800', row[23], row[24], row[25], row[26], row[27], row[28], row[29]),
+    Pattern: \b1800\b
+  Line 518: ('2300', row[30], row[31], row[32], row[33], row[34], row[35], row[36]),
+    Pattern: \b2300\b
+  Line 519: ('0030', row[37], row[38], row[39], row[40], row[41], row[42], row[43])
+    Pattern: \b0030\b
+
+[91m[X][0m trading_app\market_hours_monitor.py
+  Line 97: 'start': time(9, 0),
+    Pattern: time\(\s*9\s*,\s*0\s*\)
+  Line 103: 'start': time(18, 0),
+    Pattern: time\(\s*18\s*,\s*0\s*\)
+  Line 104: 'end': time(23, 0),
+    Pattern: time\(\s*23\s*,\s*0\s*\)
+  Line 109: 'start': time(23, 0),
+    Pattern: time\(\s*23\s*,\s*0\s*\)
+
+[91m[X][0m trading_app\market_intelligence.py
+  Line 101: "0900": (9, 0),
+    Pattern: \b0900\b
+  Line 102: "1000": (10, 0),
+    Pattern: \b1000\b
+  Line 103: "1100": (11, 0),
+    Pattern: \b1100\b
+  Line 104: "1800": (18, 0),
+    Pattern: \b1800\b
+  Line 105: "2300": (23, 0),
+    Pattern: \b2300\b
+  Line 106: "0030": (0, 30),
+    Pattern: \b0030\b
+  Line 288: OpportunityType.ACTIVE_BREAKOUT: 1000,
+    Pattern: \b1000\b
+
+[91m[X][0m trading_app\market_scanner.py
+  Line 12: - "0900 ORB: SKIP (conditions unfavorable)"
+    Pattern: \b0900\b
+  Line 13: - "1100 ORB: TAKE (high confidence setup)"
+    Pattern: \b1100\b
+  Line 42: '0900': {'mean': 0.10, 'std': 0.04},
+    Pattern: \b0900\b
+  Line 43: '1000': {'mean': 0.08, 'std': 0.03},
+    Pattern: \b1000\b
+  Line 44: '1100': {'mean': 0.09, 'std': 0.04},
+    Pattern: \b1100\b
+  Line 45: '1800': {'mean': 0.12, 'std': 0.05},
+    Pattern: \b1800\b
+  Line 46: '2300': {'mean': 0.15, 'std': 0.06},
+    Pattern: \b2300\b
+  Line 47: '0030': {'mean': 0.13, 'std': 0.05},
+    Pattern: \b0030\b
+  Line 61: for orb_time in ['0900', '1000', '1100', '1800', '2300', '0030']:
+    Pattern: \b0900\b
+  Line 61: for orb_time in ['0900', '1000', '1100', '1800', '2300', '0030']:
+    Pattern: \b1000\b
+  Line 61: for orb_time in ['0900', '1000', '1100', '1800', '2300', '0030']:
+    Pattern: \b1100\b
+  Line 61: for orb_time in ['0900', '1000', '1100', '1800', '2300', '0030']:
+    Pattern: \b1800\b
+  Line 61: for orb_time in ['0900', '1000', '1100', '1800', '2300', '0030']:
+    Pattern: \b2300\b
+  Line 61: for orb_time in ['0900', '1000', '1100', '1800', '2300', '0030']:
+    Pattern: \b0030\b
+  Line 89: for orb_time in ['0900', '1000', '1100', '1800', '2300', '0030']:
+    Pattern: \b0900\b
+  Line 89: for orb_time in ['0900', '1000', '1100', '1800', '2300', '0030']:
+    Pattern: \b1000\b
+  Line 89: for orb_time in ['0900', '1000', '1100', '1800', '2300', '0030']:
+    Pattern: \b1100\b
+  Line 89: for orb_time in ['0900', '1000', '1100', '1800', '2300', '0030']:
+    Pattern: \b1800\b
+  Line 89: for orb_time in ['0900', '1000', '1100', '1800', '2300', '0030']:
+    Pattern: \b2300\b
+  Line 89: for orb_time in ['0900', '1000', '1100', '1800', '2300', '0030']:
+    Pattern: \b0030\b
+  Line 165: orb_times = ['0900', '1000', '1100', '1800', '2300', '0030']
+    Pattern: \b0900\b
+  Line 165: orb_times = ['0900', '1000', '1100', '1800', '2300', '0030']
+    Pattern: \b1000\b
+  Line 165: orb_times = ['0900', '1000', '1100', '1800', '2300', '0030']
+    Pattern: \b1100\b
+  Line 165: orb_times = ['0900', '1000', '1100', '1800', '2300', '0030']
+    Pattern: \b1800\b
+  Line 165: orb_times = ['0900', '1000', '1100', '1800', '2300', '0030']
+    Pattern: \b2300\b
+  Line 165: orb_times = ['0900', '1000', '1100', '1800', '2300', '0030']
+    Pattern: \b0030\b
+  Line 168: '0900': result[8] if len(result) > 8 else None,
+    Pattern: \b0900\b
+  Line 169: '1000': result[9] if len(result) > 9 else None,
+    Pattern: \b1000\b
+  Line 170: '1100': result[10] if len(result) > 10 else None,
+    Pattern: \b1100\b
+  Line 171: '1800': result[11] if len(result) > 11 else None,
+    Pattern: \b1800\b
+  Line 172: '2300': result[12] if len(result) > 12 else None,
+    Pattern: \b2300\b
+  Line 173: '0030': result[13] if len(result) > 13 else None,
+    Pattern: \b0030\b
+  Line 176: '0900': result[14] != 'NONE' if len(result) > 14 and result[14] else False,
+    Pattern: \b0900\b
+  Line 177: '1000': result[15] != 'NONE' if len(result) > 15 and result[15] else False,
+    Pattern: \b1000\b
+  Line 178: '1100': result[16] != 'NONE' if len(result) > 16 and result[16] else False,
+    Pattern: \b1100\b
+  Line 179: '1800': result[17] != 'NONE' if len(result) > 17 and result[17] else False,
+    Pattern: \b1800\b
+  Line 180: '2300': result[18] != 'NONE' if len(result) > 18 and result[18] else False,
+    Pattern: \b2300\b
+  Line 181: '0030': result[19] != 'NONE' if len(result) > 19 and result[19] else False,
+    Pattern: \b0030\b
+  Line 707: print("\n\nDETAILED CHECK: 1100 ORB")
+    Pattern: \b1100\b
+  Line 709: validation = scanner.validate_setup('1100')
+    Pattern: \b1100\b
+
+[91m[X][0m trading_app\memory.py
+  Line 18: orb_time='0900',
+    Pattern: \b0900\b
+  Line 83: memory.store_trade({'date_local': '2026-01-15', 'orb_time': '0900', ...})
+    Pattern: \b0900\b
+  Line 84: memory.store_trade(date_local='2026-01-15', orb_time='0900', ...)
+    Pattern: \b0900\b
+  Line 89: orb_time: ORB time (0900, 1000, 1100, etc.)
+    Pattern: \b0900\b
+  Line 89: orb_time: ORB time (0900, 1000, 1100, etc.)
+    Pattern: \b1000\b
+  Line 89: orb_time: ORB time (0900, 1000, 1100, etc.)
+    Pattern: \b1100\b
+  Line 749: orb_time='0900',
+    Pattern: \b0900\b
+  Line 760: trades = memory.query_trades(orb_time='0900', days_back=30, limit=5)
+    Pattern: \b0900\b
+
+[91m[X][0m trading_app\memory_integration.py
+  Line 78: setup_name: str | None = None          # e.g., "1000 ORB MGC RR=1.5"
+    Pattern: \b1000\b
+  Line 1153: context={'setup_name': '1000 ORB MGC RR=1.5'}
+    Pattern: \b1000\b
+  Line 1161: current_context={'setup_name': '1000 ORB MGC RR=1.5'}
+    Pattern: \b1000\b
+
+[91m[X][0m trading_app\mobile_ui.py
+  Line 96: z-index: 1000;
+    Pattern: \b1000\b
+  Line 549: orb_time: e.g., '0900', '1000', '1100'
+    Pattern: \b0900\b
+  Line 549: orb_time: e.g., '0900', '1000', '1100'
+    Pattern: \b1000\b
+  Line 549: orb_time: e.g., '0900', '1000', '1100'
+    Pattern: \b1100\b
+  Line 739: "0900": (9, 0, 5),
+    Pattern: \b0900\b
+  Line 740: "1000": (10, 0, 5),
+    Pattern: \b1000\b
+  Line 741: "1100": (11, 0, 5),
+    Pattern: \b1100\b
+  Line 742: "1800": (18, 0, 5),
+    Pattern: \b1800\b
+  Line 743: "2300": (23, 0, 5),
+    Pattern: \b2300\b
+  Line 744: "0030": (0, 30, 35),
+    Pattern: \b0030\b
+  Line 1161: orb_name = state.active_orb_name if hasattr(state, 'active_orb_name') else "0900
+    Pattern: \b0900\b
+  Line 1276: if orb_name == "1100":
+    Pattern: \b1100\b
+  Line 1282: orb_time="1100",
+    Pattern: \b1100\b
+  Line 1555: **Best Results:** At least 24 hours of data with ORB windows (0900, 1000, 1100, 
+    Pattern: \b0900\b
+  Line 1555: **Best Results:** At least 24 hours of data with ORB windows (0900, 1000, 1100, 
+    Pattern: \b1000\b
+  Line 1555: **Best Results:** At least 24 hours of data with ORB windows (0900, 1000, 1100, 
+    Pattern: \b1100\b
+  Line 1555: **Best Results:** At least 24 hours of data with ORB windows (0900, 1000, 1100, 
+    Pattern: \b1800\b
+  Line 1555: **Best Results:** At least 24 hours of data with ORB windows (0900, 1000, 1100, 
+    Pattern: \b2300\b
+  Line 1555: **Best Results:** At least 24 hours of data with ORB windows (0900, 1000, 1100, 
+    Pattern: \b0030\b
+
+[91m[X][0m trading_app\orb_0030_visual.py
+  Line 2: 0030 NY OPEN ORB - VISUAL TRADING DASHBOARD
+    Pattern: \b0030\b
+  Line 4: Quick visual reference for trading the 0030 ORB.
+    Pattern: \b0030\b
+  Line 15: st.set_page_config(page_title="0030 ORB Visual", layout="wide")
+    Pattern: \b0030\b
+Traceback (most recent call last):
+  File "C:\Users\sydne\OneDrive\Desktop\MPX3\scripts\check\check_time_literals.py", line 189, in <module>
+    sys.exit(main())
+  File "C:\Users\sydne\OneDrive\Desktop\MPX3\scripts\check\check_time_literals.py", line 167, in main
+    print(f"  Line {line_num}: {line_content[:80]}")
+  File "C:\Users\sydne\AppData\Local\Programs\Python\Python310\lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+UnicodeEncodeError: 'charmap' codec can't encode character '\U0001f4ca' in position 21: character maps to <undefined>

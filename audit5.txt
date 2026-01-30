@@ -1,0 +1,113 @@
+API-ROI “PROVE IT’S REAL” PROMPT (NO DRIFT / NO LIES)
+
+You are operating under GUARDIAN.md. Your job is NOT to build features.
+Your job is to PROVE (with falsification tests + hard evidence) that UPDATE15/16/17/18 are actually implemented, wired, and effective.
+
+AUTHORITY ORDER:
+1) GUARDIAN.md
+2) CLAUDE.md
+3) CANONICAL_LOGIC.txt (append-only)
+4) APP_COMPLETE_SURVEY.md
+
+ABSOLUTE CONSTRAINTS:
+- Do NOT change trading logic (execution, entry rules, cost model).
+- Do NOT modify strategies/ or pipeline/.
+- Do NOT touch schema/migrations.
+- Do NOT add new DB write paths.
+- Do NOT leave any files modified at the end (working tree must be clean).
+- Any temporary edits MUST be reverted before final gates.
+
+GOAL:
+Turn “I think it’s implemented” into “I can’t make it fail incorrectly / I can make it fail correctly.”
+
+DELIVERABLES (HIGH ROI ONLY):
+A) DIFF PROOF: show exactly what changed for UPDATE15/16/17/18
+   - git log -1 --oneline (or relevant commits)
+   - git show --stat
+   - list of files added/modified
+B) WIRING PROOF: show these run from app_preflight.py
+   - canonical_guard.py
+   - forbidden_paths_modified.py
+   - scope_guard.py
+   - sql_schema_verify.py
+   - forbidden_pattern_scan.py
+   - UI fail-closed tests included in pytest
+C) FALSIFICATION PROOF: deliberately break each guard and show it FAILS, then revert
+D) FINAL GATES: after revert, run required gates and show PASS outputs
+   - python scripts/check/app_preflight.py
+   - python test_app_sync.py
+   - pytest -q
+E) EVIDENCE FOOTER: commands run + outputs + clean git status
+
+WORKFLOW (MANDATORY, SELF-VERIFY):
+1) BASELINE SNAPSHOT
+   - git status (must start clean)
+   - git rev-parse --abbrev-ref HEAD
+   - git log -1 --oneline
+
+2) DIFF PROOF (UPDATES 15-18)
+   - git show --stat (include any commits that contain updates 15-18)
+   - If multiple commits, enumerate each commit hash + title + stat.
+
+3) WIRING PROOF
+   - Show the exact lines in scripts/check/app_preflight.py that register each check.
+   - Use grep with line numbers to prove it (not paraphrase).
+
+4) FALSIFICATION TESTS (must show FAIL)
+   A. canonical_guard must FAIL:
+      - Append a temp line to CLAUDE.md
+      - Run: python scripts/check/canonical_guard.py
+      - Capture exit code
+      - Revert CLAUDE.md exactly
+
+   B. forbidden_paths_modified must FAIL:
+      - Append a temp line to trading_app/cost_model.py
+      - Run: python scripts/check/forbidden_paths_modified.py
+      - Capture exit code
+      - Revert cost_model.py exactly
+
+   C. scope_guard must FAIL under UI_ONLY:
+      - Append a temp line to a non-UI python file (not in trading_app/ui/ and not app_*.py)
+      - Run: python scripts/check/scope_guard.py
+      - Capture exit code
+      - Revert file exactly
+
+   D. sql_schema_verify must FAIL:
+      - Temporarily add a query referencing a definitely non-existent table name in any scanned file
+      - Run: python scripts/check/sql_schema_verify.py
+      - Capture exit code
+      - Revert exactly
+
+   E. forbidden_pattern_scan must FAIL:
+      - Temporarily add a known forbidden pattern line like:
+        baseline_exp_r = 0.25  # example baseline
+      - Run: python scripts/check/forbidden_pattern_scan.py
+      - Capture exit code
+      - Revert exactly
+
+   F. UI fail-closed tests must FAIL:
+      - Temporarily change derive_validation_status so PASS does NOT require stress_50_pass
+      - Run: pytest -q
+      - Confirm failing test name(s)
+      - Revert exactly
+
+5) FINAL CLEAN STATE
+   - git status (must be clean)
+   - If not clean: STOP and fix until clean
+
+6) FINAL GATES (MUST PASS)
+   - python scripts/check/app_preflight.py
+   - python test_app_sync.py
+   - pytest -q
+
+FINAL REPORT FORMAT (MANDATORY):
+- DIFF PROOF: commit(s) + file stats
+- WIRING PROOF: grep outputs with line numbers
+- FALSIFICATION RESULTS: each test + expected FAIL + actual exit code
+- FINAL GATES: pass outputs
+- EVIDENCE FOOTER:
+  - git status clean: YES/NO
+  - forbidden paths touched: NONE
+  - canonical docs touched: NONE (after revert)
+  - trading logic changed: NO
+  - tables written: NONE

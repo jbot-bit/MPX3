@@ -1,0 +1,152 @@
+🔍 MPX FULL SYSTEM AUDIT & RATIONALISATION PROMPT
+
+You are performing a full-system audit and rationalisation of a complex Python trading application.
+
+Objective:
+Identify everything that is fragile, redundant, inconsistent, over-engineered, or incorrectly wired — and produce a clean, minimal, deterministic architecture that actually works end-to-end.
+
+NON-NEGOTIABLE RULES
+
+❌ Do NOT write code yet
+
+❌ Do NOT assume intent
+
+❌ Do NOT add features
+
+❌ Do NOT change trading logic
+
+✅ Only observe, map, and diagnose
+
+STEP 1 — INVENTORY (NO JUDGEMENT YET)
+
+Produce a complete map of:
+
+All entry points (CLI, Streamlit, scripts, tests)
+
+All write paths (DB, files, session_state, logs)
+
+All “authority” files (canonical specs, guards, surveys)
+
+All guard systems (preflight, scope guard, CI checks)
+
+All state locations (DuckDB, session_state, filesystem)
+
+Output:
+
+Bullet list
+
+File → purpose → who uses it → when it runs
+
+Stop after inventory.
+
+STEP 2 — SOURCE OF TRUTH CHECK
+
+For each domain, answer exactly one:
+
+What is the single source of truth?
+
+Where is it duplicated?
+
+Where is it contradicted?
+
+Domains:
+
+Strategy lifecycle
+
+Candidate → validation → production flow
+
+Cost model
+
+Session definitions
+
+UI state vs DB state
+
+Guards vs reality
+
+Flag anything that violates:
+
+“One truth, one path, one owner”
+
+STEP 3 — FAILURE MODE ANALYSIS
+
+Identify:
+
+Silent failures
+
+State that resets unexpectedly
+
+Guards that block valid work
+
+Guards that don’t block invalid work
+
+Things that only work “because you know how”
+
+For each issue:
+
+Why it exists
+
+How it fails
+
+How serious it is (LOW / MED / CRITICAL)
+
+No fixes yet.
+
+STEP 4 — SIMPLIFICATION PROPOSAL
+
+Propose a simpler architecture that:
+
+Removes unnecessary layers
+
+Collapses duplicate concepts
+
+Makes illegal states impossible
+
+Enforces lifecycle via data, not memory
+
+Keeps everything deterministic and auditable
+
+Constraints:
+
+Must fit current project (no rewrite fantasy)
+
+Must reduce moving parts
+
+Must reduce cognitive load
+
+Output:
+
+Before → After table
+
+What stays
+
+What dies
+
+What merges
+
+STEP 5 — EXECUTION PLAN
+
+Give a safe, ordered plan:
+
+Step-by-step
+
+Each step independently reversible
+
+Each step testable
+
+Each step low blast radius
+
+End with:
+
+“If we stop after step X, system is still stable”
+
+TONE REQUIREMENT
+
+Direct
+
+Brutally honest
+
+Engineer-to-engineer
+
+No motivational fluff
+
+No AI cheerleading

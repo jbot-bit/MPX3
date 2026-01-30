@@ -1,0 +1,86 @@
+UPDATE19 — APP-WIDE LIFECYCLE SMOKE TESTS (HUMAN-FLOW PROOF)
+
+You are operating under GUARDIAN.md.
+
+AUTHORITY ORDER:
+1) GUARDIAN.md
+2) CLAUDE.md
+3) CANONICAL_LOGIC.txt
+4) APP_COMPLETE_SURVEY.md
+
+ABSOLUTE CONSTRAINTS:
+- Do NOT change trading calculations, entry rules, execution logic, cost_model, strategies/, pipeline/, schema/migrations/.
+- Do NOT change how daily_features / validated_setups / validated_setups_archive are populated.
+- Do NOT add new DB write paths.
+- Do NOT introduce mock/example/simulated data.
+
+GOAL:
+Prove “the app works as a human” for the Candidate→Strategy conveyor belt.
+These tests MUST fail-closed.
+
+SCOPE:
+You MAY add tests + small UI-orchestration helpers (pure functions) ONLY.
+No refactors unless required to make testing deterministic.
+
+MANDATORY GATES (must pass):
+- python scripts/check/app_preflight.py
+- python test_app_sync.py
+- pytest -q
+
+TASKS:
+
+A) INVENTORY ALL WRITE PATHS (from code, not memory)
+- Locate every DB write callsite in trading_app/ and scripts/ that is reachable from the UI.
+- Output a list: file, function, table(s) written, and whether it is protected by attempt_write_action() (or equivalent).
+- If any UI-reachable write path bypasses the wrapper, mark it as P0.
+
+B) ADD “LIFECYCLE E2E SMOKE TESTS” (minimal 4–6 tests)
+Create: tests/test_lifecycle_smoke.py
+
+Rules for these tests:
+- Use a temporary DuckDB copy in a temp directory (never modify real gold.db).
+- Tests must be deterministic and fast.
+- Tests validate flow integrity, not trading math.
+
+Required tests:
+1) Candidate appears in Validation after “send to validation”
+   - Call the real UI orchestration function used by the button (or the underlying function it calls).
+   - Assert DB-backed state changes (not session_state).
+   - Assert Validation query returns the candidate.
+
+2) Approve calls real promotion
+   - Patch ONLY the promotion target function to observe calls (no fake return values).
+   - Assert: called exactly once only when status is PASS AND write-gate passes.
+   - Assert: validated_setups contains the new strategy row after approval.
+
+3) Fail-closed on missing metrics
+   - Insert a candidate row missing required metrics JSON.
+   - Assert: status UNKNOWN and approve blocked.
+
+4) Fail-closed on malformed JSON
+   - Insert malformed JSON.
+   - Assert: no crash, status UNKNOWN, approve blocked.
+
+Optional (pick one):
+5) No duplicate listings
+   - If the same candidate would appear from two sources, assert UI layer collapses/returns one.
+
+OR
+6) Forbidden-table reference regression
+   - Assert Validation Gate queries come ONLY from known real tables (edge_candidates + experiment_metrics if and only if it exists). If a table is referenced and absent, test must fail.
+
+C) ENFORCE “UI STATE IS NOT TRUTH”
+- Add a test that refresh-like behavior (recreate app_state) does not lose candidate lifecycle state.
+- The truth must be DB-backed.
+
+D) REPORTING
+- Exact files changed
+- Tests added and what each proves
+- Evidence footer:
+  - Tables read/written (test DB only)
+  - Write wrappers used
+  - Gates run + results
+  - Confirm forbidden paths unchanged
+
+STOP CONDITIONS:
+- If you discover the code has no DB-backed “send to validation” mechanism (only session_state), STOP and propose the smallest compliant fix that uses existing tables/flows (do not invent new tables).

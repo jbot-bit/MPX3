@@ -1,0 +1,102 @@
+) SQL Schema Reference Checker (DuckDB) — Spec + Acceptance
+Goal
+
+Fail immediately if any code references:
+
+a table not present in your DuckDB schema
+
+(optionally) a column not present in that table
+
+This would have caught experiment_metrics instantly.
+
+What it must check
+Inputs
+
+Path to DuckDB file (use whatever your app already uses; do not hardcode a new path)
+
+Repo root path (scan .py, .sql, .md if you embed queries)
+
+It collects
+
+From DuckDB:
+
+list of tables
+
+list of columns per table
+
+From repo:
+
+SQL strings inside python triple-quotes and normal quotes
+
+.sql files if any
+
+It validates
+
+For every query found:
+
+Extract table names from FROM and JOIN clauses
+
+Verify each table exists
+
+(Optional stage 2) extract table.column and verify column exists
+
+Fail conditions (fail-closed)
+
+Missing table → FAIL
+
+Query parse uncertain → WARN (or FAIL if you want strict mode)
+
+Missing column (if enabled) → FAIL
+
+Output format (non-negotiable)
+
+Print:
+
+✅ PASS or ❌ FAIL
+
+Missing tables list
+
+File + line number for each offending query
+
+Summary counts: queries scanned, tables referenced
+
+Exit code:
+
+0 pass
+
+1 fail
+
+Where to wire it
+Must run in:
+
+python scripts/check/app_preflight.py
+
+CI (GitHub Actions) before merge
+
+optionally pre-commit hook
+
+Minimal implementation plan (file layout)
+
+Create:
+
+scripts/check/sql_schema_verify.py
+
+And add to:
+
+scripts/check/app_preflight.py (as a called step)
+
+Acceptance Criteria (how you know it works)
+
+✅ When you intentionally add a fake query like:
+SELECT * FROM experiment_metrics
+the checker must fail with:
+
+file + line
+
+missing table name
+
+non-zero exit code
+
+✅ When everything is correct, it prints PASS and exits 0.
+
+✅ It must run in under ~3–10 seconds on your repo.

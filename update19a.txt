@@ -1,0 +1,97 @@
+✅ UPDATE19 — LIFECYCLE SMOKE TESTS + DB-BACKED “SEND TO VALIDATION” (FAIL-CLOSED)
+
+You are operating in GUARDIAN MODE.
+
+AUTHORITATIVE INPUTS (read first):
+- /mnt/data/CLAUDE.md
+- /mnt/data/APP_COMPLETE_SURVEY.md
+- /mnt/data/CANONICAL_LOGIC.txt (append-only, DO NOT EDIT)
+- GUARDIAN.md / WORKFLOW_GUARDRAILS.md (if present)
+- Any UI contract doc (REDEISGN.TXT / UI_CONTRACT.md) if present
+
+AUTHORITY ORDER (highest → lowest):
+1) CLAUDE.md
+2) CANONICAL_LOGIC.txt
+3) GUARDIAN.md / WORKFLOW_GUARDRAILS.md
+4) APP_COMPLETE_SURVEY.md
+5) UI_CONTRACT / REDESIGN docs
+
+ABSOLUTE CONSTRAINTS (VIOLATION = STOP):
+- Do NOT change trading calculations, execution logic, cost_model, entry rules, pipeline, schema/migrations.
+- Do NOT modify how daily_features, validated_setups, validated_setups_archive are populated.
+- Do NOT introduce mock/simulated/example data.
+- Do NOT reference DB tables/cols that do not exist.
+- Do NOT add NEW DB write paths. (Using an EXISTING table via an EXISTING write API is OK.)
+- Any write-capable UI action MUST go through attempt_write_action() and must be fail-closed.
+
+MANDATORY GATES (must pass before “done”):
+- python scripts/check/app_preflight.py
+- python test_app_sync.py
+- pytest -q  (and also: pytest -q tests/test_ui_fail_closed.py)
+
+MISSION
+A) FIX P0 LIFECYCLE BREAK:
+“Send to Validation” must be DB-backed (not st.session_state truth).
+B) ADD UPDATE19:
+Minimal deterministic lifecycle smoke tests that prove the app cannot lie as a human.
+
+TWO-PASS WORKFLOW (MANDATORY)
+PASS 1 — AUDIT (NO CODE CHANGES)
+1) Locate the current “Send to Validation” implementation and any Validation Gate data source.
+2) Identify the canonical/approved mechanism (if any) for enqueueing candidates to validation:
+   - Search for existing functions touching validation_queue (enqueue / add_to_queue / mark_for_validation).
+3) Confirm validation_queue exists and list its columns by querying DuckDB in READ-ONLY mode.
+4) Produce an Impact Map:
+   - files to change (UI-only)
+   - functions to call
+   - tables read/written
+   - why it does not violate “no new DB write paths”
+
+STOP after PASS 1 and only proceed if compliant.
+
+PASS 2 — BUILD (MINIMAL DIFFS)
+Task A — Make “Send to Validation” DB-backed (smallest compliant change)
+1) Prefer calling an existing enqueue function/API if it exists.
+2) If none exists, implement a tiny UI-layer helper (UI scope only) that inserts into validation_queue.
+3) The “Send to Validation” button must call:
+   attempt_write_action("enqueue_for_validation", callback)
+   - callback enqueues selected candidates into validation_queue with status = 'PENDING'
+4) Add dedup protection:
+   - If table has a natural key (candidate_id/source_id), prevent duplicates by checking first OR using a safe insert pattern.
+   - If no safe dedup is possible without schema changes, implement “SELECT existing → skip insert” (minimal).
+5) session_state may store UI selections only; it must NOT be source of truth for lifecycle.
+
+Task B — Validation Gate must read from DB-backed queue
+1) Replace any session_state-based pending list with a query from validation_queue.
+2) Must be fail-closed:
+   - If required fields missing/malformed JSON → status UNKNOWN, approve disabled.
+3) Status chips must remain UI-derived only (PASS/WEAK/FAIL/UNKNOWN). Never stored.
+
+Task C — UPDATE19 lifecycle smoke tests (minimal, deterministic)
+Create: tests/test_lifecycle_smoke_update19.py (or similar)
+Tests (keep it 4–6 tests max):
+1) Enqueue persists:
+   - Enqueue candidate(s) → verify they appear in validation_queue (using a temp DB copy, not production DB).
+2) Refresh safety (no session truth):
+   - Simulate “new session” by re-reading from DB → queued rows still appear.
+3) Fail-closed on missing JSON:
+   - Row missing metrics_json/robustness_json (or malformed JSON) → status UNKNOWN + approve disabled.
+4) Approve wiring calls real promotion function only when PASS and write-gate passes:
+   - Patch the promotion function target (only patch call target, not status logic).
+   - Confirm called exactly once when PASS; never called for WEAK/FAIL/UNKNOWN.
+IMPORTANT: tests must NOT depend on Streamlit runtime. Use pure functions where possible.
+
+Implementation notes:
+- Use a temporary DuckDB database file copied from data/db/gold.db for tests (so tests are non-destructive).
+- If you already have ui_contract.py helpers, reuse them; otherwise add pure helpers in trading_app/ui/* (allowed scope).
+
+REPORTING (MANDATORY)
+Provide an Evidence Footer:
+- Files modified (exact)
+- Tables read:
+- Tables written:
+- Write actions invoked (and how guarded):
+- Forbidden/canonical modules touched (must be NONE):
+- Gates run + results:
+
+Finally: If anything required conflicts with constraints, STOP and propose a compliant alternative.

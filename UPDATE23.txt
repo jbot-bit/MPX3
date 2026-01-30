@@ -1,0 +1,38 @@
+GUARDIAN MODE ACTIVE.
+
+TASK: Make code-guardian an ACTUAL enforced project skill + hooks. Self-detect current repo state. No assumptions.
+
+PASS 1 (AUDIT ONLY):
+1) Confirm skill discovery paths:
+   - List .claude/skills/*
+   - List skills/*
+   - Run /skills and note whether code-guardian appears and under which section.
+2) Open and review:
+   - .claude/settings.json
+   - .claude/settings.local.json
+   Identify any existing hooks or enforcement commands.
+3) Inventory gates currently used by this project:
+   - scripts/check/app_preflight.py
+   - test_app_sync.py
+   - pytest -q
+   - scripts/check/check_time_literals.py
+4) Identify “protected paths” from GUARDIAN.md and reconcile with code-guardian tiers.
+5) Output a short plan:
+   - exact files to change
+   - exact hook(s) to add
+   - how to make backups Windows-safe
+STOP.
+
+PASS 2 (BUILD):
+1) Move repo skill to .claude/skills/code-guardian if needed.
+2) Update SKILL.md:
+   - remove stale file references (only list files that exist)
+   - replace cp/date backups with PowerShell-safe backups
+   - align forbidden paths with GUARDIAN.md
+3) Add hooks in .claude/settings.json so BEFORE edits/commit:
+   - run app_preflight, test_app_sync, pytest, check_time_literals
+   - block if fail
+4) Prove:
+   - /skills shows code-guardian
+   - hook runs gates automatically (show output)
+STOP.

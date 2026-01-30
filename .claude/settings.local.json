@@ -64,7 +64,15 @@
       "Bash(git reset:*)",
       "Bash(echo:*)",
       "Bash(pkill:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(streamlit run:*)",
+      "Bash(git rm:*)",
+      "Bash(sqlite3:*)",
+      "Bash(wmic process:*)",
+      "Bash(Get-Service -Name sshd -ErrorAction SilentlyContinue)",
+      "Bash(Select-Object Name, Status, StartType)",
+      "Bash(Format-List)",
+      "Bash(powershell.exe:*)"
     ]
   }
 }

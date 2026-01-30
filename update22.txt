@@ -1,0 +1,110 @@
+GUARDIAN MODE IS ACTIVE. FOLLOW GUARDIAN.md AUTHORITY + RULES. :contentReference[oaicite:0]{index=0}
+
+CONTEXT
+- TSOT migration is PARKED (no 78-file refactor).
+- time_spec.py is the single source of truth for ORBs/sessions/time windows. :contentReference[oaicite:1]{index=1}
+- UPDATE21 PASS 2 is complete (naming helpers + NEW-only TSOT enforcement).
+- Goal now is STRATEGY DISCOVERY: PB (Pullback) family grid → generate candidates → store DB-backed → queue best for validation.
+
+ABSOLUTE CONSTRAINTS (REMINDER)
+- Do NOT edit forbidden paths: strategies/, pipeline/, trading_app/cost_model.py, trading_app/entry_rules.py, trading_app/execution_engine.py, schema/migrations/ :contentReference[oaicite:2]{index=2}
+- Do NOT change trading formulas or execution logic.
+- Do NOT add new DB tables or migrations (assume NO).
+- Do NOT create new UI screens or parallel flows.
+- session_state may hold selections only; lifecycle state must be DB-backed.
+
+GOAL (PB FAMILY)
+Define and run a deterministic SMALL PB grid for MGC ORBs using canonical tokens, then create edge candidates with stable name/ID and queue a short-list for validation.
+
+PB FAMILY DEFINITION (TOKENS — NO FREE TEXT)
+- family: PB
+- entry_token:
+  - RETEST_ORB (retest of ORB high/low after break)
+  - MID_PULLBACK (pullback to ORB mid)
+- confirm_token:
+  - CLOSE_CONFIRM (bar closes back in direction after touch)
+  - WICK_REJECT (wick rejection at level)
+- stop_token:
+  - STOP_ORB_OPP (stop at opposite side of ORB)
+  - STOP_SWING (stop at last swing)
+- tp_token:
+  - TP_FIXED_R_1_0
+  - TP_FIXED_R_1_5
+  - TP_FIXED_R_2_0
+
+GRID (KEEP SMALL FIRST PASS)
+- instrument: MGC
+- orb_time: ONLY from time_spec.ORBS (do not hardcode). Prefer subset: ['0900','1000','1100'] if available in ORBS. :contentReference[oaicite:3]{index=3}
+- direction: LONG, SHORT
+- entry_token: 2
+- confirm_token: 2
+- stop_token: 2
+- tp_token: 3
+Expected grid size: 3*2*2*2*2*3 = 144 candidates (before filters).
+
+FILTERS (BOUNDED, OPTIONAL — ONLY IF FIELDS EXIST ALREADY)
+- atr_bucket: LOW/MID/HIGH (only if an existing feature exists; otherwise skip)
+- min_orb_range_bucket: MID/HIGH (only if already supported; otherwise skip)
+Fail-closed: if feature missing, do NOT invent it; simply omit that filter dimension.
+
+NAMING + ID (MUST BE DETERMINISTIC)
+Name format:
+  "{INSTR}_{ORB}_{DIR}_PB_{ENTRY}_{STOP}_v1"
+Example:
+  "MGC_1000_LONG_PB_RETEST_ORB_STOP_ORB_OPP_v1"
+
+ID:
+- Use existing helper if present (generate_strategy_name / hash) from UPDATE21.
+- If helper exists, call it; do not re-implement.
+- No schema changes.
+
+WHERE TO STORE
+- Use existing canonical lifecycle tables already in DB:
+  - edge_candidates (Research)
+  - validation_queue (Queue)
+  - validated_setups (Production) — NOT written in this step
+Do not create new tables.
+
+TWO-PASS MODE
+
+PASS 1 (AUDIT ONLY — NO CODE)
+1) Self-detect existing PB-related support:
+   - Find candidate generation entrypoint(s) (auto_search_engine / research lab).
+   - Find where candidates are inserted (which function writes edge_candidates).
+   - Confirm write wrapper usage (attempt_write_action).
+2) Confirm time usage:
+   - Ensure orb_time values come from time_spec.ORBS.
+3) Confirm naming helpers exist and how to call them.
+4) Produce an Impact Map:
+   - exact files to change (if any)
+   - expected diff size (<200 lines per file)
+   - tables written + wrappers
+STOP and wait for approval.
+
+PASS 2 (BUILD — ONLY AFTER APPROVAL)
+1) Implement PB grid generation in the EXISTING discovery path (no new UI):
+   - generate the 144 deterministic parameter combinations
+   - for each, create candidate payload with stable name/id + parameter tokens
+   - insert into edge_candidates using existing wrappers
+2) Add a “dedupe guard”:
+   - if candidate with same deterministic id already exists, skip insert (no duplicates)
+3) Create a short-list rule to queue for validation:
+   - Either queue NONE (pure generation), OR queue top N based on existing scoring if it already exists.
+   - Do not invent scoring metrics. If no scoring exists, queue 0 and just generate candidates.
+4) Run gates (must pass):
+   - python scripts/check/app_preflight.py
+   - python test_app_sync.py
+   - pytest -q
+   - python scripts/check/check_time_literals.py  (confirm 0 NEW structural violations)
+5) Report:
+   - number of candidates generated
+   - number inserted vs skipped (dedupe)
+   - whether any were queued
+   - Evidence Footer (files changed, tables written, wrappers, gates)
+
+STOP CONDITIONS
+- If any required change touches forbidden paths: STOP.
+- If you need new DB columns/tables: STOP and propose alternative.
+- If you cannot find an existing write wrapper: STOP.
+- If any file diff would exceed 200 lines: STOP and split plan.
+- If time literals are required: STOP and import from time_spec instead. :contentReference[oaicite:4]{index=4}

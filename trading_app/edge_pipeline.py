@@ -356,7 +356,8 @@ def create_edge_candidate(
     slippage_assumptions: Dict,
     code_version: str,
     data_version: str,
-    actor: str
+    actor: str,
+    db_connection = None
 ) -> int:
     """
     Create a new edge candidate in DRAFT status.
@@ -372,6 +373,7 @@ def create_edge_candidate(
         code_version: Git hash or version identifier
         data_version: Schema version identifier
         actor: Name of person creating candidate
+        db_connection: Optional existing DuckDB connection to reuse (prevents connection conflicts)
 
     Returns:
         candidate_id: ID of newly created candidate
@@ -395,7 +397,15 @@ def create_edge_candidate(
             version=version
         )
 
-    conn = get_database_connection(read_only=False)
+    # REQUIRE connection parameter in app runtime (no fallback to prevent connection conflicts)
+    if db_connection is None:
+        raise ValueError(
+            "db_connection is required for app runtime. "
+            "Pass app_state.db_connection to prevent connection conflicts. "
+            "For standalone scripts, pass get_database_connection(read_only=False)."
+        )
+
+    conn = db_connection
 
     try:
         # Get next candidate_id

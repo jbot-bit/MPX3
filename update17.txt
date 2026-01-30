@@ -1,0 +1,68 @@
+UPDATE17 — UI FAIL-CLOSED CONTRACT TESTS (DETERMINISTIC)
+
+Context:
+- UPDATE15 (sql_schema_verify) and UPDATE16 (forbidden_pattern_scan) are integrated into app_preflight.
+- APP_COMPLETE_SURVEY.md exists and is the ground truth.
+- Do NOT modify trading logic, schema, execution, entry rules, daily_features population, validated_setups population, or cost_model.py.
+
+Mission:
+Add a minimal, deterministic test suite that proves the UI cannot lie and cannot strand the user.
+
+NON-NEGOTIABLE RULES:
+- NO Streamlit dependency in the core logic under test (pure functions only).
+- Status is UI-derived only and NEVER written to DB.
+- Missing/invalid data must fail-closed to UNKNOWN and block approve/deploy.
+
+Step 1 — Create a shared pure module (no Streamlit):
+Create trading_app/ui/ux_contract.py (or closest existing shared UI module if one already exists) containing:
+
+1) safe_parse_json(s: str|None) -> dict|None
+   - returns None on None/empty
+   - returns None on JSON decode error
+   - never raises
+
+2) derive_validation_status(metrics_json: str|None, robustness_json: str|None) -> str
+   Returns one of: "PASS", "WEAK", "FAIL", "UNKNOWN"
+   Rules:
+   - If metrics missing/invalid -> UNKNOWN
+   - If avg_r missing/invalid -> UNKNOWN
+   - If avg_r < 0.15 -> FAIL
+   - If robustness missing/invalid -> UNKNOWN (fail-closed)
+   - If stress_50_pass is True -> PASS
+   - Else if stress_25_pass is True -> WEAK
+   - Else -> FAIL
+
+3) can_approve(status: str) -> bool
+   - True only if status == "PASS"
+   - False otherwise
+
+Step 2 — Add tests:
+Create tests/test_ui_fail_closed.py with pytest tests:
+
+A) Missing metrics_json -> status UNKNOWN and can_approve False
+B) Missing robustness_json -> status UNKNOWN and can_approve False
+C) Malformed JSON metrics_json -> UNKNOWN and can_approve False (no exception)
+D) avg_r>=0.15 and stress_50_pass True -> PASS and can_approve True
+E) avg_r>=0.15 and stress_25_pass True but stress_50_pass False/missing -> WEAK and can_approve False
+F) avg_r<0.15 -> FAIL and can_approve False
+
+Step 3 — Wiring test for “approve calls real promotion”:
+Add ONE test that verifies the UI approval action calls the REAL promotion function:
+- Identify the actual function used to promote candidates (e.g. trading_app.edge_pipeline.promote_candidate or equivalent).
+- Patch/mock ONLY that function call target (not the status logic).
+- Simulate a PASS result via derive_validation_status inputs.
+- Verify: called exactly once when PASS, and not called when WEAK/FAIL/UNKNOWN.
+
+IMPORTANT:
+- Do not execute preflight scripts inside unit tests.
+- This test is only verifying wiring + gating logic, not DB writes.
+
+Step 4 — Integrate into test runner:
+Ensure these tests run with:
+pytest -q
+and are invoked by your existing test entrypoint (test_app_sync.py or CI config). If there is an existing test runner script, add pytest invocation there. Otherwise, add a minimal scripts/check/run_pytest_smoke.py and call it from app_preflight OR test_app_sync (choose the place that matches current project structure).
+
+Deliverables:
+- List exact files changed
+- Show pytest output
+- Confirm no canonical logic touched (execution_engine, cost_model, entry_rules, schema)

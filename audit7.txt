@@ -1,0 +1,139 @@
+Step 2 — Red flags in this Step 4 output (must fix before Step 5)
+
+These proposals violate your own constraints / reality.
+
+H4 “delete validate_instrument_or_block()”
+
+That’s a trading/runtime guard change. Not allowed.
+
+Also swapping it for DB constraints implies DB writes are the only path — not always true.
+
+C5 “regen config.py at import time”
+
+Import-time DB dependency = brittle.
+
+If DB locked (you just saw lock errors), app won’t start. That’s “fail-closed” but could be fail-useless.
+
+H5 “make all timestamps TIMESTAMPTZ in DuckDB”
+
+DuckDB support here is not something you can assume in your current schema without migration risk.
+
+Also your DB is already mixed and large — this is not “minimal” unless proven.
+
+H1 “generate SQL dynamically from config”
+
+That’s touching pipeline behavior. It might be allowed, but it’s not “minimal” unless you can do it with a tiny wrapper without changing semantics.
+
+Pre-commit hook approach
+
+On Windows, .git/hooks/pre-commit works locally but is not shareable/portable unless you use a framework (pre-commit) or document manual install.
+
+Also users can bypass with --no-verify. So calling it “cannot bypass” is false.
+
+So: Step 4 is directionally correct, but technically sloppy.
+
+Step 3 — The corrected “minimal changes” version (still within your scope)
+C5 — Config ↔ DB desync
+
+Invariant: app must never trade if DB/config mismatch.
+
+Single truth: DB (validated_setups) is truth; config.py is a cached projection.
+
+Delete/ignore: stop treating config.py as canonical truth.
+
+Enforcement (fail-closed):
+
+Add a startup gate in each app entrypoint that runs test_app_sync logic (or a fast assert_sync() helper) before UI starts.
+
+If mismatch → hard stop with clear message.
+
+Test: “tamper config then start app → must raise/exit”.
+
+(This avoids import-time DB hard dependency and keeps “fail-closed” where it matters: app start.)
+
+H1 — Session definitions duplicated
+
+Invariant: one canonical session spec used everywhere.
+
+Single truth: trading_app/time_spec.py (or whatever file is already intended) not config.py if config is generated/cached.
+
+Delete/ignore: all other session literals.
+
+Enforcement:
+
+CI check: grep/AST rule “no session literal strings/times outside time_spec.py”.
+
+Test: “introduce literal → CI fails”.
+
+H5 — Timezone drift
+
+Invariant: all computations explicitly convert using one TZ reference.
+
+Single truth: TZ_LOCAL + conversion helpers in one module (time_spec.py / time_utils.py).
+
+Delete/ignore: datetime.now() naked, hardcoded offsets, ad-hoc conversions.
+
+Enforcement:
+
+CI grep rule: ban datetime.now() and datetime.strptime() usages without tz attach.
+
+Runtime assert where windows are computed: assert tzinfo is not None.
+
+Test: “run orb window compute under forced TZ env → same output”.
+
+(No DB TIMESTAMPTZ migration required for “minimal”).
+
+C2 — Cost model centralization
+
+Invariant: cost numbers come from one module.
+
+Single truth: pipeline/cost_model.py.
+
+Delete/ignore: hardcoded 8.40 across repo.
+
+Enforcement: CI grep ban 8.4 literals outside cost_model.
+
+Test: “change cost_model friction and rerun key calc test → value changes”.
+
+H4 — Guard asymmetry
+
+Invariant: every guard is either blocking or removed.
+
+Single truth: scripts/check/app_preflight.py + canonical_guard (actual enforced gates).
+
+Delete/ignore: do not delete runtime guards; instead classify them.
+
+Enforcement:
+
+Make CI/preflight fail if “warning-only guard” patterns exist in protected domains (execution_engine/cost_model/strategies/pipeline).
+
+Keep runtime guards as defense-in-depth, but don’t rely on them.
+
+Test: “introduce edit to protected file → preflight fails”.
+
+Step 4 — Next step prompt (STEP 5) you should run
+
+Use this exact instruction:
+
+Proceed to AUDIT6 — STEP 5: EXECUTION PLAN.
+Use the corrected minimal-change interpretations:
+
+No import-time DB dependency
+
+No DB type migrations unless proven necessary
+
+No removal of runtime trading guards
+
+Pre-commit is optional; CI/preflight is mandatory
+
+Produce a 6–10 step plan. Each step must include:
+
+Exact files touched (expected)
+
+Gate to run (preflight/pytest/smoke)
+
+Rollback strategy
+
+“Stop after this step and system still stable” statement
+
+Order must prioritize: C5 → H1 → H5 → C2 → H4.

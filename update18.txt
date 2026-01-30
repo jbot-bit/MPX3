@@ -1,0 +1,111 @@
+MISSION: Lock down drift permanently (tooling-level), using the existing GUARDIAN.md protocol.
+Goal: make it practically impossible to accidentally change canonical logic while doing UI work.
+
+AUTHORITY ORDER:
+1) /mnt/data/CLAUDE.md
+2) /mnt/data/CANONICAL_LOGIC.txt (append-only)
+3) /mnt/data/APP_COMPLETE_SURVEY.md
+4) UI contracts (REDESIGN*.md / UI_CONTRACT.md)
+
+ABSOLUTE CONSTRAINTS (STOP if violated):
+- Do NOT change trading calculations or logic.
+- Do NOT change execution_engine, cost_model, entry_rules, strategies/, pipeline/.
+- Do NOT change schema/migrations.
+- Do NOT add any new DB write paths.
+- No mock/example/simulated data.
+- No references to non-existent tables.
+
+TWO-PASS MODE (MANDATORY):
+PASS 1 (AUDIT ONLY): produce Impact Map + exact plan. NO edits.
+PASS 2 (BUILD): apply only the planned edits + run gates + evidence footer.
+
+------------------------------------------------------------
+PASS 1 — AUDIT ONLY (NO CODE CHANGES)
+------------------------------------------------------------
+1) Read current GUARDIAN.md and app_preflight.py to see existing checks and failures.
+2) Identify current canonical “forbidden paths” set and confirm it matches:
+   - strategies/
+   - pipeline/
+   - trading_app/cost_model.py
+   - trading_app/entry_rules.py
+   - trading_app/execution_engine.py
+   - schema/migrations/
+3) Produce an Impact Map that includes:
+   - Files you will modify (exact list)
+   - Files you will NOT modify (exact list, include forbidden paths)
+   - What will be enforced (read-only protection, diff guard, scope rules)
+   - Where enforcement will run (pre-commit, preflight, CI/test runner)
+
+STOP after PASS 1 and wait for nothing; proceed directly to PASS 2 only if the plan is consistent with constraints.
+
+------------------------------------------------------------
+PASS 2 — BUILD (MINIMAL IMPLEMENTATION)
+------------------------------------------------------------
+
+A) Canonical files “read-only” at tooling level (choose best option for this repo):
+Implement ONE of these (prefer strongest available in local dev):
+1) Git hook (recommended): add a pre-commit hook that blocks commits modifying canonical files unless commit message contains "CANONICAL-APPEND:".
+   Canonical files list:
+   - CLAUDE.md
+   - CANONICAL_LOGIC.txt
+   - GUARDIAN.md
+   (optionally include REDESIGN docs if you want)
+OR
+2) A dedicated script gate: scripts/check/canonical_guard.py that fails if those files changed unless an override flag is set.
+
+Deliverable:
+- A deterministic block that prevents accidental canonical edits during normal work.
+
+B) Forbidden-paths modified check (hard block):
+Create scripts/check/forbidden_paths_modified.py that:
+- Uses git diff against HEAD (or main) to detect changed files
+- Fails if any changed file is under forbidden paths:
+  strategies/, pipeline/, schema/migrations/
+  OR matches exact files:
+  trading_app/cost_model.py, trading_app/entry_rules.py, trading_app/execution_engine.py
+- Prints the violating file list and exits non-zero
+Integrate this check into scripts/check/app_preflight.py so it runs EVERY time.
+
+C) Task scope limiter (prevents “helpful refactors”):
+Add a lightweight scope rule enforced by preflight:
+- If a task is UI_ONLY, code changes must be limited to:
+  trading_app/ui/, trading_app/app_*.py (UI pages), and tests/ (UI tests)
+- Provide a simple environment variable or flag for scope, default UI_ONLY:
+  e.g. SCOPE=UI_ONLY python scripts/check/app_preflight.py
+Implement scripts/check/scope_guard.py:
+- Reads SCOPE (default UI_ONLY)
+- Fails if git diff touches files outside allowed directories for that scope
+Integrate into app_preflight.py.
+
+D) Builder vs Auditor workflow (no extra infra):
+Add docs-only file: WORKFLOW_GUARDRAILS.md that defines:
+- Builder step: implement change
+- Auditor step: run app_preflight.py, test_app_sync.py, pytest -q, review diff
+This doc is for you; do not change logic.
+
+------------------------------------------------------------
+MANDATORY GATES (MUST RUN AND REPORT OUTPUT)
+------------------------------------------------------------
+Run and show output for:
+- python scripts/check/app_preflight.py
+- python test_app_sync.py
+- pytest -q
+
+If any fail:
+- Fix until all pass.
+- Do NOT bypass or disable checks.
+
+------------------------------------------------------------
+EVIDENCE FOOTER (MANDATORY IN FINAL REPORT)
+------------------------------------------------------------
+- Files modified (with line counts)
+- New checks added + where wired
+- Forbidden paths verified unchanged (list)
+- Canonical files verified unchanged (list)
+- Gates run + pass/fail
+- Tables read/written (should be NONE for this task)
+
+DELIVER:
+- Exact files changed
+- Commands run + outputs
+- Short explanation of how the new protections prevent drift

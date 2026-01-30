@@ -1,0 +1,45 @@
+GUARDIAN MODE IS ACTIVE. FOLLOW GUARDIAN.md AUTHORITY + RULES.
+
+Goal: Execute TSOT Step 6 (migration execution) safely, without mass refactor.
+Constraints:
+- No changes to trading logic, pipeline, cost_model, entry_rules, execution_engine, or schema.
+- No new DB write paths. No mock data. No broad reformatting.
+- Keep diffs <200 lines per file. If would exceed, STOP and split into smaller commits.
+- Use time_spec.py as TSOT. Keep time literal detector as WARN-only (do not break CI).
+
+Context files already exist:
+- trading_app/time_spec.py
+- trading_app/orb_time_logic.py imports time_spec
+- scripts/check/check_time_literals.py exists
+- tsot_migration_map.json exists (generated)
+- time_literal_inventory.txt exists
+
+TASK:
+1) PASS 1 (AUDIT ONLY):
+   - Read GUARDIAN.md and confirm forbidden paths untouched.
+   - Read TSOT_STEP5_REPORT.md + tsot_migration_map.json.
+   - Produce an Impact Map for Phase 1 only:
+     * live_scanner.py
+     * config.py
+     * execution_spec.py
+   - For each file, list: exact symbols to replace, where to import from time_spec.py, and expected diff size estimate.
+
+2) PASS 2 (BUILD) — ONLY AFTER PASS 1:
+   - Apply minimal edits for Phase 1 only.
+   - Add imports from trading_app.time_spec (or equivalent) and replace structural time literals using the migration map.
+   - Do NOT change UI display-only literals unless clearly safe and called out as UI/DISPLAY.
+   - Run gates (must run in this order):
+     a) python scripts/check/app_preflight.py
+     b) python test_app_sync.py
+     c) pytest -q
+   - If any gate fails: STOP, fix, rerun gates.
+
+3) REPORT:
+   - Provide EVIDENCE FOOTER exactly per GUARDIAN.md
+   - Provide git diff summary (files changed, +/− lines)
+   - Confirm detector remains WARN-only (no CI-breaking)
+
+STOP CONDITIONS:
+- If any required edit touches forbidden paths: STOP.
+- If a single file diff would exceed 200 lines: STOP and propose split plan.
+- If tsot_migration_map.json references a symbol not in time_spec.py: STOP and list missing symbols.

@@ -1,0 +1,169 @@
+Step 1 — Sanity check (are we aligned?)
+
+You have identified all real runtime connection creators
+
+You have correctly identified the intended singleton:
+
+app_canonical.py:174 → app_state.db_connection
+
+You have proven the crash is caused by mixed configs + early connects
+
+So yes: PASS 1 (AUDIT / SELF-DETECT) is COMPLETE.
+
+Nothing more to discover here.
+
+✅ You are approved to move to PASS 2 (BUILD / PATCH).
+
+Step 2 — Core rule (non-negotiable)
+
+From this point forward:
+
+There must be exactly ONE duckdb.connect() call used at runtime.
+
+That call lives here:
+
+trading_app/app_canonical.py
+→ app_state.db_connection = duckdb.connect(self.db_path)
+
+Everything else must:
+
+receive that connection
+
+or retrieve it
+
+never create their own
+
+Step 3 — The exact fix order (do this in THIS order)
+3.1 Kill the EARLY startup conflicts (critical)
+
+These fire before your singleton and poison the process.
+
+A) sync_guard.py:55
+
+❌ REMOVE: duckdb.connect(db_path, read_only=True)
+
+✅ CHANGE TO:
+
+accept a conn parameter or
+
+use app_state.db_connection
+
+This must NOT create a connection at import/startup time.
+
+B) db_health_check.py:36
+
+❌ REMOVE standalone duckdb.connect
+
+✅ Either:
+
+run health checks using the singleton
+
+or defer health check until after singleton exists
+
+These two are why you still see APP STARTUP BLOCKED.
+
+3.2 Kill secondary runtime connections (click paths)
+
+C) app_canonical.py:2504 (Refresh Data)
+
+❌ REMOVE: duckdb.connect(db_path, read_only=True)
+
+✅ USE: app_state.db_connection
+
+No read-only connections. Ever.
+
+3.3 Kill hidden connection factories (most important)
+
+D) cloud_mode.py:148
+
+❌ This function must NOT call duckdb.connect
+
+✅ Change it to:
+
+return the existing connection
+
+or raise if none is passed
+
+E) edge_pipeline.create_edge_candidate()
+
+Make db_connection required for app runtime
+
+❌ NO fallback to get_database_connection()
+
+This is the biggest long-term drift risk. You identified it correctly.
+
+Step 4 — Enforce this forever (1 small guard)
+
+Add one guard near the singleton creation:
+
+Store a fingerprint:
+
+db_path
+
+read_only
+
+If any code attempts to create another connection:
+
+raise a clear error
+
+fail fast
+
+This prevents “AI fixed it mate” regressions.
+
+Step 5 — Verification sequence (must pass in this order)
+
+After patches:
+
+Kill all running Streamlit / Python processes
+
+Start app
+
+❌ no startup block
+
+Click sequence:
+
+Refresh Data
+
+Generate PB Grid
+
+Refresh Data again
+
+Run:
+
+python scripts/check/app_preflight.py
+python test_app_sync.py
+pytest -q
+rg "duckdb\.connect" trading_app scripts
+
+
+Final grep result must show ONE location only.
+
+Step 6 — About audit23.txt
+
+You’re right to flag it.
+
+Before coding, answer one thing:
+
+Does audit23.txt propose:
+
+a singleton pattern, or
+
+a central DB manager, or
+
+just more health checks?
+
+If it introduces another connection abstraction, we do NOT add it — we fold its logic into the existing singleton.
+
+👉 Paste only the relevant section of audit23.txt if you want me to reconcile it before you patch.
+
+Final instruction (no ambiguity)
+
+Proceed with PASS 2 BUILD using the order above.
+Start with sync_guard.py and db_health_check.py first.
+
+Reply with:
+
+“early fixed” once startup no longer blocks,
+or
+
+paste the audit23.txt excerpt you want reconciled.

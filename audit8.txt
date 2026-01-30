@@ -1,0 +1,140 @@
+STEP 1 — LOCK THE STRATEGY (NO CODE YET)
+
+Decision:
+You already chose the right direction.
+
+✅ Grandfather existing code
+
+✅ WARN-only enforcement
+
+❌ No mass refactor now
+
+This prevents breaking MPX while still forcing convergence.
+
+Confirm this is locked.
+Reply “LOCK STEP 1” to proceed.
+
+STEP 2 — INVENTORY (YOU JUST DID THIS) ✅
+
+You already ran the scanner and generated:
+
+time_literal_inventory.txt
+
+~78 files
+
+Thousands of lines
+
+Mixed responsibilities
+
+This is correct and sufficient.
+You do not need to paste anything.
+
+We will treat that file as the single source of truth.
+
+✔ No duplication
+✔ No re-scanning
+✔ No manual copy/paste
+
+STEP 3 — CLASSIFY, NOT FIX (CRITICAL)
+
+Before touching code, we classify automatically.
+
+Each violation will fall into exactly one bucket:
+
+Structural
+
+Session definitions
+
+ORB ordering
+
+Window boundaries
+→ Must migrate to time_spec.py
+
+Operational
+
+Logging
+
+UI labels
+
+Debug output
+→ Allowed to remain (doc-level)
+
+Historical / Analysis
+
+Backtests
+
+Archived logic
+
+Research notebooks
+→ Explicitly ignored
+
+Dead / Legacy
+
+Unused paths
+
+Deprecated scripts
+→ Flagged, not touched
+
+No human judgement.
+No refactors yet.
+
+STEP 4 — NAME THE PROGRAM (YES, NOW)
+
+This needs a named enforcement track so it doesn’t get muddled with H1/H5/C2.
+
+Proposed name:
+
+TIME SOURCE OF TRUTH (TSOT)
+
+Short, explicit, future-proof.
+
+Artifacts under TSOT:
+
+time_spec.py (canonical)
+
+check_time_literals.py (detector)
+
+time_literal_inventory.txt (ledger)
+
+future: time_migration_map.json
+
+If you want a different name, say so now.
+Otherwise TSOT is locked.
+
+STEP 5 — AUTO-GENERATE THE MIGRATION MAP (NEXT ACTION)
+
+This is the step you want me to help with next.
+
+We will generate:
+
+{
+  "trading_app/foo.py": {
+    "lines": [123, 145],
+    "category": "STRUCTURAL",
+    "action": "MIGRATE",
+    "target": "time_spec.py::ORB_TRADING_WINDOWS"
+  },
+  "analysis/bar.py": {
+    "lines": [88],
+    "category": "HISTORICAL",
+    "action": "IGNORE"
+  }
+}
+
+
+No guessing.
+No edits yet.
+Pure classification.
+
+WHAT I NEED FROM YOU (ONE THING ONLY)
+
+Confirm Step 1 is locked.
+
+Reply with exactly one line:
+
+LOCK STEP 1
+
+
+Then I’ll give you the single best Claude Code prompt to generate the migration map from time_literal_inventory.txt — safely, deterministically, no hallucinations.
+
+We’re done fucking around after this.

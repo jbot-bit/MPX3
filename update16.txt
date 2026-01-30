@@ -1,0 +1,193 @@
+2) Forbidden-Pattern Scanner — Stop Fake Logic, Stubs, Drift
+
+This is the highest ROI safety net. It prevents exactly what just bit you:
+
+mock ExpR
+
+TODO validation
+
+fake PASS states
+
+half-wired approve buttons
+
+This runs fast, is deterministic, and blocks bullshit before it lands.
+
+Goal
+
+Fail the build if any forbidden pattern appears anywhere in the repo.
+
+This is not linting.
+This is truth enforcement.
+
+What it must catch (non-negotiable)
+🚫 Forbidden words / phrases (case-insensitive)
+
+These must never exist in UI or app code:
+
+mock
+
+simulate
+
+example baseline
+
+baseline_exp
+
+TODO: implement
+
+TODO: simulate
+
+fake
+
+dummy
+
+hardcoded PASS
+
+return True # pass
+
+pass = True
+
+pass_validation = True
+
+You can tune later, but start strict.
+
+What it scans
+
+.py
+
+.sql
+
+.md (yes — comments and docs matter)
+
+anything under:
+
+trading_app/
+
+scripts/
+
+tests/
+
+Exclude:
+
+.venv
+
+.git
+
+node_modules
+
+generated artifacts
+
+Fail conditions (fail-closed)
+
+Any forbidden pattern found → FAIL
+
+Print:
+
+pattern
+
+file
+
+line number
+
+offending line
+
+Exit code 1
+
+No warnings. No allow-lists.
+If it’s there, the build dies.
+
+Output format (example)
+❌ FORBIDDEN PATTERN DETECTED
+
+Pattern: "baseline_exp"
+File: trading_app/validation_gate.py
+Line: 412
+Code: baseline_exp_r = 0.25  # example baseline
+
+Build FAILED.
+
+Where to wire it
+
+Must run in:
+
+scripts/check/app_preflight.py
+
+CI pipeline
+
+(optional but recommended) pre-commit hook
+
+This ensures:
+
+Claude
+
+You
+
+Future-you
+cannot accidentally ship fake logic.
+
+Minimal file layout
+
+Create:
+
+scripts/check/forbidden_pattern_scan.py
+
+Wire into:
+
+scripts/check/app_preflight.py
+
+Acceptance Criteria (how you know it works)
+
+✅ Add a temporary line anywhere:
+
+baseline_exp_r = 0.25
+
+
+→ Preflight must fail
+
+✅ Remove it
+→ Preflight passes
+
+✅ Runtime < 1 second
+
+Claude Prompt to implement #2 (copy/paste)
+
+Use this exactly:
+
+Implement scripts/check/forbidden_pattern_scan.py
+
+Requirements:
+- Deterministic script (no AI).
+- Scan repository files: .py, .sql, .md.
+- Exclude .git, .venv, node_modules, build artifacts.
+- Detect forbidden patterns (case-insensitive):
+
+  ["mock", "simulate", "example baseline", "baseline_exp",
+   "TODO: implement", "TODO: simulate", "fake", "dummy",
+   "hardcoded pass", "pass = true", "pass_validation = true"]
+
+- On first detection:
+  - Print ❌ header
+  - Print pattern, file, line number, offending line
+  - Exit with code 1
+
+- If none found:
+  - Print ✅ clean message
+  - Exit 0
+
+Then:
+- Integrate this script into scripts/check/app_preflight.py
+- Ensure preflight fails if forbidden patterns are detected
+- Show example FAIL output by temporarily inserting and then removing a forbidden pattern.
+
+Why this matters (explicitly)
+
+This single script would have prevented:
+
+fake ExpR
+
+fake PASS
+
+stub approve logic
+
+“works in UI, lies in truth”
+
+It enforces honesty, not correctness — which is exactly what AI tools tend to violate first.

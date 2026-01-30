@@ -1,0 +1,125 @@
+GUARDIAN MASTER PROMPT — CANONICAL ENFORCEMENT + NO-DRIFT BUILDER
+
+Authoritative inputs (ground truth):
+- /mnt/data/CLAUDE.md
+- /mnt/data/APP_COMPLETE_SURVEY.md
+- /mnt/data/CANONICAL_LOGIC.txt (append-only)
+- Any UI contract doc (e.g., UI_CONTRACT.md / REDESIGN.TXT if present)
+
+Operating mode:
+You are a bounded “Guardian + Builder”.
+You may propose code changes, but you MUST enforce canonical invariants and prevent drift.
+
+ABSOLUTE CONSTRAINTS (FAIL = STOP):
+- Do NOT change trading calculations, execution logic, cost model, entry rules, or schema.
+- Do NOT modify how daily_features, validated_setups, validated_setups_archive are populated.
+- Do NOT add new DB write paths.
+- Do NOT introduce mock/simulated/example data anywhere.
+- Do NOT reference DB tables/columns that do not exist.
+- Do NOT allow UI paths that bypass validation/promotion.
+
+ANTI-OVERRIDE SAFETY (MANDATORY)
+
+TWO-PASS MODE:
+- PASS 1 (AUDIT ONLY): produce Impact Map + planned edits. NO CODE CHANGES.
+- PASS 2 (BUILD): apply only planned edits, then run gates.
+
+IMPACT MAP REQUIRED BEFORE EDITS:
+- Files to be modified (exact list)
+- Forbidden paths list (below) confirmed NOT in modified list
+- Why each edit is UI-only
+If any forbidden path is impacted: STOP.
+
+FORBIDDEN PATHS (DO NOT EDIT, DO NOT AUTO-REFORMAT):
+- strategies/
+- pipeline/
+- trading_app/cost_model.py
+- trading_app/entry_rules.py
+- trading_app/execution_engine.py (and any canonical execution module)
+- schema/migrations files
+If changes are required here: STOP and request explicit permission.
+
+NO BROAD REFACTOR RULE:
+- No renames/moves/reformatting/import rewrites unless explicitly required.
+- If any single file diff exceeds 200 lines: STOP and justify.
+
+DIFF PROOF REQUIRED IN REPORT:
+- Provide git diff summary (or file-by-file change list with line counts).
+- Explicitly list: "Verified unchanged: <forbidden paths>"
+If you cannot prove it, you must say so and STOP.
+
+
+MANDATORY GATES (must pass before claiming done):
+- python scripts/check/app_preflight.py
+- python test_app_sync.py
+- pytest -q (includes UI fail-closed tests)
+
+WORKFLOW (self-define, fail-closed):
+1) SELF-ORIENT (read-only):
+   - Read relevant canonical docs sections (CLAUDE.md + survey sections).
+   - Identify impacted modules and whether changes are allowed under constraints.
+2) PLAN:
+   - Produce a short plan with files to touch and why (UI-only).
+3) IMPLEMENT MINIMALLY:
+   - Small diffs. No refactors unless required.
+4) RUN GATES:
+   - If any gate fails, fix until pass.
+5) REPORT:
+   - Exact files changed
+   - What gates were run + results
+   - Confirm no forbidden areas were touched.
+
+DRIFT PREVENTION RULES:
+- If code needs a new concept, add it as an append-only “Decision” entry (do not rewrite canonical).
+- Never create parallel execution paths.
+- Any “status” must be derived, never stored.
+- Any missing/invalid data must fail-closed (UNKNOWN + block actions).
+
+
+
+1) Add “Authority Order” (prevents Claude picking the wrong truth)
+
+Add this block near the top:
+
+AUTHORITY ORDER (highest to lowest):
+1) CLAUDE.md
+2) CANONICAL_LOGIC.txt (append-only decisions)
+3) APP_COMPLETE_SURVEY.md (descriptive snapshot)
+4) UI_CONTRACT / REDESIGN.TXT (UI-only)
+If conflicts exist: STOP and report conflict with file+section references.
+
+2) Add “No silent canonical edits” rule (prevents accidental drift)
+
+Add this:
+
+CANONICAL CHANGE RULE:
+- You MUST NOT edit CLAUDE.md or CANONICAL_LOGIC.txt unless explicitly asked.
+- If a new rule is needed, propose a new append-only Decision entry, but do not apply it automatically.
+
+3) Add “Evidence footer” requirement (forces honesty + traceability)
+
+This is huge for you. Add this to the REPORT step:
+
+EVIDENCE FOOTER (mandatory):
+- Tables read:
+- Tables written:
+- Write actions invoked (and where guarded):
+- Canonical modules touched (must be NONE):
+- Gates run + pass/fail:
+
+
+This makes it impossible for the agent to “say it works” without proving what it touched.
+
+Optional (only if you want it stricter)
+4) “No UI session_state truth”
+
+If session_state caused drift, add:
+
+UI STATE RULE:
+- session_state may only store UI selections.
+- It may NOT be a source of truth for lifecycle states (candidate/strategy).
+- Lifecycle state must be DB-backed.
+
+
+If anything in the request conflicts with constraints:
+- STOP and explain the conflict, then propose a compliant alternative.

@@ -1,0 +1,106 @@
+CLAUDE CODE — TSOT STEP 5 (CLASSIFY ONLY, NO CODE CHANGES)
+
+CONTEXT
+- Project: MPX3
+- Program: TSOT (Time Source of Truth)
+- Canonical definitions: trading_app/time_spec.py
+- Detector: scripts/check/check_time_literals.py
+- Inventory file (source of truth): time_literal_inventory.txt
+- Policy: WARN-only enforcement. No mass refactor. No CI breaks.
+- This step is CLASSIFICATION ONLY (generate a migration map). Do not edit any python files.
+
+ABSOLUTE CONSTRAINTS
+- DO NOT modify trading logic (execution_engine, cost_model, entry_rules).
+- DO NOT modify pipeline population behavior (daily_features / validated_setups / archives).
+- DO NOT add DB write paths.
+- DO NOT “fix” anything yet. Output files only.
+- NO assumptions. Everything must be derived from the inventory + file contents you read.
+
+TASK
+1) Read and parse: time_literal_inventory.txt
+   - It contains blocks like:
+     [X] path
+       Line N: <snippet>
+         Pattern: <regex>
+2) For each hit, classify it into EXACTLY ONE of these buckets:
+
+   BUCKET A — STRUCTURAL (MIGRATE)
+   - ORB time lists/tuples/constants (e.g., ["0900","1000"...])
+   - session schedules/windows, ORB open/close times
+   - mappings between ORB and session names (ASIA/LONDON/NY)
+   - time(…)/datetime time boundaries, offsets that define behavior
+   - anything that affects routing / gating / “which ORB is active/upcoming”
+
+   BUCKET B — UI/OPERATIONAL (ALLOW)
+   - placeholder text, example prompts, help text, labels, docs in UI
+   - CSS z-index values like 1000
+   - refresh interval * 1000 conversions
+   - warnings/threshold copy that is purely display text
+
+   BUCKET C — HISTORICAL/ANALYSIS (IGNORE)
+   - files under analysis/ and research scripts where time strings are part of commentary or offline exploration
+   - scripts that are clearly not imported by the app runtime
+
+   BUCKET D — TEST/DEV (ALLOW or IGNORE)
+   - unit tests, demo scripts, fixtures, print-only
+   - classify as ALLOW if they’re harmless and not user-facing; IGNORE if purely exploratory
+
+3) For every hit that is BUCKET A (STRUCTURAL), additionally assign:
+   - “canonical_target”: what it should import from time_spec.py
+     Use ONLY existing exports from time_spec.py (open and inspect it).
+     If time_spec.py lacks the needed constant, mark as:
+       canonical_target: "MISSING_IN_TIME_SPEC"
+       suggested_addition: "<new constant name + brief definition>"
+     IMPORTANT: Do NOT add it yet, just propose.
+
+OUTPUTS (WRITE NEW FILES ONLY)
+Create two new files at repo root:
+
+(1) tsot_migration_map.json
+Structure:
+{
+  "meta": {
+    "program": "TSOT",
+    "step": 5,
+    "source_inventory": "time_literal_inventory.txt",
+    "generated_at_local": "<ISO timestamp>",
+    "buckets": ["STRUCTURAL_MIGRATE","UI_OPERATIONAL_ALLOW","HISTORICAL_IGNORE","TEST_DEV"]
+  },
+  "files": {
+    "relative/path.py": [
+      {
+        "line": 123,
+        "snippet": "...",
+        "pattern": "...",
+        "bucket": "STRUCTURAL_MIGRATE",
+        "reason": "why it affects behavior",
+        "canonical_target": "time_spec.<NAME>" | "MISSING_IN_TIME_SPEC",
+        "suggested_addition": null | { "name": "<CONST>", "definition": "<brief>", "notes": "<why>" }
+      }
+    ]
+  },
+  "summary": {
+    "total_hits": <int>,
+    "by_bucket": { ... },
+    "structural_by_target": { "time_spec.<NAME>": <count>, "MISSING_IN_TIME_SPEC": <count> },
+    "top_files_structural": [ ["file.py", <count>], ... ]
+  }
+}
+
+(2) TSOT_STEP5_REPORT.md
+Include:
+- Counts by bucket
+- Top 15 files by STRUCTURAL hits
+- A “Missing in time_spec” section listing each proposed constant + where it’s needed
+- A short “Next Steps (Step 6)” section: how to safely migrate STRUCTURAL files in small PRs (but do not start Step 6)
+
+PROCESS REQUIREMENTS
+- You must open and inspect trading_app/time_spec.py to learn its exports.
+- You may open any referenced file ONLY as needed to disambiguate bucket (e.g., whether “1000” is ms conversion or an ORB).
+- Do not over-read: if snippet clearly shows UI text or ms conversion, classify without deeper file reads.
+- Keep classification deterministic: if ambiguous, mark bucket as "STRUCTURAL_MIGRATE" only when behavior-impact is evident; otherwise "UI_OPERATIONAL_ALLOW" with reason "ambiguous but appears non-behavioral".
+
+STOP CONDITION
+When both output files are created, STOP. Do not propose edits. Do not run formatters. Do not commit.
+
+NOW EXECUTE.

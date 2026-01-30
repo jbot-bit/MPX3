@@ -1,0 +1,97 @@
+GUARDIAN MODE IS ACTIVE. FOLLOW GUARDIAN.md AUTHORITY + RULES.
+
+TAKE A STEP BACK. THINK SYSTEM-LEVEL. DO NOT CREATE DUPLICATE FLOWS OR DOUBLE UIs.
+ASSUME THE REPO MAY ALREADY HAVE A STRATEGY/EDGE FLOW. YOU MUST SELF-DETECT FIRST.
+
+GOAL
+- I want to find NEW strategies (edges) and store them properly, with consistent naming + lifecycle.
+- I want ZERO drift and ZERO duplicated UI flows.
+- I do NOT want to finish TSOT migration across the whole repo first.
+- I DO want TSOT enforced for ALL NEW strategy work going forward.
+
+NON-NEGOTIABLES
+- Do not modify trading calculations, pipeline, cost_model, entry_rules, execution_engine, schema.
+- No new DB tables/migrations unless I explicitly approve (assume NO).
+- No new DB write paths; if any writes exist, must use existing wrappers/patterns.
+- No session_state as lifecycle source-of-truth (selection only).
+- No broad refactors. No reformatting. Keep diffs small.
+- Two-pass mode required.
+
+WHAT "DONE" LOOKS LIKE
+1) A SINGLE canonical “Strategy/Edge lifecycle” flow exists (or is confirmed to already exist) with:
+   - Discover candidate edge (research)
+   - Queue/mark for validation (DB-backed or existing table-backed)
+   - Validate → approve/reject (DB-backed)
+   - Promote to production (DB-backed)
+2) A deterministic naming + ID scheme that is stable and human-readable.
+3) TSOT enforcement that prevents new time/orb literals in NEW/CHANGED strategy logic,
+   WITHOUT forcing a 78-file migration today.
+
+PASS 1 — AUDIT / PLAN ONLY (NO CODE)
+A) SELF-DETECT CURRENT REALITY (must prove; no assumptions)
+   1. Find where “strategies/edges/setups” are defined/stored:
+      - search for tables: edge_candidates, edge_registry, validated_setups, validated_setups_archive, validation_queue
+      - search for code paths: “Send to Validation”, “approve”, “promote”, “archive”, “candidate”
+      - identify the ONE canonical UI entrypoint(s) for research/validation/production
+   2. Identify ALL DB write paths reachable from UI for lifecycle actions.
+      - confirm each uses a safety wrapper (attempt_write_action or equivalent)
+      - if any lifecycle state is stored only in session_state: flag it (must be DB-backed)
+   3. Identify current naming conventions (if any):
+      - fields like: setup_id, edge_id, name, orb_time, direction, entry_rule, stop_mode
+      - confirm what the “primary key” is today
+
+B) DESIGN A SINGLE NAMING/ID POLICY (no schema changes)
+   - Define:
+     * Human name format (example): "MGC_{ORB}_{DIR}_{ENTRY}_{STOP}_v{N}"
+     * Deterministic ID format (hash-based or composite) using existing fields ONLY
+     * Versioning rule: bump vN only when logic changes; otherwise keep stable
+   - Must not require new columns; use existing columns or computed IDs.
+
+C) TSOT POLICY THAT PREVENTS NEW MESS WITHOUT MIGRATING EVERYTHING
+   Implement “NEW-only enforcement” plan:
+   - Keep existing violations grandfathered (WARN).
+   - Add baseline file committed in git: artifacts/tsot_baseline.json (or .txt)
+   - Update check_time_literals.py to:
+     1) load baseline
+     2) compute current violations
+     3) compute NEW = current - baseline
+     4) FAIL only if NEW contains STRUCTURAL category
+     5) Always allow UI/DISPLAY
+   - Add explicit flag: --update-baseline
+   - IMPORTANT: the checker must not crash on Windows encoding (write safe output; no UnicodeEncodeError)
+
+D) OUTPUT (PASS 1 deliverables)
+   1) “Current lifecycle map” (1 page):
+      - what exists today, what tables, what UIs, what writes
+      - list any duplicates / parallel flows found
+   2) “Single-flow recommendation”:
+      - which UI becomes canonical; which paths should be removed/ignored (NO CODE YET)
+   3) “Naming/ID spec”:
+      - exact format + examples + how to compute
+   4) “TSOT NEW-only enforcement plan”:
+      - exact files to change + estimated diff size
+      - confirm no forbidden paths
+STOP. WAIT FOR APPROVAL.
+
+PASS 2 — BUILD (ONLY AFTER APPROVAL)
+1) Implement TSOT NEW-only enforcement (baseline + diff-based fail):
+   - modify scripts/check/check_time_literals.py
+   - add artifacts/tsot_baseline.* committed
+   - wire into app_preflight + CI (existing hooks)
+   - prove:
+     a) checker passes on current main
+     b) adding a NEW structural literal causes CI fail
+2) Implement naming/ID policy in the SINGLE canonical flow only:
+   - do not add new UI screens unless absolutely required
+   - do not duplicate existing screens
+   - store name/ID via existing DB-backed pipeline only
+3) Gates (must run):
+   - python scripts/check/app_preflight.py
+   - python test_app_sync.py
+   - pytest -q
+4) Report with Evidence Footer (files changed, lines, forbidden paths unchanged, gates pass)
+
+STOP CONDITIONS
+- If you discover duplicate UIs or parallel lifecycle flows: STOP in PASS 1 and list them.
+- If any required piece implies schema change: STOP and propose alternative.
+- If a single diff exceeds 200 lines: STOP and split plan.

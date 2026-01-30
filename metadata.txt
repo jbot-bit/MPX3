@@ -1,0 +1,125 @@
+What the pre-prompt needs to collect
+
+Before generating the redesign enforcement prompt, Claude should produce:
+
+📌 App Surface Summary
+
+List of UI screens (tabs, panels, workflows)
+
+What each screen does and what each action triggers
+
+📌 Data & Tables
+
+All DuckDB tables currently in use
+
+All columns used by queries
+
+Any tables referenced that don’t actually exist
+
+📌 Write Paths
+
+All functions that write data
+
+All places UI triggers writes
+
+Which flows are protected by your safety wrapper
+
+📌 Canonical & Contract Inventory
+
+Contents of CLAUDE.md
+
+Contents of UI_CONTRACT.md / any equivalent
+
+Any existing decision logs (e.g., DECISIONS.md)
+
+Any contradiction between docs
+
+📌 Possible Drift Points
+
+Imports that fail or reference missing modules
+
+Queries that reference missing tables
+
+Forbidden patterns (mock/TODO/simulate/etc.)
+
+📌 Logic Boundaries
+
+Where trading logic lives (execution_engine, cost_model)
+
+Where UI logic lives
+
+What must not be changed
+
+The Pre-Prompt (give this to Claude first)
+
+This is the exact prompt you should give Claude (or any agent) before asking it to build enforcement, watchers, or UX redesign aids:
+
+PRE-PROMPT: APP SURVEY & CANONICAL ANALYSIS
+
+You are given access to the full repository and all canonical documents:
+
+- Codebase under trading_app/
+- DuckDB schema used at runtime
+- Canonical rules in CLAUDE.md
+- Any UI/UX contracts (UI_CONTRACT.md / RESIGN.TXT)
+- Any existing decisions or design docs (DECISIONS.md)
+
+Do not modify anything yet.
+
+Your job is to produce **one comprehensive markdown file** named:
+
+    APP_COMPLETE_SURVEY.md
+
+The file must include the following sections:
+
+1) **UI Surface Summary**
+   - All screens/tabs in the app
+   - For each, list:
+     • What inputs it shows
+     • What outputs it shows
+     • What actions it triggers
+     • What DB tables it reads
+     • What DB tables it writes (if any)
+
+2) **Data Tables & References**
+   - All tables present in DuckDB
+   - All tables referenced in code
+   - Any referenced tables that do not exist (with file + line)
+
+3) **Write Path Inventory**
+   - Every function that writes data (promotion, validation status, archive, etc.)
+   - What UI action triggers it
+   - What preflight or safety wrapper must guard it
+
+4) **Canonical & Contract Inventory**
+   - Text content of CLAUDE.md
+   - Text content of any UI contract documents
+   - Extracted invariants (bulleted)
+   - Any contradictions within these docs
+
+5) **Trade Logic Boundaries**
+   - Where trading logic is implemented
+     (e.g., execution_engine, cost_model)
+   - Where trade logic should not be touched by UI/UX
+   - Any possible overlaps
+
+6) **Drift & Risk Scan**
+   - List of:
+     • `TODO`, `FIXME`, `mock`, `simulate`, `example` references
+     • Queries referencing non-existent tables
+     • Code paths unprotected by preflight gates
+     • Any UI logic that bypasses canonical checks
+
+7) **Gaps & Blockers**
+   - List possible blocks to redesign or enforcement
+   - Things that *must* exist before safe automation is possible
+
+Output must be syntactically valid markdown, with:
+- headers for each section
+- tables or bullet lists where appropriate
+- file+line references for every finding
+
+The purpose is to give you a **complete understanding of the app** so you never drift from canonical logic in future prompts.
+
+Produce **only** the markdown file content. Do not write code yet. 
+Title the file: APP_COMPLETE_SURVEY.md

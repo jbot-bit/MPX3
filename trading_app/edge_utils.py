@@ -65,30 +65,34 @@ def generate_strategy_name(
     direction: str,
     entry_rule: str,
     sl_mode: str,
-    version: int = 1
+    version: int = 1,
+    family: Optional[str] = None
 ) -> str:
     """
     Generate human-readable strategy name following naming policy.
 
-    Format: {INSTRUMENT}_{ORB}_{DIR}_{ENTRY}_{STOP}_v{VER}
+    Format (standard): {INSTRUMENT}_{ORB}_{DIR}_{ENTRY}_{STOP}_v{VER}
+    Format (PB family): {INSTRUMENT}_{ORB}_{DIR}_PB_{ENTRY}_{STOP}_v{VER}
 
     Args:
         instrument: 3-letter code (MGC, NQ, MPL)
-        orb_time: 4-digit ORB time (0900, 1000, etc.)
+        orb_time: 4-digit ORB time from time_spec.ORBS
         direction: LONG, SHORT, or BOTH
-        entry_rule: Entry type (LIMIT, 1ST, 2ND, 5M)
-        sl_mode: Stop mode (ORB_LOW, ATR_05, FIXED, etc.)
+        entry_rule: Entry type (LIMIT, 1ST, 2ND, 5M) or PB token (RETEST_ORB, MID_PULLBACK)
+        sl_mode: Stop mode (ORB_LOW, ATR_05, FIXED) or PB token (STOP_ORB_OPP, STOP_ORB_OPP)
         version: Version number (default 1)
+        family: Strategy family (None for standard, 'PB' for pullback family)
 
     Returns:
         name: Human-readable strategy name
 
     Examples:
-        >>> generate_strategy_name("MGC", "1000", "LONG", "1ST", "ORB_LOW", 1)
-        "MGC_1000_LONG_1ST_ORB_LOW_v1"
+        Standard: MGC_XXXX_LONG_1ST_ORB_LOW_v1
+        PB family: MGC_XXXX_LONG_PB_RETEST_STOP_ORB_OPP_v1
     """
     # Normalize entry rule to short form
     entry_map = {
+        # Standard ORB entries
         '1st_close_outside': '1ST',
         '2nd_close_outside': '2ND',
         '5m_close_outside': '5M',
@@ -96,12 +100,16 @@ def generate_strategy_name(
         '1ST': '1ST',
         '2ND': '2ND',
         '5M': '5M',
-        'LIMIT': 'LIMIT'
+        'LIMIT': 'LIMIT',
+        # PB family entry tokens
+        'RETEST_ORB': 'RETEST',
+        'MID_PULLBACK': 'MID'
     }
     entry_short = entry_map.get(entry_rule, entry_rule.upper())
 
     # Normalize stop mode to short form
     sl_map = {
+        # Standard stops
         'orb_low': 'ORB_LOW',
         'orb_high': 'ORB_HIGH',
         'atr_0.5': 'ATR_05',
@@ -109,12 +117,20 @@ def generate_strategy_name(
         'ORB_LOW': 'ORB_LOW',
         'ORB_HIGH': 'ORB_HIGH',
         'ATR_05': 'ATR_05',
-        'FIXED': 'FIXED'
+        'FIXED': 'FIXED',
+        # PB family stop tokens
+        'STOP_ORB_OPP': 'STOP_ORB_OPP',
+        'STOP_SWING': 'STOP_SWING'
     }
     sl_short = sl_map.get(sl_mode, sl_mode.upper())
 
     # Build name
-    name = f"{instrument}_{orb_time}_{direction.upper()}_{entry_short}_{sl_short}_v{version}"
+    if family == 'PB':
+        # PB family format: {INSTR}_{ORB}_{DIR}_PB_{ENTRY}_{STOP}_v{VER}
+        name = f"{instrument}_{orb_time}_{direction.upper()}_PB_{entry_short}_{sl_short}_v{version}"
+    else:
+        # Standard format: {INSTR}_{ORB}_{DIR}_{ENTRY}_{STOP}_v{VER}
+        name = f"{instrument}_{orb_time}_{direction.upper()}_{entry_short}_{sl_short}_v{version}"
 
     return name
 
