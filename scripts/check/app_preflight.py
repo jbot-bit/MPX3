@@ -13,7 +13,13 @@ CHECKS = [
     # Keep these fast + deterministic
     # NOTE: test_app_sync temporarily disabled - has import path issues when run from root
     # ("test_app_sync", ["python", "scripts/test/test_app_sync.py"]),
+    ("canonical_guard", ["python", "scripts/check/canonical_guard.py"]),
+    ("forbidden_paths_modified", ["python", "scripts/check/forbidden_paths_modified.py"]),
+    ("scope_guard", ["python", "scripts/check/scope_guard.py"]),
+    ("ui_fail_closed", ["python", "scripts/check/run_pytest_smoke.py"]),
+    ("forbidden_patterns", ["python", "scripts/check/forbidden_pattern_scan.py"]),
     ("execution_spec", ["python", "scripts/check/check_execution_spec.py"]),
+    ("sql_schema_verify", ["python", "scripts/check/sql_schema_verify.py"]),
     ("auto_search_tables", ["python", "scripts/check/check_auto_search_tables.py"]),
     ("validation_queue_integration", ["python", "scripts/check/check_validation_queue_integration.py"]),
     ("live_terminal_fields", ["python", "scripts/check/check_live_trading_terminal_fields.py"]),
