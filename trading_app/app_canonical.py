@@ -2027,21 +2027,21 @@ with tab_production:
     app_state.current_zone = "PRODUCTION"
     render_zone_banner("PRODUCTION")
 
+    # Next-step rail
+    render_next_step_rail("PRODUCTION")
+
     st.markdown("""
-    ### 🚀 Production
+    ### 🚀 Production Monitoring
 
-    **Purpose:** Run approved edges only
+    **Purpose:** Monitor approved strategies in real-time
 
-    **Rules:**
-    - Read-only to execution logic
-    - AI can explain but not modify
-    - Any change requires new edge_id
-    - Promotion requires full lineage
+    **This tab shows:**
+    - Current setup recommendation (time-aware)
+    - Strategy health indicators (HEALTHY/WATCH/FAILING)
+    - Expected vs actual performance
+    - All active setups with performance metrics
 
-    **Safety:**
-    - Fail-closed by default
-    - Evidence pack required
-    - Explicit operator approval needed
+    **Read-only zone** - No modifications allowed. To change strategies, go through Research → Validation pipeline.
     """)
 
     st.divider()
@@ -2210,6 +2210,27 @@ with tab_production:
                     else:
                         exp_r_color = "#6c757d"
 
+                    # Derive health indicator (HEALTHY/WATCH/FAILING)
+                    # For now, use mock data - TODO: integrate with actual trade history
+                    from redesign_components import derive_strategy_health
+                    strategy_for_health = {
+                        'avg_r': expected_r,
+                        'expected_r': expected_r
+                    }
+                    recent_trades = None  # TODO: Query actual recent trades for this setup
+                    health = derive_strategy_health(strategy_for_health, recent_trades)
+
+                    # Health indicator emoji
+                    if health == "HEALTHY":
+                        health_emoji = "🟢"
+                        health_color = "#198754"
+                    elif health == "WATCH":
+                        health_emoji = "🟡"
+                        health_color = "#ffc107"
+                    else:  # FAILING
+                        health_emoji = "🔴"
+                        health_color = "#dc3545"
+
                     with cols[col_idx]:
                         st.markdown(f"""
                         <div style="
@@ -2218,9 +2239,10 @@ with tab_production:
                             border-radius: 8px;
                             padding: 16px;
                             margin-bottom: 16px;
-                            min-height: 180px;
+                            min-height: 200px;
                         ">
                             <div style="text-align: center;">
+                                <!-- Time Status -->
                                 <div style="font-size: 24px;">{status_emoji}</div>
                                 <div style="font-size: 32px; font-weight: 700; color: #1a1a1a; margin: 8px 0;">
                                     {orb_time}
@@ -2228,14 +2250,33 @@ with tab_production:
                                 <div style="font-size: 16px; color: #666; margin-bottom: 12px;">
                                     RR {rr:.1f}
                                 </div>
+
+                                <!-- Expected R -->
                                 <div style="font-size: 48px; font-weight: 700; color: {exp_r_color}; margin: 12px 0;">
                                     +{expected_r:.3f}R
                                 </div>
+
+                                <!-- Stats -->
                                 <div style="font-size: 14px; color: #666;">
                                     {win_rate*100:.0f}% | {int(sample_size)}N
                                 </div>
+
+                                <!-- Time Status Badge -->
                                 <div style="font-size: 12px; color: {border_color}; margin-top: 8px;">
                                     {status_text}
+                                </div>
+
+                                <!-- Health Indicator -->
+                                <div style="
+                                    margin-top: 12px;
+                                    padding: 6px 12px;
+                                    background: {health_color}22;
+                                    border-radius: 6px;
+                                    font-size: 12px;
+                                    font-weight: 700;
+                                    color: {health_color};
+                                ">
+                                    {health_emoji} {health}
                                 </div>
                             </div>
                         </div>
