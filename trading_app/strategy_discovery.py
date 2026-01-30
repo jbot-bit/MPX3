@@ -53,7 +53,7 @@ class BacktestResult:
 
 
 class StrategyDiscovery:
-    """Backtest engine for discovering profitable ORB configurations"""
+    """Backtest engine for discovering profitable ORB configurations using CANONICAL execution"""
 
     def __init__(self):
         self.feature_tables = {
@@ -61,13 +61,7 @@ class StrategyDiscovery:
             "NQ": "daily_features_nq",
             "MPL": "daily_features_mpl"
         }
-
-        # Instrument point values (for P&L calculation)
-        self.point_values = {
-            "MGC": 10,  # $10/point
-            "NQ": 2,    # $2/point
-            "MPL": 5    # $5/point (micro)
-        }
+        # ✅ CANONICAL: NO hardcoded point values - use cost_model.py at runtime
 
     def _get_connection(self):
         """Get cloud-aware database connection."""
@@ -80,9 +74,10 @@ class StrategyDiscovery:
 
     def backtest_configuration(self, config: DiscoveryConfig) -> BacktestResult:
         """
-        Backtest a single ORB configuration against historical data.
+        Backtest a single ORB configuration using CANONICAL execution_engine.py.
 
-        Returns BacktestResult with win rate, avg R, and tier assignment.
+        Uses execution_engine.simulate_orb_trade() for deterministic, cost-aware backtesting.
+        Returns BacktestResult with win rate, avg R (REALIZED, post-cost), and tier assignment.
         """
         table = self.feature_tables.get(config.instrument)
         if not table:
@@ -90,23 +85,17 @@ class StrategyDiscovery:
 
         orb_prefix = f"orb_{config.orb_time}"
 
+        # Query dates only (execution_engine will simulate from bars)
         query = f"""
         SELECT
             date_local,
-            CAST({orb_prefix}_high AS DOUBLE) as orb_high,
-            CAST({orb_prefix}_low AS DOUBLE) as orb_low,
             CAST({orb_prefix}_size AS DOUBLE) as orb_size,
-            {orb_prefix}_break_dir as break_dir,
-            CAST({orb_prefix}_mae AS DOUBLE) as mae,
-            CAST({orb_prefix}_mfe AS DOUBLE) as mfe,
             atr_20 as atr
         FROM {table}
         WHERE {orb_prefix}_high IS NOT NULL
           AND {orb_prefix}_low IS NOT NULL
           AND {orb_prefix}_break_dir IS NOT NULL
           AND {orb_prefix}_break_dir != 'NONE'
-          AND {orb_prefix}_mae IS NOT NULL
-          AND {orb_prefix}_mfe IS NOT NULL
         ORDER BY date_local
         """
 
@@ -139,11 +128,11 @@ class StrategyDiscovery:
                 total_r=0.0
             )
 
+        # Apply ORB size filter
         if config.orb_size_filter is not None:
             df = df[df['orb_size'] <= (df['atr'] * config.orb_size_filter)]
 
-        total_trades = len(df)
-        if total_trades == 0:
+        if len(df) == 0:
             return BacktestResult(
                 config=config,
                 total_trades=0,
@@ -156,31 +145,57 @@ class StrategyDiscovery:
                 total_r=0.0
             )
 
-        # Evaluate each trade using MAE/MFE for the specified RR and sl_mode
-        from trading_app.strategy_evaluation import evaluate_trade_outcome, calculate_metrics
+        # ✅ CANONICAL EXECUTION: Use execution_engine.simulate_orb_trade()
+        from strategies.execution_engine import simulate_orb_trade, ExecutionMode
+        from pipeline.cost_model import get_cost_model
 
-        outcomes_and_r = []
+        # Get canonical costs for this instrument
+        cost_model = get_cost_model(config.instrument)
+
+        trades = []
         for _, row in df.iterrows():
-            outcome, r_achieved = evaluate_trade_outcome(
-                break_dir=row['break_dir'],
-                orb_high=row['orb_high'],
-                orb_low=row['orb_low'],
-                mae=row['mae'],
-                mfe=row['mfe'],
+            result = simulate_orb_trade(
+                con=con,
+                date_local=row['date_local'],
+                orb=config.orb_time,
+                mode='1m',
+                confirm_bars=1,
                 rr=config.rr,
-                sl_mode=config.sl_mode
+                sl_mode=config.sl_mode.lower(),
+                exec_mode=ExecutionMode.MARKET_ON_CLOSE,
+                slippage_ticks=cost_model['slippage_ticks'],
+                commission_per_contract=cost_model['commission_rt'] / 2
             )
-            outcomes_and_r.append((outcome, r_achieved))
 
-        # Calculate metrics from evaluated trades
-        metrics_data = calculate_metrics(outcomes_and_r)
-        wins = metrics_data['wins']
-        losses = metrics_data['losses']
-        total_trades = metrics_data['total_trades']
-        win_rate = (metrics_data['win_rate'] * 100) if total_trades > 0 else 0
-        total_r = metrics_data['total_r']
-        avg_r = metrics_data['avg_r']
+            # Skip if no trade
+            if result.outcome in ['WIN', 'LOSS']:
+                trades.append(result)
 
+        if len(trades) == 0:
+            return BacktestResult(
+                config=config,
+                total_trades=0,
+                wins=0,
+                losses=0,
+                win_rate=0.0,
+                avg_r=0.0,
+                annual_trades=0,
+                tier="N/A",
+                total_r=0.0
+            )
+
+        # Calculate metrics from canonical execution results
+        wins = sum(1 for t in trades if t.outcome == 'WIN')
+        losses = sum(1 for t in trades if t.outcome == 'LOSS')
+        total_trades = len(trades)
+
+        # Use REALIZED R (post-cost)
+        r_values = [t.r_multiple - t.cost_r for t in trades]
+        total_r = sum(r_values)
+        avg_r = total_r / total_trades
+        win_rate = (wins / total_trades * 100) if total_trades > 0 else 0
+
+        # Calculate annual trades
         date_range_days = (df['date_local'].max() - df['date_local'].min()).days
         years = date_range_days / 365.25 if date_range_days > 0 else 1
         annual_trades = int(total_trades / years)

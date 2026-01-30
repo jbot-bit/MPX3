@@ -1,0 +1,305 @@
+✅ CLAUDE MASTER PROMPT — FRONTEND UX REFACTOR (SAFE MODE / CANONICAL)
+
+You are redesigning the frontend UI and UX ONLY of a professional trading strategy application.
+
+Your job is NOT to add features.
+Your job is NOT to optimize trading logic.
+Your job is to guide the user step-by-step to either VALIDATE or REJECT strategies.
+
+This app is a guided process, not a toolkit.
+
+🎯 PRIMARY WORKFLOW (NON-NEGOTIABLE)
+
+🔴 RESEARCH LAB → Discover candidate setups
+
+🟡 VALIDATION GATE → Run validation tests + decide
+
+🟢 PRODUCTION → Manage approved strategies
+
+🚦 LIVE TRADING → Use active strategies + calculate position size
+
+A setup must move forward or be killed.
+There are no side paths.
+
+🔒 CRITICAL SAFETY CONSTRAINTS (ABSOLUTE)
+
+You MUST NOT:
+
+Change ANY trading calculations (ExpR, R-multiple, costs, slippage)
+
+Modify how daily_features, validated_setups, or validated_setups_archive are populated
+
+Write any new data directly to database paths
+
+Add UI inputs that bypass validation or promotion rules
+
+Create “What-If”, sandbox, or hypothetical tools that affect canonical tables
+
+Touch schema, execution logic, entry rules, friction specs, or cost_model.py
+
+Introduce alternate validation, partial validation, or speculative flows
+
+You CAN:
+
+Read any existing data (edge_candidates, validated_setups, metrics, cost_model)
+
+Trigger existing validator and promotion functions
+
+Queue batch validation using existing validator APIs
+
+Add UI-only logic (derived statuses, visibility rules)
+
+Simplify, restyle, and restructure layout for clarity
+
+Hide or remove confusing or unused UI elements
+
+📦 CANONICAL OBJECT DEFINITIONS (DO NOT INVENT NEW ONES)
+1️⃣ Candidate
+
+A setup undergoing discovery or validation
+
+Lives ONLY in:
+
+Research Lab
+
+Validation Gate
+
+Backed by existing candidate tables and metrics
+
+Allowed actions:
+
+Validate
+
+Approve / Reject
+
+❌ Cannot be traded
+
+❌ Cannot be “deployed”
+
+2️⃣ Strategy
+
+A setup that has passed validation
+
+Lives ONLY in:
+
+Production
+
+Live Trading
+
+Backed by validated_setups
+
+Allowed actions:
+
+Pause
+
+Archive
+
+❌ Cannot be re-validated from Production
+
+❌ Cannot be edited or tuned
+
+If you introduce new object types, states, or naming — you have failed.
+
+🧠 SINGLE MENTAL MODEL (MANDATORY)
+
+All tabs share ONE mental model:
+
+A setup moves forward or is rejected.
+There is no analysis without action.
+There are no side paths.
+
+If a UI element does not advance or terminate a setup, remove it.
+
+⏳ USAGE TIME + INTENT ANCHORS
+
+Design each screen to match real usage:
+
+Research: 5–10 minutes (scan + shortlist)
+
+Validation: 10–15 minutes (batch validation + decision)
+
+Production: weekly hygiene (monitor / pause)
+
+Live Trading: 1–2 minutes per session (decision + sizing)
+
+Do NOT add UI density that violates these time budgets.
+
+🧭 TAB-BY-TAB UX CONTRACT (DO NOT DEVIATE)
+🔴 RESEARCH LAB
+
+Question: What might be worth testing?
+Primary action: Scan for candidates
+
+Single-column, guided layout
+
+Unified selectors (instrument, ORB, filters)
+
+One action: Scan
+
+Results:
+
+Ranked by realized ExpR (post-cost)
+
+Sample size
+
+Basic validity
+
+Actions:
+
+Send to Validation
+
+Reject / Archive
+
+❌ No Advanced / What-If UI
+
+❌ No free-text parameter input
+
+Optional toggles hidden by default
+
+🟡 VALIDATION GATE
+
+Question: Is this real or bullshit?
+Primary action: Validate / Approve / Reject
+
+Batch validation UI
+
+Queue validate_candidate() calls (existing API)
+
+Show deterministic results only
+
+Status chips (UI-derived, NEVER stored):
+
+✅ PASS = ExpR ≥ 0.15R AND stress_50_pass == True
+
+⚠️ WEAK = ExpR ≥ 0.15R AND stress_25_pass == True
+
+❌ FAIL = ExpR < 0.15R OR stress failure
+
+Actions:
+
+Approve → send to Production
+
+Reject → archive
+
+❌ No tuning
+
+❌ No speculative analysis
+
+🟢 PRODUCTION
+
+Question: Is this still working?
+Primary action: Keep / Pause / Archive
+
+Read-only monitoring
+
+Health indicator only (derived)
+
+No parameter editing
+
+No validation here
+
+No strategy creation here
+
+🚦 LIVE TRADING
+
+Question: What do I do right now?
+Primary action: Trade / Don’t Trade
+
+Show Production-approved strategies only
+
+Add read-only position size calculator
+
+Must read from cost_model.py
+
+No writes
+
+Minimal UI
+
+No research context
+
+No configuration
+
+🔁 NEXT-STEP RAIL (MANDATORY)
+
+At the top of every tab, show the single valid next action:
+
+Research → Send to Validation
+
+Validation → Deploy Passed
+
+Production → View Live
+
+Live Trading → (none)
+
+User must never wonder what to do next.
+
+✍️ WRITE SAFETY (FAIL-CLOSED, MANDATORY)
+
+ALL write-capable UI actions must go through ONE wrapper function:
+
+attempt_write_action(action_name, callback):
+    run: python scripts/check/app_preflight.py
+    run: python test_app_sync.py
+    if either FAILS:
+        block action
+        show red banner
+        DO NOT proceed
+    else:
+        call existing promotion/deploy/pause function
+
+
+No button may bypass this wrapper.
+
+🚫 FORBIDDEN UX ANTI-PATTERNS
+
+DO NOT introduce:
+
+Modals, popups, or hovercards
+
+Tooltips explaining trading concepts
+
+Tabs inside tabs
+
+Multiple UI paths for the same action
+
+Floating panels or hidden stateful UI
+
+“Preview”, “Sandbox”, “Partial validation”, or “What-If” tools
+
+Duplicate listings of the same setup (collapse if detected)
+
+🛡️ ANTI-DRIFT RULES
+
+Status (PASS/WEAK/FAIL) is derived, never stored
+
+No duplicate object representations
+
+UI may read anything
+
+UI may only write through existing validated flows
+
+Backend logic must remain untouched
+
+✅ SUCCESS CRITERIA
+
+User always knows what to do next
+
+Every screen answers one question
+
+Every screen exposes one primary action
+
+No UI path can bypass validation
+
+No trading logic is changed
+
+App feels like a guided conveyor belt:
+
+Scan → Validate → Deploy → Trade
+
+🧭 FINAL DESIGN PHILOSOPHY (NON-NEGOTIABLE)
+
+This app is not a dashboard.
+It is a conveyor belt for setups.
+If a UI element does not move the user forward or kill a setup, remove it.
+
+Proceed with the refactor.

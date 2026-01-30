@@ -179,13 +179,13 @@ def promote_candidate_to_validated_setups(candidate_id: int, actor: str) -> str:
     conn = get_database_connection(read_only=False)
 
     try:
-        # 1) Fetch candidate row
+        # 1) Fetch candidate row (with robustness_json for promotion gates)
         result = conn.execute("""
             SELECT
                 candidate_id, name, instrument, hypothesis_text,
                 filter_spec_json, test_config_json, metrics_json, slippage_assumptions_json,
                 code_version, data_version, status, created_at_utc, approved_at, approved_by,
-                promoted_validated_setup_id, notes
+                promoted_validated_setup_id, notes, robustness_json
             FROM edge_candidates
             WHERE candidate_id = ?
         """, [candidate_id]).fetchone()
@@ -196,6 +196,7 @@ def promote_candidate_to_validated_setups(candidate_id: int, actor: str) -> str:
         # Unpack status and promotion check
         status = result[10]
         already_promoted_id = result[14]
+        robustness_json = result[16] if len(result) > 16 else None
 
         # 2) Verify status == APPROVED
         if status != 'APPROVED':
@@ -208,6 +209,48 @@ def promote_candidate_to_validated_setups(candidate_id: int, actor: str) -> str:
             raise ValueError(
                 f"Cannot promote candidate {candidate_id}: already promoted as setup_id={already_promoted_id}"
             )
+
+        # 3.5) ✅ CANONICAL PROMOTION GATES (audit3.txt, CLAUDE.md)
+        # FAIL-CLOSED: Validate ExpR >= 0.15R AND stress tests BEFORE promotion
+        metrics_json = result[6]
+        metrics = parse_json_field(metrics_json)
+
+        if metrics is None or 'avg_r' not in metrics:
+            raise ValueError(
+                f"Cannot promote candidate {candidate_id}: Missing metrics_json (fail-closed)"
+            )
+
+        # Check ExpR >= 0.15R threshold
+        if metrics['avg_r'] < 0.15:
+            raise ValueError(
+                f"Cannot promote candidate {candidate_id}: "
+                f"ExpR {metrics['avg_r']:.3f}R < 0.15R threshold (CLAUDE.md approval rule)"
+            )
+
+        # Check stress test results exist (FAIL-CLOSED)
+        robustness = parse_json_field(robustness_json)
+        if robustness is None:
+            raise ValueError(
+                f"Cannot promote candidate {candidate_id}: "
+                f"Missing robustness_json (fail-closed - must run research_runner first)"
+            )
+
+        if 'stress_50_pass' not in robustness:
+            raise ValueError(
+                f"Cannot promote candidate {candidate_id}: "
+                f"Missing stress_50_pass field (fail-closed - robustness tests incomplete)"
+            )
+
+        # Check +50% stress test passed
+        if not robustness['stress_50_pass']:
+            stress_50_exp_r = robustness.get('stress_50_exp_r', 'N/A')
+            raise ValueError(
+                f"Cannot promote candidate {candidate_id}: "
+                f"Failed +50% stress test (ExpR={stress_50_exp_r}R at +50% costs). "
+                f"Strategy will LOSE MONEY in adverse cost conditions."
+            )
+
+        logger.info(f"✅ Promotion gates PASSED: ExpR={metrics['avg_r']:.3f}R (>= 0.15R), Stress50 PASS")
 
         # 4) Extract and validate manifest (FAIL-CLOSED)
         manifest = extract_candidate_manifest(result)

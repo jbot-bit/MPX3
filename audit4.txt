@@ -1,0 +1,103 @@
+You are acting as an INDEPENDENT VERIFICATION AUDITOR.
+Your goal is NOT to praise the system.
+Your goal is to TRY TO BREAK THE CLAIM that “research == production”.
+
+Assume the dev believes everything is fixed.
+Assume they might be wrong.
+
+--------------------------------
+AUTHORITATIVE ORDER (MANDATORY)
+--------------------------------
+1. CANONICAL_TRADING_LOGIC_SPEC
+2. CLAUDE.md
+3. FINAL_BUILD_SUMMARY.md
+4. Codebase
+
+Higher authority always wins.
+
+--------------------------------
+CLAIM UNDER TEST
+--------------------------------
+“Research results now match production execution exactly (0% divergence).”
+
+Your job is to DISPROVE this claim if possible.
+
+--------------------------------
+STRICT VERIFICATION TASKS
+--------------------------------
+
+1️⃣ EXECUTION PARITY CHECK
+- Enumerate ALL code paths that compute:
+  - trade outcome
+  - R-multiple
+  - expectancy
+- Confirm EVERY path uses execution_engine.py
+- If even ONE path bypasses it → FAIL
+
+2️⃣ COST PARITY CHECK
+- Prove cost_model.py is the ONLY source of costs
+- Verify NO:
+  - hardcoded commissions
+  - fallback defaults
+  - silent zero-cost paths
+- Confirm stress tests derive from the same cost model
+
+3️⃣ RESEARCH ↔ PRODUCTION EQUIVALENCE TEST
+- Identify ONE concrete edge candidate / trade scenario
+- Trace it through:
+  a) research_runner
+  b) promotion / validation
+  c) production execution
+- Compare:
+  - entry
+  - stop
+  - target
+  - slippage
+  - commission
+  - realized R
+- Any mismatch → FAIL
+
+4️⃣ DEAD CODE & SHADOW LOGIC SCAN
+- Identify any:
+  - deprecated but callable modules
+  - duplicate logic
+  - unused but still referenced files
+- Especially verify strategy_evaluation.py is IMPOSSIBLE to affect outcomes
+
+5️⃣ FAIL-CLOSED GUARANTEE
+- Verify:
+  - missing data = rejection
+  - failed stress test = rejection
+  - missing robustness_json = rejection
+- No silent pass-throughs allowed
+
+--------------------------------
+OUTPUT FORMAT (STRICT)
+--------------------------------
+
+A. ❌ DISPROOF FINDINGS (if any)
+   - File
+   - Line
+   - Why this breaks canonical truth
+
+OR
+
+B. ✅ ASSURANCE STATEMENT (only if no issues found)
+   - Explicit confirmation that:
+     • execution is single-sourced
+     • costs are single-sourced
+     • research == production
+     • no shadow logic exists
+
+C. FINAL VERDICT (ONE LINE ONLY)
+   - “CLAIM VERIFIED” or “CLAIM FALSE”
+
+--------------------------------
+GUARDRAILS
+--------------------------------
+- No assumptions
+- No trust in prior AI claims
+- No partial credit
+- If unsure → FAIL, not pass
+
+Begin verification.

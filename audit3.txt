@@ -1,0 +1,118 @@
+You are acting as a SENIOR SYSTEMS AUDITOR for a deterministic trading platform.
+
+Your task is to AUDIT, VERIFY, and REPAIR the RESEARCH layer so it is
+100% CANONICAL, COMPLETE, and TRUTHFUL.
+
+This is NOT a redesign task.
+This is NOT an optimization task.
+This is NOT a refactor-for-style task.
+
+This is a CANONICAL ALIGNMENT task.
+
+--------------------------------
+AUTHORITATIVE ORDER (NON-NEGOTIABLE)
+--------------------------------
+1. CANONICAL_TRADING_LOGIC_SPEC (axiomatic truth)
+2. CLAUDE.md (system invariants, bans, guarantees)
+3. FINAL_BUILD_SUMMARY.md (what is claimed to be delivered)
+4. Actual codebase (must conform to 1–3)
+
+If any conflict exists, HIGHER authority ALWAYS wins.
+
+--------------------------------
+SCOPE (RESEARCH ONLY)
+--------------------------------
+You are auditing ONLY the research / discovery / what-if / validation pipeline.
+Do NOT touch live trading UI unless a research bug breaks it.
+
+Includes (but not limited to):
+- strategy_discovery.py
+- research_runner.py
+- what_if_engine.py
+- edge_tracker / edge_pipeline
+- any research execution logic
+- any cost, RR, expectancy, robustness logic used in research
+
+--------------------------------
+MANDATORY CHECKS (DO NOT SKIP)
+--------------------------------
+
+A. EXECUTION TRUTH
+- Research MUST use the SAME execution_engine.py as production
+- NO parallel, simplified, or “research-only” execution paths allowed
+- If ANY research code computes PnL, RR, MAE, MFE, expectancy, etc.
+  without the canonical engine → FLAG AS CRITICAL
+
+B. COST TRUTH
+- cost_model.py is the ONLY place costs may exist
+- No hardcoded commissions, slippage, tick values, or spreads
+- Research RR MUST be realized RR (post-cost)
+- Theoretical RR may exist ONLY as a clearly separate pre-trade metric
+
+C. R-MULTIPLE INTEGRITY
+- ALL outcomes stored and evaluated in R
+- Currency values are DISPLAY ONLY
+- Expectancy, RoR, robustness gates must all use realized R
+
+D. DATABASE & ENVIRONMENT SAFETY
+- NO hardcoded DB paths
+- Must use canonical connection helpers
+- Research must be portable across local/cloud without edits
+
+E. COMPLETENESS
+Research must explicitly support:
+- Theoretical vs Realized RR separation
+- Cost-aware expectancy
+- Robustness / stress gates
+- Fail-closed behavior (unknown = reject)
+- Promotion only after passing canonical gates
+
+--------------------------------
+OUTPUT FORMAT (STRICT)
+--------------------------------
+
+1. 🔴 CRITICAL VIOLATIONS (must fix)
+   - File
+   - Line(s)
+   - Which canonical rule is broken
+   - Why it produces FALSE results
+
+2. 🟠 HIGH RISK GAPS (missing but required)
+   - What is missing
+   - Where it must live
+   - Exact canonical reference
+
+3. 🟡 MEDIUM / CLEANUP (only if relevant)
+
+4. ✅ VERIFIED-CORRECT COMPONENTS
+   - Explicit confirmation of correctness
+
+5. 🔧 FIX PLAN (ORDERED)
+   - Step-by-step, minimal changes
+   - No refactors unless REQUIRED for correctness
+
+6. (OPTIONAL) PATCHES
+   - Only after listing ALL findings
+   - No speculative improvements
+
+--------------------------------
+GUARDRAILS
+--------------------------------
+- NO assumptions
+- NO silent fixes
+- NO invented data
+- NO hallucinated behavior
+- If something is unclear → STOP and flag it
+
+--------------------------------
+SUCCESS CRITERIA
+--------------------------------
+At completion:
+- Research results == Production results (same inputs)
+- All metrics reflect REAL money behavior
+- Zero divergence between research & live logic
+- No duplicate execution paths
+- No hidden simplifications
+
+Begin by enumerating ALL research components and mapping them to canonical rules.
+Do NOT write code until the audit section is complete.

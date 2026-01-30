@@ -1,11 +1,47 @@
 """
 Strategy Evaluation Helper
 
-Evaluates trade outcomes using MAE/MFE data for any RR and stop configuration.
-This module treats the database as a factual record and applies strategy logic separately.
+⚠️ DEPRECATED - DO NOT USE ⚠️
+
+This module is DEPRECATED and should NOT be used for any new code.
+
+CRITICAL PROBLEMS:
+1. Creates parallel execution path (doesn't use canonical execution_engine.py)
+2. MAE/MFE data pre-computed for RR=1.0 only - invalid for higher RR testing
+3. Ignores execution costs (no cost_model.py integration)
+4. Causes 84% divergence between research and production results
+5. No slippage, commission, or spread modeling
+
+WHAT TO USE INSTEAD:
+- For backtesting: Use strategies.execution_engine.simulate_orb_trade()
+- For research: Use trading_app.research_runner.py (which uses execution_engine)
+- For strategy discovery: Use trading_app.strategy_discovery.py (which uses execution_engine)
+
+WHY THIS EXISTS:
+This module was created before execution_engine.py was canonical. It evaluates
+trade outcomes using pre-computed MAE/MFE data, which seemed efficient but:
+- MAE/MFE computed at RR=1.0 scan windows (doesn't match higher RR targets)
+- No cost integration (research shows profit, production loses money)
+- Not the same code path as production execution
+
+This file is kept for historical reference only. All new code must use
+execution_engine.py to ensure research results match production behavior.
+
+See audit3.txt and AUDIT3_FINAL_REPORT.md for full analysis.
 """
 
+import warnings
 from typing import Tuple, Optional
+
+# Issue deprecation warning when module is imported
+warnings.warn(
+    "strategy_evaluation module is DEPRECATED. "
+    "Use strategies.execution_engine.simulate_orb_trade() instead. "
+    "This module creates 84% divergence from production results. "
+    "See module docstring for details.",
+    DeprecationWarning,
+    stacklevel=2
+)
 
 
 def evaluate_trade_outcome(

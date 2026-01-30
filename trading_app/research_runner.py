@@ -49,12 +49,17 @@ class BacktestMetrics:
 
 @dataclass
 class RobustnessMetrics:
-    """Robustness check results."""
+    """Robustness check results with stress testing."""
     walk_forward_periods: int
     walk_forward_avg_r: float
     walk_forward_std_r: float
     regime_split_results: Dict[str, Dict[str, float]]
     is_robust: bool
+    # ✅ CANONICAL: Stress testing required (audit3.txt, CLAUDE.md)
+    stress_25_exp_r: float = 0.0
+    stress_50_exp_r: float = 0.0
+    stress_25_pass: bool = False
+    stress_50_pass: bool = False
 
 
 class ResearchRunner:
@@ -131,10 +136,10 @@ class ResearchRunner:
 
     def run_backtest(self, candidate: Dict[str, Any]) -> Optional[BacktestMetrics]:
         """
-        Run backtest for a candidate using daily_features data.
-        
-        Queries the database for ORB breakout data and simulates trades
-        based on the candidate's filter_spec configuration.
+        Run backtest for a candidate using CANONICAL execution_engine.py.
+
+        Uses execution_engine.simulate_orb_trade() for deterministic, cost-aware backtesting.
+        NO parallel execution paths - all research uses same engine as production.
         """
         logger.info(f"Running backtest for candidate {candidate['candidate_id']}: {candidate['name']}")
 
@@ -156,7 +161,7 @@ class ResearchRunner:
             "NQ": "daily_features_nq",
             "MPL": "daily_features_mpl"
         }
-        
+
         table = feature_tables.get(instrument)
         if not table:
             logger.error(f"Unknown instrument: {instrument}")
@@ -166,84 +171,104 @@ class ResearchRunner:
 
         try:
             con = self.get_connection(read_only=True)
-            
+
+            # Query dates with ORB breaks only (execution_engine will simulate from bars)
             sql = f"""
             SELECT
                 date_local,
-                CAST({orb_prefix}_high AS DOUBLE) as orb_high,
-                CAST({orb_prefix}_low AS DOUBLE) as orb_low,
                 CAST({orb_prefix}_size AS DOUBLE) as orb_size,
-                {orb_prefix}_break_dir as break_dir,
-                CAST({orb_prefix}_mae AS DOUBLE) as mae,
-                CAST({orb_prefix}_mfe AS DOUBLE) as mfe,
                 atr_20 as atr
             FROM {table}
             WHERE {orb_prefix}_high IS NOT NULL
               AND {orb_prefix}_low IS NOT NULL
               AND {orb_prefix}_break_dir IS NOT NULL
               AND {orb_prefix}_break_dir != 'NONE'
-              AND {orb_prefix}_mae IS NOT NULL
-              AND {orb_prefix}_mfe IS NOT NULL
             """
-            
+
             if test_window_start:
                 sql += f" AND date_local >= '{test_window_start}'"
             if test_window_end:
                 sql += f" AND date_local <= '{test_window_end}'"
-            
+
             sql += " ORDER BY date_local"
-            
+
             df = con.execute(sql).df()
-            con.close()
-            
+
             if df.empty:
                 logger.warning("No data found for backtest")
+                con.close()
                 return BacktestMetrics(
                     win_rate=0.0, avg_r=0.0, total_r=0.0, n_trades=0,
                     max_drawdown_r=0.0, mae_avg=0.0, mfe_avg=0.0
                 )
-            
+
+            # Apply ORB size filter if specified
             if orb_size_filter is not None:
                 df = df[df['orb_size'] <= (df['atr'] * orb_size_filter)]
-            
-            n_trades = len(df)
-            if n_trades == 0:
+
+            n_dates = len(df)
+            if n_dates == 0:
+                con.close()
                 return BacktestMetrics(
                     win_rate=0.0, avg_r=0.0, total_r=0.0, n_trades=0,
                     max_drawdown_r=0.0, mae_avg=0.0, mfe_avg=0.0
                 )
-            
-            # Evaluate each trade using MAE/MFE for the specified RR and sl_mode
-            from trading_app.strategy_evaluation import evaluate_trade_outcome, calculate_metrics
 
-            outcomes_and_r = []
+            # ✅ CANONICAL EXECUTION: Use execution_engine.simulate_orb_trade()
+            from strategies.execution_engine import simulate_orb_trade, ExecutionMode
+            from pipeline.cost_model import get_cost_model
+
+            # Get canonical costs for this instrument
+            cost_model = get_cost_model(instrument)
+
+            trades = []
+            logger.info(f"  Simulating {n_dates} dates with canonical execution engine...")
+
             for _, row in df.iterrows():
-                outcome, r_achieved = evaluate_trade_outcome(
-                    break_dir=row['break_dir'],
-                    orb_high=row['orb_high'],
-                    orb_low=row['orb_low'],
-                    mae=row['mae'],
-                    mfe=row['mfe'],
+                result = simulate_orb_trade(
+                    con=con,
+                    date_local=row['date_local'],
+                    orb=orb_time,
+                    mode='1m',
+                    confirm_bars=1,
                     rr=rr,
-                    sl_mode=sl_mode
+                    sl_mode=sl_mode.lower(),
+                    exec_mode=ExecutionMode.MARKET_ON_CLOSE,
+                    slippage_ticks=cost_model['slippage_ticks'],
+                    commission_per_contract=cost_model['commission_rt'] / 2  # Per side
                 )
-                outcomes_and_r.append((outcome, r_achieved))
 
-            # Calculate metrics from evaluated trades
-            metrics_data = calculate_metrics(outcomes_and_r)
-            wins = metrics_data['wins']
-            losses = metrics_data['losses']
-            win_rate = metrics_data['win_rate']
-            avg_r = metrics_data['avg_r']
-            total_r = metrics_data['total_r']
-            n_trades_actual = metrics_data['total_trades']  # Trades with resolution (excludes NO_TRADE)
-            r_values = [r for _, r in outcomes_and_r if _ in ['WIN', 'LOSS']]
+                # Skip if no trade
+                if result.outcome in ['SKIPPED_NO_ORB', 'SKIPPED_NO_BARS', 'SKIPPED_NO_ENTRY', 'NO_TRADE']:
+                    continue
+
+                trades.append(result)
+
+            con.close()
+
+            if len(trades) == 0:
+                return BacktestMetrics(
+                    win_rate=0.0, avg_r=0.0, total_r=0.0, n_trades=0,
+                    max_drawdown_r=0.0, mae_avg=0.0, mfe_avg=0.0
+                )
+
+            # Calculate metrics from canonical execution results
+            wins = sum(1 for t in trades if t.outcome == 'WIN')
+            losses = sum(1 for t in trades if t.outcome == 'LOSS')
+            n_trades_actual = wins + losses
 
             if n_trades_actual == 0:
                 return BacktestMetrics(
                     win_rate=0.0, avg_r=0.0, total_r=0.0, n_trades=0,
                     max_drawdown_r=0.0, mae_avg=0.0, mfe_avg=0.0
                 )
+
+            win_rate = wins / n_trades_actual
+
+            # Use REALIZED R (post-cost)
+            r_values = [t.r_multiple - t.cost_r for t in trades if t.outcome in ['WIN', 'LOSS']]
+            total_r = sum(r_values)
+            avg_r = total_r / n_trades_actual
 
             # Calculate drawdown curve
             running_r = 0.0
@@ -257,9 +282,9 @@ class ResearchRunner:
                 if dd < max_dd:
                     max_dd = dd
 
-            # Calculate MAE/MFE averages from actual data
-            mae_avg = df['mae'].mean() if not df.empty else 0.0
-            mfe_avg = df['mfe'].mean() if not df.empty else 0.0
+            # Calculate MAE/MFE averages from execution results
+            mae_avg = sum(t.mae_r for t in trades if t.mae_r is not None) / len([t for t in trades if t.mae_r is not None]) if any(t.mae_r is not None for t in trades) else 0.0
+            mfe_avg = sum(t.mfe_r for t in trades if t.mfe_r is not None) / len([t for t in trades if t.mfe_r is not None]) if any(t.mfe_r is not None for t in trades) else 0.0
 
             # Calculate profit factor
             gross_profit = sum(r for r in r_values if r > 0)
@@ -286,30 +311,34 @@ class ResearchRunner:
                 profit_factor=profit_factor
             )
 
-            logger.info(f"  Backtest complete: {metrics.n_trades} trades, {metrics.win_rate:.1%} WR, {metrics.avg_r:+.3f}R avg")
+            logger.info(f"  Backtest complete: {metrics.n_trades} trades, {metrics.win_rate:.1%} WR, {metrics.avg_r:+.3f}R avg (REALIZED, post-cost)")
             return metrics
-            
+
         except Exception as e:
             logger.error(f"Backtest error: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
             return None
 
     def run_robustness_checks(self, candidate: Dict[str, Any]) -> Optional[RobustnessMetrics]:
         """
-        Run robustness checks on a candidate using real data.
+        Run robustness checks using CANONICAL execution_engine.py.
 
         Checks:
         1. Walk-forward analysis (split into N windows, test on each)
         2. Regime split (high vol vs low vol based on ATR)
+        3. Stress testing (+25%, +50% costs)
         """
         logger.info(f"Running robustness checks for candidate {candidate['candidate_id']}")
 
         test_config = candidate.get('test_config') or {}
         walk_forward_windows = test_config.get('walk_forward_windows', 4)
         filter_spec = candidate.get('filter_spec') or {}
-        
+
         instrument = candidate['instrument']
         rr = filter_spec.get('rr', 2.0)
         orb_time = filter_spec.get('orb_time', '0900')
+        sl_mode = filter_spec.get('sl_mode', 'FULL')
         orb_size_filter = filter_spec.get('orb_size_filter')
         test_window_start = candidate.get('test_window_start')
         test_window_end = candidate.get('test_window_end')
@@ -326,35 +355,29 @@ class ResearchRunner:
 
         try:
             con = self.get_connection(read_only=True)
-            
+
+            # Query dates only (execution_engine will simulate from bars)
             sql = f"""
             SELECT
                 date_local,
-                CAST({orb_prefix}_high AS DOUBLE) as orb_high,
-                CAST({orb_prefix}_low AS DOUBLE) as orb_low,
                 CAST({orb_prefix}_size AS DOUBLE) as orb_size,
-                {orb_prefix}_break_dir as break_dir,
-                CAST({orb_prefix}_mae AS DOUBLE) as mae,
-                CAST({orb_prefix}_mfe AS DOUBLE) as mfe,
                 atr_20 as atr
             FROM {table}
             WHERE {orb_prefix}_high IS NOT NULL
               AND {orb_prefix}_low IS NOT NULL
               AND {orb_prefix}_break_dir IS NOT NULL
               AND {orb_prefix}_break_dir != 'NONE'
-              AND {orb_prefix}_mae IS NOT NULL
-              AND {orb_prefix}_mfe IS NOT NULL
             """
             if test_window_start:
                 sql += f" AND date_local >= '{test_window_start}'"
             if test_window_end:
                 sql += f" AND date_local <= '{test_window_end}'"
             sql += " ORDER BY date_local"
-            
+
             df = con.execute(sql).df()
-            con.close()
-            
+
             if df.empty or len(df) < walk_forward_windows:
+                con.close()
                 return RobustnessMetrics(
                     walk_forward_periods=walk_forward_windows,
                     walk_forward_avg_r=0.0,
@@ -362,14 +385,19 @@ class ResearchRunner:
                     regime_split_results={},
                     is_robust=False
                 )
-            
+
+            # Apply ORB size filter
             if orb_size_filter is not None:
                 df = df[df['orb_size'] <= (df['atr'] * orb_size_filter)]
-            
+
+            # ✅ CANONICAL EXECUTION: Use execution_engine
+            from strategies.execution_engine import simulate_orb_trade, ExecutionMode
+            from pipeline.cost_model import get_cost_model
+
+            cost_model = get_cost_model(instrument)
+
             window_size = len(df) // walk_forward_windows
             wf_results = []
-            
-            from trading_app.strategy_evaluation import evaluate_trade_outcome, calculate_metrics
 
             for i in range(walk_forward_windows):
                 start_idx = i * window_size
@@ -379,58 +407,119 @@ class ResearchRunner:
                 if len(window_df) == 0:
                     continue
 
-                # Evaluate trades in this window
-                outcomes_and_r = []
+                # Simulate trades in this window using canonical engine
+                trades = []
                 for _, row in window_df.iterrows():
-                    outcome, r_achieved = evaluate_trade_outcome(
-                        break_dir=row['break_dir'],
-                        orb_high=row['orb_high'],
-                        orb_low=row['orb_low'],
-                        mae=row['mae'],
-                        mfe=row['mfe'],
+                    result = simulate_orb_trade(
+                        con=con,
+                        date_local=row['date_local'],
+                        orb=orb_time,
+                        mode='1m',
+                        confirm_bars=1,
                         rr=rr,
-                        sl_mode=filter_spec.get('sl_mode', 'FULL')
+                        sl_mode=sl_mode.lower(),
+                        exec_mode=ExecutionMode.MARKET_ON_CLOSE,
+                        slippage_ticks=cost_model['slippage_ticks'],
+                        commission_per_contract=cost_model['commission_rt'] / 2
                     )
-                    outcomes_and_r.append((outcome, r_achieved))
 
-                metrics_data = calculate_metrics(outcomes_and_r)
-                avg_r = metrics_data['avg_r']
-                wf_results.append(avg_r)
-            
+                    if result.outcome in ['WIN', 'LOSS']:
+                        trades.append(result)
+
+                if len(trades) > 0:
+                    # Use REALIZED R (post-cost)
+                    r_values = [t.r_multiple - t.cost_r for t in trades]
+                    avg_r = sum(r_values) / len(r_values)
+                    wf_results.append(avg_r)
+                else:
+                    wf_results.append(0.0)
+
             import statistics
             wf_avg_r = statistics.mean(wf_results) if wf_results else 0.0
             wf_std_r = statistics.stdev(wf_results) if len(wf_results) > 1 else 0.0
-            
+
+            # Regime split analysis
             median_atr = df['atr'].median() if 'atr' in df.columns else 0
             high_vol_df = df[df['atr'] > median_atr]
             low_vol_df = df[df['atr'] <= median_atr]
-            
+
             regime_results = {}
             for regime_name, regime_df in [("high_vol", high_vol_df), ("low_vol", low_vol_df)]:
                 if len(regime_df) > 0:
-                    # Evaluate trades in this regime
-                    outcomes_and_r = []
+                    # Simulate trades in this regime
+                    trades = []
                     for _, row in regime_df.iterrows():
-                        outcome, r_achieved = evaluate_trade_outcome(
-                            break_dir=row['break_dir'],
-                            orb_high=row['orb_high'],
-                            orb_low=row['orb_low'],
-                            mae=row['mae'],
-                            mfe=row['mfe'],
+                        result = simulate_orb_trade(
+                            con=con,
+                            date_local=row['date_local'],
+                            orb=orb_time,
+                            mode='1m',
+                            confirm_bars=1,
                             rr=rr,
-                            sl_mode=filter_spec.get('sl_mode', 'FULL')
+                            sl_mode=sl_mode.lower(),
+                            exec_mode=ExecutionMode.MARKET_ON_CLOSE,
+                            slippage_ticks=cost_model['slippage_ticks'],
+                            commission_per_contract=cost_model['commission_rt'] / 2
                         )
-                        outcomes_and_r.append((outcome, r_achieved))
 
-                    metrics_data = calculate_metrics(outcomes_and_r)
-                    regime_results[regime_name] = {
-                        "avg_r": metrics_data['avg_r'],
-                        "n": metrics_data['total_trades'],
-                        "win_rate": metrics_data['win_rate']
-                    }
-            
+                        if result.outcome in ['WIN', 'LOSS']:
+                            trades.append(result)
+
+                    if len(trades) > 0:
+                        wins = sum(1 for t in trades if t.outcome == 'WIN')
+                        r_values = [t.r_multiple - t.cost_r for t in trades]
+                        regime_results[regime_name] = {
+                            "avg_r": sum(r_values) / len(r_values),
+                            "n": len(trades),
+                            "win_rate": wins / len(trades)
+                        }
+
+            con.close()
+
+            # ✅ ADD STRESS TESTING (CANONICAL requirement)
+            # Reload all trades for stress testing
+            con = self.get_connection(read_only=True)
+            all_trades = []
+            for _, row in df.iterrows():
+                result = simulate_orb_trade(
+                    con=con,
+                    date_local=row['date_local'],
+                    orb=orb_time,
+                    mode='1m',
+                    confirm_bars=1,
+                    rr=rr,
+                    sl_mode=sl_mode.lower(),
+                    exec_mode=ExecutionMode.MARKET_ON_CLOSE,
+                    slippage_ticks=cost_model['slippage_ticks'],
+                    commission_per_contract=cost_model['commission_rt'] / 2
+                )
+
+                if result.outcome in ['WIN', 'LOSS']:
+                    all_trades.append(result)
+
+            con.close()
+
+            # Calculate stress test metrics
+            if len(all_trades) > 0:
+                r_values = [t.r_multiple - t.cost_r for t in all_trades]
+
+                # Stress tests: increase costs by 25% and 50%
+                stress_25_r = [t.r_multiple - (t.cost_r * 1.25) for t in all_trades]
+                stress_50_r = [t.r_multiple - (t.cost_r * 1.50) for t in all_trades]
+
+                stress_25_exp_r = sum(stress_25_r) / len(stress_25_r)
+                stress_50_exp_r = sum(stress_50_r) / len(stress_50_r)
+
+                stress_25_pass = stress_25_exp_r >= 0.15
+                stress_50_pass = stress_50_exp_r >= 0.15
+            else:
+                stress_25_exp_r = 0.0
+                stress_50_exp_r = 0.0
+                stress_25_pass = False
+                stress_50_pass = False
+
             is_robust = (
-                wf_avg_r > 0 and 
+                wf_avg_r > 0 and
                 wf_std_r < abs(wf_avg_r) * 0.5 and
                 all(r > 0 for r in wf_results) if wf_results else False
             )
@@ -440,10 +529,15 @@ class ResearchRunner:
                 walk_forward_avg_r=wf_avg_r,
                 walk_forward_std_r=wf_std_r,
                 regime_split_results=regime_results,
-                is_robust=is_robust
+                is_robust=is_robust,
+                stress_25_exp_r=stress_25_exp_r,
+                stress_50_exp_r=stress_50_exp_r,
+                stress_25_pass=stress_25_pass,
+                stress_50_pass=stress_50_pass
             )
 
             logger.info(f"  Robustness: WF avg_r={robustness.walk_forward_avg_r:+.3f}R, std={robustness.walk_forward_std_r:.3f}R, robust={robustness.is_robust}")
+            logger.info(f"  Stress Tests: +25%={robustness.stress_25_exp_r:+.3f}R ({'PASS' if robustness.stress_25_pass else 'FAIL'}), +50%={robustness.stress_50_exp_r:+.3f}R ({'PASS' if robustness.stress_50_pass else 'FAIL'})")
             return robustness
             
         except Exception as e:
@@ -479,13 +573,17 @@ class ResearchRunner:
             "profit_factor": metrics.profit_factor
         }
 
-        # Build robustness JSON
+        # Build robustness JSON (with stress tests)
         robustness_json = {
             "walk_forward_periods": robustness.walk_forward_periods,
             "walk_forward_avg_r": robustness.walk_forward_avg_r,
             "walk_forward_std_r": robustness.walk_forward_std_r,
             "regime_split_results": robustness.regime_split_results,
-            "is_robust": robustness.is_robust
+            "is_robust": robustness.is_robust,
+            "stress_25_exp_r": robustness.stress_25_exp_r,
+            "stress_50_exp_r": robustness.stress_50_exp_r,
+            "stress_25_pass": robustness.stress_25_pass,
+            "stress_50_pass": robustness.stress_50_pass
         }
 
         try:
@@ -552,14 +650,13 @@ class ResearchRunner:
             data_version = datetime.now().strftime('%Y-%m-%d')
 
         if test_config_json is None or parse_json_field(test_config_json) is None:
-            # Default test config
+            # Default test config (NO hardcoded costs - loaded from cost_model.py at runtime)
             test_config = {
                 "random_seed": 42,
                 "walk_forward_windows": 4,
                 "train_pct": 0.7,
-                "regime_detection": "volatility_quartiles",
-                "slippage_ticks": 1,
-                "commission_per_side": 0.62
+                "regime_detection": "volatility_quartiles"
+                # ✅ CANONICAL: NO hardcoded costs - use cost_model.py at runtime
             }
             test_config_json = serialize_json_field(test_config)
 
