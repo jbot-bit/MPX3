@@ -718,140 +718,90 @@ with tab_research:
     app_state.current_zone = "RESEARCH"
     render_zone_banner("RESEARCH")
 
+    # Import redesign components
+    from redesign_components import render_next_step_rail, attempt_write_action
+
+    # Next-step rail (MANDATORY)
+    render_next_step_rail("RESEARCH")
+
+    # ========================================================================
+    # PRIMARY QUESTION: What might be worth testing?
+    # PRIMARY ACTION: Scan for Candidates
+    # ========================================================================
     st.markdown("""
-    ### 🔬 Research Lab
-
-    **Purpose:** Discover candidate edges
-
-    **Rules:**
-    - Read-only access to market data
-    - Write only to research metadata
-    - Cannot trade or modify production logic
-    - Cannot modify validated_setups
-
-    **AI Role:**
-    - Active but constrained
-    - Can propose variants
-    - Can explain patterns
-    - **Cannot approve or promote edges**
-    """)
-
-    st.divider()
-
-    # Edge Registry Quick Stats
-    st.subheader("📊 Edge Registry Stats")
-
-    # Get real stats from database
-    try:
-        stats = get_registry_stats(app_state.db_connection)
-    except Exception as e:
-        logger.error(f"Failed to get registry stats: {e}")
-        stats = {'total': 0, 'never_tested': 0, 'validated': 0, 'promoted': 0}
-
-    col1, col2, col3, col4 = st.columns(4)
-
-    with col1:
-        st.metric("Total Edges", stats.get('total', 0), help="All edges ever tested")
-    with col2:
-        st.metric("Never Tested", stats.get('never_tested', 0), help="Candidates awaiting validation")
-    with col3:
-        st.metric("Validated", stats.get('validated', 0), help="Passed all gates")
-    with col4:
-        st.metric("In Production", stats.get('promoted', 0), help="Promoted and running")
+    <div style="text-align: center; padding: 8px 0; margin-bottom: 16px;">
+        <h3 style="margin: 0; font-size: 20px; font-weight: 700; color: #1a1a1a;">
+            What might be worth testing?
+        </h3>
+        <p style="color: #666; font-size: 14px; margin-top: 4px;">
+            Scan for promising candidate setups
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
 
     st.divider()
 
     # ========================================================================
-    # RESEARCH WORKFLOW - Single Clear Path
+    # SCAN CONFIGURATION (Single Column - Guided)
     # ========================================================================
-    st.subheader("🔍 Edge Discovery")
 
-    # Tab-based workflow (cleaner than expanders)
-    research_tab1, research_tab2 = st.tabs(["Quick Search", "Advanced Testing"])
+    # Instrument Selection
+    search_instrument = st.radio(
+        "1️⃣ Select Instrument",
+        options=["MGC", "NQ", "MPL"],
+        index=0,
+        horizontal=True,
+        key="quick_search_instrument"
+    )
 
-    # ========================================================================
-    # TAB 1: QUICK SEARCH (Zero-Typing UI)
-    # ========================================================================
-    with research_tab1:
-        st.caption("Find promising setups fast - optimized for speed")
-        st.divider()
+    st.markdown("---")
 
-        # Instrument
-        search_instrument = st.radio(
-            "Instrument",
-            options=["MGC", "NQ", "MPL"],
-            index=0,
-            horizontal=True,
-            key="quick_search_instrument"
-        )
+    # ORB Times Selection
+    st.markdown("2️⃣ **Select ORB Times**")
 
-        # ORB Times
+    # Initialize selected ORBs (empty by default)
+    if 'quick_search_selected_orbs' not in st.session_state:
+        st.session_state.quick_search_selected_orbs = []
 
-        # Initialize selected ORBs (empty by default)
-        if 'quick_search_selected_orbs' not in st.session_state:
-            st.session_state.quick_search_selected_orbs = []
+    # Create 6 toggle buttons for ORB times
+    col1, col2, col3, col4, col5, col6 = st.columns(6)
 
-        # Create 6 toggle buttons for ORB times
-        col1, col2, col3, col4, col5, col6 = st.columns(6)
+    orb_buttons = [
+        (col1, '0900'),
+        (col2, '1000'),
+        (col3, '1100'),
+        (col4, '1800'),
+        (col5, '2300'),
+        (col6, '0030')
+    ]
 
-        orb_buttons = [
-            (col1, '0900'),
-            (col2, '1000'),
-            (col3, '1100'),
-            (col4, '1800'),
-            (col5, '2300'),
-            (col6, '0030')
-        ]
+    for col, orb_time in orb_buttons:
+        with col:
+            is_selected = orb_time in st.session_state.quick_search_selected_orbs
+            button_type = "primary" if is_selected else "secondary"
 
-        for col, orb_time in orb_buttons:
-            with col:
-                is_selected = orb_time in st.session_state.quick_search_selected_orbs
-                button_type = "primary" if is_selected else "secondary"
+            if st.button(
+                orb_time,
+                key=f"orb_btn_{orb_time}",
+                type=button_type,
+                use_container_width=True
+            ):
+                # Toggle: add if not selected, remove if selected
+                if is_selected:
+                    st.session_state.quick_search_selected_orbs.remove(orb_time)
+                else:
+                    st.session_state.quick_search_selected_orbs.append(orb_time)
+                st.rerun()
 
-                if st.button(
-                    orb_time,
-                    key=f"orb_btn_{orb_time}",
-                    type=button_type,
-                    use_container_width=True
-                ):
-                    # Toggle: add if not selected, remove if selected
-                    if is_selected:
-                        st.session_state.quick_search_selected_orbs.remove(orb_time)
-                    else:
-                        st.session_state.quick_search_selected_orbs.append(orb_time)
-                    st.rerun()
+    orb_times = st.session_state.quick_search_selected_orbs
 
-        orb_times = st.session_state.quick_search_selected_orbs
+    if not orb_times:
+        st.warning("⚠️ Select at least one ORB time to continue")
 
-        if not orb_times:
-            st.warning("Select at least one ORB time")
+    st.markdown("---")
 
-        # Entry Rule
-        entry_rule = st.radio(
-            "Entry Rule",
-            options=[
-                "1st close outside ORB",
-                "2nd close outside ORB",
-                "Limit at ORB edge"
-            ],
-            index=0,
-            key="quick_search_entry_rule"
-        )
-
-        if entry_rule == "1st close outside ORB":
-            entry_rule_value = "FIRST_CLOSE"
-        elif entry_rule == "2nd close outside ORB":
-            entry_rule_value = "SECOND_CLOSE"
-        else:
-            entry_rule_value = "LIMIT_ORDER"
-
-        # RR Targets (proxy mode - no RR-specific data)
-        rr_targets = [None]  # NULL = proxy mode
-        st.info("📊 **Stored Model Proxy** (from daily_features tradeable columns)")
-        st.caption("⚠️ These metrics use a single stored model per ORB time. Entry: 1st close outside ORB. For RR-specific results, use validated_setups.")
-
-        # Filters
-
+    # Optional Filters (Collapsible - Hidden by Default)
+    with st.expander("⚙️ Optional Filters", expanded=False):
         # ORB Size Filter
         orb_filter_enabled = st.toggle(
             "ORB Size Filter",
@@ -891,34 +841,43 @@ with tab_research:
             key="quick_min_sample_size"
         )
 
-        # Advanced
-        with st.expander("Advanced", expanded=False):
-            search_max_seconds_custom = st.number_input(
-                "Timeout (seconds)",
-                min_value=30,
-                max_value=300,
-                value=300,
-                step=30,
-                key="advanced_timeout"
-            )
-
-            setup_family_advanced = st.selectbox(
-                "Setup Family",
-                options=["ORB_BASELINE", "ORB_L4", "ORB_RSI", "ORB_BOTH_LOST"],
-                index=0,
-                key="advanced_setup_family"
-            )
-
-        # Run
-        run_search_button = st.button(
-            "Run Search",
-            type="primary",
-            disabled=(not rr_targets or not orb_times),
-            use_container_width=True,
-            key="quick_search_run_button"
+        search_max_seconds_custom = st.number_input(
+            "Timeout (seconds)",
+            min_value=30,
+            max_value=300,
+            value=300,
+            step=30,
+            key="advanced_timeout"
         )
 
-        if run_search_button:
+        setup_family_advanced = st.selectbox(
+            "Setup Family",
+            options=["ORB_BASELINE", "ORB_L4", "ORB_RSI", "ORB_BOTH_LOST"],
+            index=0,
+            key="advanced_setup_family"
+        )
+
+    st.markdown("---")
+
+    # ========================================================================
+    # PRIMARY ACTION: Scan for Candidates
+    # ========================================================================
+    st.markdown("### 3️⃣ Scan for Candidates")
+
+    # RR Targets (proxy mode - using daily_features)
+    rr_targets = [None]  # NULL = proxy mode
+    entry_rule_value = "FIRST_CLOSE"  # Default entry rule
+
+    run_search_button = st.button(
+        "🔍 Scan for Candidates",
+        type="primary",
+        disabled=(not orb_times),
+        use_container_width=True,
+        key="quick_search_run_button",
+        help="Scan historical data for promising setups"
+    )
+
+    if run_search_button:
             # Import engine
             try:
                 from auto_search_engine import AutoSearchEngine
@@ -1127,6 +1086,48 @@ For RR-specific win rates, use `validated_setups` or run a full backtest.
                                 st.success(f"✅ Expected R matches mean(realized_rr) ({exp_r_reported:.3f} ≈ {mean_rr:.3f})")
                             else:
                                 st.warning(f"⚠️ Expected R mismatch: reported {exp_r_reported:.3f}, actual {mean_rr:.3f}")
+
+                    # ================================================================
+                    # NEXT STEP: Send to Validation
+                    # ================================================================
+                    st.markdown("---")
+                    st.markdown("### 🎯 Next Step: Validation")
+
+                    st.info("""
+                    **Found promising candidates!**
+
+                    These candidates show positive Expected R in initial testing.
+                    Next step: Send to Validation Gate for robustness testing (stress tests).
+                    """)
+
+                    # Select candidates to send
+                    st.caption("Select candidates to validate:")
+                    selected_indices = []
+                    for i, c in enumerate(results['candidates']):
+                        exp_r = c.expected_r_proxy if c.expected_r_proxy else c.score_proxy
+                        checkbox_label = f"{c.orb_time} RR={c.rr_target} (+{exp_r:.3f}R, N={c.sample_size})"
+                        if st.checkbox(checkbox_label, value=True, key=f"select_cand_{i}"):
+                            selected_indices.append(i)
+
+                    # Send to Validation button (with write safety wrapper)
+                    if st.button("📤 Send Selected to Validation Gate", type="primary", disabled=len(selected_indices)==0):
+                        selected_candidates = [results['candidates'][i] for i in selected_indices]
+
+                        # Define callback function
+                        def mark_for_validation():
+                            """Mark candidates as ready for validation"""
+                            # For now, just log this action (actual validation happens in Validation Gate tab)
+                            logger.info(f"Marked {len(selected_candidates)} candidates for validation")
+                            st.session_state['candidates_for_validation'] = selected_candidates
+                            st.session_state['validation_run_id'] = results['run_id']
+
+                        # Use write safety wrapper (MANDATORY)
+                        if attempt_write_action(
+                            "Send Candidates to Validation",
+                            mark_for_validation
+                        ):
+                            st.success(f"✅ Sent {len(selected_candidates)} candidates to Validation Gate")
+                            st.info("📋 **Next**: Go to **Validation Gate** tab to run stress tests")
 
                 else:
                     st.info("No candidates found")
@@ -1414,23 +1415,6 @@ For RR-specific win rates, use `validated_setups` or run a full backtest.
     except Exception as e:
         st.error(f"Failed to load candidates: {e}")
         logger.error(f"Candidate list error: {e}")
-
-    # ========================================================================
-    # TAB 2: ADVANCED TESTING (What-If Analyzer)
-    # ========================================================================
-    with research_tab2:
-        st.caption("Test filters on historical data - for deeper analysis")
-        st.divider()
-
-        st.info("🔧 **Advanced Testing Coming Soon**")
-        st.markdown("""
-        This tab will include:
-        - **What-If Analyzer**: Test filter conditions against historical data
-        - **Condition Snapshots**: Save and compare different filter combinations
-        - **Statistical Validation**: Deeper analysis of edge conditions
-
-        For now, use **Quick Search** tab for edge discovery.
-        """)
 
 # ============================================================================
 # ZONE B: VALIDATION GATE (Yellow Zone - Deterministic)
