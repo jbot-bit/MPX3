@@ -185,8 +185,9 @@ class PriorityEngine:
                             elif result_class == 'NEUTRAL':
                                 filter_counts[filter_type]['neutral'] += 1
 
-                    except Exception:
-                        pass  # Skip malformed JSON
+                    except Exception as e:
+                        # Phase 3A: Log malformed JSON (debug level - low priority)
+                        logger.debug(f"Skipping malformed filters_json: {e}")
 
             # Calculate priorities
             for filter_type, counts in filter_counts.items():

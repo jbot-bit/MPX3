@@ -18,6 +18,10 @@ import duckdb
 from typing import Dict, List, Optional
 from datetime import datetime, date, time, timedelta
 import json
+import logging
+
+# Phase 3A: Explicit logging for fail-closed visibility
+logger = logging.getLogger(__name__)
 
 
 class LiveScanner:
@@ -147,7 +151,12 @@ class LiveScanner:
                 self._condition_cache[edge_id] = None
                 return None
 
-        except Exception:
+        except Exception as e:
+            # Phase 3A: Explicit logging for fail-closed visibility
+            logger.error(f"DEGRADED: Failed to load promoted conditions for edge {edge_id}: {e}")
+            # Return None with degraded flag - caller should treat as "conditions unknown"
+            # NOT as "no conditions exist"
+            self._condition_cache[edge_id] = {'_load_error': str(e), '_degraded': True}
             return None
 
     def _evaluate_conditions(
@@ -318,15 +327,27 @@ class LiveScanner:
             # Check promoted conditions (What-If validated filters)
             passes_promoted_conditions = True
             promoted_reason = None
+            is_degraded = False
 
             promoted_conditions = self._load_promoted_conditions(edge_id)
-            if promoted_conditions:
+
+            # Phase 3A: Check for degraded state (condition load failure)
+            cached_state = self._condition_cache.get(edge_id)
+            if cached_state and isinstance(cached_state, dict) and cached_state.get('_degraded'):
+                is_degraded = True
+                promoted_reason = f"DEGRADED: {cached_state.get('_load_error', 'condition load failed')}"
+                logger.warning(f"Edge {edge_id[:16]}... in degraded state - conditions could not be loaded")
+            elif promoted_conditions:
                 passes_promoted_conditions, promoted_reason = self._evaluate_conditions(
                     promoted_conditions, market_state, orb_time
                 )
 
             # Determine overall status
-            if passes_size_filter and passes_direction_filter and passes_promoted_conditions:
+            # Phase 3A: DEGRADED status takes priority - fail-closed with visibility
+            if is_degraded:
+                status = 'DEGRADED'
+                reason = promoted_reason
+            elif passes_size_filter and passes_direction_filter and passes_promoted_conditions:
                 status = 'ACTIVE'
                 reason = f"All filters passed! ORB size: {orb_size_norm:.3f}, Break: {break_dir}"
             elif not passes_size_filter:
@@ -356,7 +377,8 @@ class LiveScanner:
                 'orb_size_norm': orb_size_norm,
                 'break_dir': break_dir,
                 'filter_threshold': orb_size_filter,
-                'passes_filter': passes_size_filter and passes_direction_filter
+                'passes_filter': passes_size_filter and passes_direction_filter,
+                'is_degraded': is_degraded  # Phase 3A: Surface degraded state
             })
 
         return results

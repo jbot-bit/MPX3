@@ -15,6 +15,10 @@ import subprocess
 from datetime import datetime
 from pathlib import Path
 from typing import Optional, Dict
+import logging
+
+# Phase 3A: Logging for fail-closed visibility (debug level for metadata)
+logger = logging.getLogger(__name__)
 
 # Repo root (relative to this file)
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -42,7 +46,9 @@ def get_git_commit() -> Optional[str]:
         else:
             return None
 
-    except Exception:
+    except Exception as e:
+        # Phase 3A: Log git failures (debug level - metadata only)
+        logger.debug(f"Could not get git commit: {e}")
         return None
 
 
@@ -67,7 +73,9 @@ def get_git_branch() -> Optional[str]:
         else:
             return None
 
-    except Exception:
+    except Exception as e:
+        # Phase 3A: Log git failures (debug level - metadata only)
+        logger.debug(f"Could not get git branch: {e}")
         return None
 
 
@@ -81,7 +89,9 @@ def get_db_path() -> str:
     try:
         relative_path = DB_PATH.relative_to(REPO_ROOT)
         return str(relative_path).replace('\\', '/')  # Unix-style paths
-    except Exception:
+    except Exception as e:
+        # Phase 3A: Log path resolution failures (debug level - metadata only)
+        logger.debug(f"Could not get relative db path: {e}")
         return str(DB_PATH)
 
 

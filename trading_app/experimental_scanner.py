@@ -167,7 +167,9 @@ class ExperimentalScanner:
                 """, [candidate, instrument]).fetchone()
                 if row:
                     return candidate
-            except Exception:
+            except Exception as e:
+                # Phase 3A: Log warning instead of silent continue
+                logger.warning(f"Error checking trading day {candidate} for {instrument}: {e}")
                 continue
         return None
 
