@@ -64,43 +64,57 @@ inject_terminal_theme()
 # ============================================================================
 
 def load_pipeline_summary() -> Dict[str, int]:
-    """Load candidate pipeline status summary"""
+    """Load candidate pipeline status summary (P2-5: single query optimization)"""
     try:
         conn = get_database_connection(read_only=True)
 
-        df = conn.execute("""
-            SELECT status, COUNT(*) as count
+        # P2-5: Combined into single query with conditional aggregation
+        result = conn.execute("""
+            SELECT
+                SUM(CASE WHEN status = 'DRAFT' THEN 1 ELSE 0 END) as draft,
+                SUM(CASE WHEN status = 'TESTED' THEN 1 ELSE 0 END) as tested,
+                SUM(CASE WHEN status = 'PENDING' THEN 1 ELSE 0 END) as pending,
+                SUM(CASE WHEN status = 'APPROVED' THEN 1 ELSE 0 END) as approved,
+                SUM(CASE WHEN status = 'REJECTED' THEN 1 ELSE 0 END) as rejected,
+                SUM(CASE WHEN promoted_validated_setup_id IS NOT NULL THEN 1 ELSE 0 END) as promoted
             FROM edge_candidates
-            GROUP BY status
-        """).df()
-
-        summary = {"DRAFT": 0, "TESTED": 0, "PENDING": 0, "APPROVED": 0, "REJECTED": 0}
-        for _, row in df.iterrows():
-            summary[row['status']] = int(row['count'])
-
-        promoted = conn.execute("""
-            SELECT COUNT(*) FROM edge_candidates WHERE promoted_validated_setup_id IS NOT NULL
-        """).fetchone()[0]
-        summary["PROMOTED"] = promoted
+        """).fetchone()
 
         conn.close()
-        return summary
+
+        return {
+            "DRAFT": result[0] or 0,
+            "TESTED": result[1] or 0,
+            "PENDING": result[2] or 0,
+            "APPROVED": result[3] or 0,
+            "REJECTED": result[4] or 0,
+            "PROMOTED": result[5] or 0
+        }
     except Exception as e:
         logger.error(f"Error loading pipeline summary: {e}")
         return {"DRAFT": 0, "TESTED": 0, "PENDING": 0, "APPROVED": 0, "REJECTED": 0, "PROMOTED": 0}
 
 
-def load_candidates(status_filter: str = "ALL", instrument_filter: str = "ALL") -> Optional[pd.DataFrame]:
-    """Load edge candidates from database"""
+def load_candidates(
+    status_filter: str = "ALL",
+    instrument_filter: str = "ALL",
+    limit: int = 50,
+    offset: int = 0
+) -> Optional[pd.DataFrame]:
+    """
+    Load edge candidates from database (list view - scalar columns only).
+
+    P2-1/P2-2: Pagination + reduced payload for performance.
+    JSON columns fetched separately on detail view.
+    """
     try:
         conn = get_database_connection(read_only=True)
 
+        # P2-2: Reduced payload - scalar columns only for list view
         sql = """
             SELECT
-                candidate_id, created_at_utc, instrument, name, hypothesis_text,
-                status, test_window_start, test_window_end,
-                approved_at, approved_by, promoted_validated_setup_id,
-                metrics_json, robustness_json, filter_spec_json, notes
+                candidate_id, created_at_utc, instrument, name,
+                status, approved_at, approved_by, promoted_validated_setup_id
             FROM edge_candidates
             WHERE status != 'REJECTED'
         """
@@ -117,7 +131,8 @@ def load_candidates(status_filter: str = "ALL", instrument_filter: str = "ALL") 
             sql += " AND instrument = ?"
             params.append(instrument_filter)
 
-        sql += " ORDER BY created_at_utc DESC LIMIT 100"
+        # P2-1: Pagination with LIMIT/OFFSET
+        sql += f" ORDER BY created_at_utc DESC LIMIT {limit} OFFSET {offset}"
 
         df = conn.execute(sql, params).df()
         conn.close()
@@ -125,6 +140,67 @@ def load_candidates(status_filter: str = "ALL", instrument_filter: str = "ALL") 
     except Exception as e:
         logger.error(f"Error loading candidates: {e}")
         return None
+
+
+def load_candidate_detail(candidate_id: int) -> Optional[Dict]:
+    """
+    Load full candidate detail including JSON fields.
+
+    P2-2: Fetch heavy JSON columns only when needed (detail view).
+    """
+    try:
+        conn = get_database_connection(read_only=True)
+
+        row = conn.execute("""
+            SELECT
+                candidate_id, created_at_utc, instrument, name, hypothesis_text,
+                status, test_window_start, test_window_end,
+                approved_at, approved_by, promoted_validated_setup_id,
+                metrics_json, robustness_json, filter_spec_json, notes
+            FROM edge_candidates
+            WHERE candidate_id = ?
+        """, [candidate_id]).fetchone()
+
+        conn.close()
+
+        if row:
+            columns = [
+                'candidate_id', 'created_at_utc', 'instrument', 'name', 'hypothesis_text',
+                'status', 'test_window_start', 'test_window_end',
+                'approved_at', 'approved_by', 'promoted_validated_setup_id',
+                'metrics_json', 'robustness_json', 'filter_spec_json', 'notes'
+            ]
+            return dict(zip(columns, row))
+        return None
+    except Exception as e:
+        logger.error(f"Error loading candidate detail: {e}")
+        return None
+
+
+def get_candidate_count(status_filter: str = "ALL", instrument_filter: str = "ALL") -> int:
+    """Get total count of candidates matching filters (for pagination)."""
+    try:
+        conn = get_database_connection(read_only=True)
+
+        sql = "SELECT COUNT(*) FROM edge_candidates WHERE status != 'REJECTED'"
+        params = []
+
+        if status_filter == "REJECTED":
+            sql = sql.replace("WHERE status != 'REJECTED'", "WHERE status = 'REJECTED'")
+        elif status_filter != "ALL":
+            sql += " AND status = ?"
+            params.append(status_filter)
+
+        if instrument_filter != "ALL":
+            sql += " AND instrument = ?"
+            params.append(instrument_filter)
+
+        count = conn.execute(sql, params).fetchone()[0]
+        conn.close()
+        return count
+    except Exception as e:
+        logger.error(f"Error getting candidate count: {e}")
+        return 0
 
 
 def parse_metrics(metrics_json: Any) -> Dict:
@@ -413,7 +489,7 @@ def render_pipeline_view():
 
     render_section_divider("FILTER & VIEW")
 
-    col1, col2 = st.columns(2)
+    col1, col2, col3 = st.columns([1, 1, 1])
 
     with col1:
         status_filter = st.selectbox(
@@ -429,89 +505,139 @@ def render_pipeline_view():
             key="pipeline_instrument_filter"
         )
 
-    # Load candidates
-    df = load_candidates(status_filter, instrument_filter)
+    with col3:
+        page_size = st.selectbox(
+            "PER PAGE",
+            [25, 50, 100],
+            index=1,
+            key="pipeline_page_size"
+        )
+
+    # P2-1: Pagination state
+    if "pipeline_page" not in st.session_state:
+        st.session_state.pipeline_page = 0
+
+    # Get total count for pagination
+    total_count = get_candidate_count(status_filter, instrument_filter)
+    total_pages = max(1, (total_count + page_size - 1) // page_size)
+
+    # Ensure page is valid
+    if st.session_state.pipeline_page >= total_pages:
+        st.session_state.pipeline_page = 0
+
+    # Load candidates with pagination (P2-1 + P2-2: reduced payload)
+    offset = st.session_state.pipeline_page * page_size
+    df = load_candidates(status_filter, instrument_filter, limit=page_size, offset=offset)
 
     if df is not None and not df.empty:
-        render_section_divider(f"CANDIDATES ({len(df)})")
+        # P2-1: Pagination controls
+        render_section_divider(f"CANDIDATES (Page {st.session_state.pipeline_page + 1}/{total_pages} • {total_count} total)")
 
-        # Display candidates
+        pg_col1, pg_col2, pg_col3, pg_col4 = st.columns([1, 1, 1, 1])
+        with pg_col1:
+            if st.button("⏮️ First", disabled=(st.session_state.pipeline_page == 0), use_container_width=True):
+                st.session_state.pipeline_page = 0
+                st.rerun()
+        with pg_col2:
+            if st.button("◀️ Prev", disabled=(st.session_state.pipeline_page == 0), use_container_width=True):
+                st.session_state.pipeline_page -= 1
+                st.rerun()
+        with pg_col3:
+            if st.button("Next ▶️", disabled=(st.session_state.pipeline_page >= total_pages - 1), use_container_width=True):
+                st.session_state.pipeline_page += 1
+                st.rerun()
+        with pg_col4:
+            if st.button("Last ⏭️", disabled=(st.session_state.pipeline_page >= total_pages - 1), use_container_width=True):
+                st.session_state.pipeline_page = total_pages - 1
+                st.rerun()
+
+        # P2-2: List view with scalar columns only
         for idx, row in df.iterrows():
-            with st.expander(f"📊 {row['name']} ({row['instrument']}) - {row['status']}", expanded=False):
-                col1, col2 = st.columns([2, 1])
+            # Show summary line (no JSON parsing yet)
+            name_display = row['name'] if row['name'] else f"Candidate {row['candidate_id']}"
+            status_icon = {"DRAFT": "📝", "TESTED": "🧪", "PENDING": "⏳", "APPROVED": "✅", "REJECTED": "❌"}.get(row['status'], "📊")
 
-                with col1:
-                    st.markdown(f"**ID:** {row['candidate_id']}")
-                    st.markdown(f"**Hypothesis:** {row['hypothesis_text']}")
-                    st.markdown(f"**Test Window:** {row['test_window_start']} to {row['test_window_end']}")
+            with st.expander(f"{status_icon} {name_display} ({row['instrument']}) - {row['status']}", expanded=False):
+                # P2-2: Load full detail ONLY when expander is opened (lazy load)
+                detail = load_candidate_detail(row['candidate_id'])
 
-                    # Metrics
-                    metrics = parse_metrics(row['metrics_json'])
-                    if metrics:
-                        st.markdown("**Performance Metrics:**")
-                        m_col1, m_col2, m_col3, m_col4 = st.columns(4)
-                        with m_col1:
-                            st.metric("Win Rate", f"{metrics.get('win_rate', 0)*100:.1f}%")
-                        with m_col2:
-                            st.metric("Avg R", f"{metrics.get('avg_r', 0):.2f}")
-                        with m_col3:
-                            st.metric("Total R", f"{metrics.get('total_r', 0):.1f}")
-                        with m_col4:
-                            st.metric("Trades", metrics.get('n_trades', 0))
+                if detail:
+                    col1, col2 = st.columns([2, 1])
 
-                with col2:
-                    st.markdown(f"**Created:** {row['created_at_utc']}")
-                    st.markdown(f"**Status:** `{row['status']}`")
+                    with col1:
+                        st.markdown(f"**ID:** {detail['candidate_id']}")
+                        st.markdown(f"**Hypothesis:** {detail.get('hypothesis_text', 'N/A')}")
+                        st.markdown(f"**Test Window:** {detail.get('test_window_start', 'N/A')} to {detail.get('test_window_end', 'N/A')}")
 
-                    if row['approved_at']:
-                        st.markdown(f"**Approved:** {row['approved_at']}")
-                        st.markdown(f"**By:** {row['approved_by']}")
+                        # P2-2: Parse JSON only in detail view (not list)
+                        metrics = parse_metrics(detail.get('metrics_json'))
+                        if metrics:
+                            st.markdown("**Performance Metrics:**")
+                            m_col1, m_col2, m_col3, m_col4 = st.columns(4)
+                            with m_col1:
+                                st.metric("Win Rate", f"{metrics.get('win_rate', 0)*100:.1f}%")
+                            with m_col2:
+                                st.metric("Avg R", f"{metrics.get('avg_r', 0):.2f}")
+                            with m_col3:
+                                st.metric("Total R", f"{metrics.get('total_r', 0):.1f}")
+                            with m_col4:
+                                st.metric("Trades", metrics.get('n_trades', 0))
 
-                    if row['promoted_validated_setup_id']:
-                        st.markdown(f"**✅ PROMOTED** (ID: {row['promoted_validated_setup_id']})")
+                    with col2:
+                        st.markdown(f"**Created:** {detail['created_at_utc']}")
+                        st.markdown(f"**Status:** `{detail['status']}`")
 
-                    # Action buttons
-                    st.markdown("---")
+                        if detail.get('approved_at'):
+                            st.markdown(f"**Approved:** {detail['approved_at']}")
+                            st.markdown(f"**By:** {detail.get('approved_by')}")
 
-                    if row['status'] == "DRAFT":
-                        if st.button("🧪 RUN BACKTEST", key=f"test_{row['candidate_id']}"):
-                            with st.spinner("Running backtest..."):
-                                try:
-                                    runner = ResearchRunner()
-                                    runner.run_candidate(candidate_id=row['candidate_id'])
-                                    st.success("✅ Backtest complete")
-                                    st.rerun()
-                                except Exception as e:
-                                    st.error(f"❌ Backtest failed: {str(e)}")
+                        if detail.get('promoted_validated_setup_id'):
+                            st.markdown(f"**✅ PROMOTED** (ID: {detail['promoted_validated_setup_id']})")
 
-                    elif row['status'] == "TESTED":
-                        if st.button("👀 REVIEW", key=f"review_{row['candidate_id']}"):
-                            set_candidate_status(row['candidate_id'], "PENDING")
-                            st.success("✅ Moved to PENDING")
-                            st.rerun()
+                        # Action buttons
+                        st.markdown("---")
 
-                    elif row['status'] == "PENDING":
-                        btn_col1, btn_col2 = st.columns(2)
-                        with btn_col1:
-                            if st.button("✅ APPROVE", key=f"approve_{row['candidate_id']}", type="primary"):
-                                approve_edge_candidate(row['candidate_id'], approved_by="user")
-                                st.success("✅ Approved!")
-                                st.rerun()
-                        with btn_col2:
-                            if st.button("❌ REJECT", key=f"reject_{row['candidate_id']}"):
-                                set_candidate_status(row['candidate_id'], "REJECTED")
-                                st.success("❌ Rejected")
+                        if detail['status'] == "DRAFT":
+                            if st.button("🧪 RUN BACKTEST", key=f"test_{detail['candidate_id']}"):
+                                with st.spinner("Running backtest..."):
+                                    try:
+                                        runner = ResearchRunner()
+                                        runner.run_candidate(candidate_id=detail['candidate_id'])
+                                        st.success("✅ Backtest complete")
+                                        st.rerun()
+                                    except Exception as e:
+                                        st.error(f"❌ Backtest failed: {str(e)}")
+
+                        elif detail['status'] == "TESTED":
+                            if st.button("👀 REVIEW", key=f"review_{detail['candidate_id']}"):
+                                set_candidate_status(detail['candidate_id'], "PENDING")
+                                st.success("✅ Moved to PENDING")
                                 st.rerun()
 
-                    elif row['status'] == "APPROVED" and not row['promoted_validated_setup_id']:
-                        if st.button("🚀 PROMOTE TO PRODUCTION", key=f"promote_{row['candidate_id']}", type="primary"):
-                            with st.spinner("Promoting to production..."):
-                                try:
-                                    setup_id = promote_candidate_to_validated_setups(row['candidate_id'])
-                                    st.success(f"✅ Promoted! Setup ID: {setup_id}")
+                        elif detail['status'] == "PENDING":
+                            btn_col1, btn_col2 = st.columns(2)
+                            with btn_col1:
+                                if st.button("✅ APPROVE", key=f"approve_{detail['candidate_id']}", type="primary"):
+                                    approve_edge_candidate(detail['candidate_id'], approved_by="user")
+                                    st.success("✅ Approved!")
                                     st.rerun()
-                                except Exception as e:
-                                    st.error(f"❌ Promotion failed: {str(e)}")
+                            with btn_col2:
+                                if st.button("❌ REJECT", key=f"reject_{detail['candidate_id']}"):
+                                    set_candidate_status(detail['candidate_id'], "REJECTED")
+                                    st.success("❌ Rejected")
+                                    st.rerun()
+
+                        elif detail['status'] == "APPROVED" and not detail.get('promoted_validated_setup_id'):
+                            if st.button("🚀 PROMOTE TO PRODUCTION", key=f"promote_{detail['candidate_id']}", type="primary"):
+                                with st.spinner("Promoting to production..."):
+                                    try:
+                                        setup_id = promote_candidate_to_validated_setups(detail['candidate_id'])
+                                        st.success(f"✅ Promoted! Setup ID: {setup_id}")
+                                        st.rerun()
+                                    except Exception as e:
+                                        st.error(f"❌ Promotion failed: {str(e)}")
+                else:
+                    st.error("Failed to load candidate details")
     else:
         st.info("⚡ No candidates found. Start a discovery scan to create new candidates.", icon="ℹ️")
 
