@@ -102,11 +102,14 @@ def load_candidates(status_filter: str = "ALL", instrument_filter: str = "ALL") 
                 approved_at, approved_by, promoted_validated_setup_id,
                 metrics_json, robustness_json, filter_spec_json, notes
             FROM edge_candidates
-            WHERE 1=1
+            WHERE status != 'REJECTED'
         """
         params = []
 
-        if status_filter != "ALL":
+        # Allow explicit viewing of rejected candidates
+        if status_filter == "REJECTED":
+            sql = sql.replace("WHERE status != 'REJECTED'", "WHERE status = 'REJECTED'")
+        elif status_filter != "ALL":
             sql += " AND status = ?"
             params.append(status_filter)
 
@@ -311,6 +314,66 @@ def render_discovery_view():
             except Exception as e:
                 logger.error(f"Discovery error: {e}")
                 st.error(f"❌ Discovery failed: {str(e)}")
+
+    # ========================================================================
+    # PB GRID GENERATOR (Single Owner - moved from app_canonical)
+    # ========================================================================
+    render_section_divider("PB FAMILY GRID GENERATOR")
+
+    st.markdown("""
+    <div style="font-family: var(--font-mono); color: var(--text-secondary); margin-bottom: 16px;">
+        Generate 144 PB (Pullback) parameter combinations for systematic testing.
+        Grid: 3 ORBs × 2 directions × 2 entry × 2 confirm × 2 stop × 3 target = 144 candidates
+    </div>
+    """, unsafe_allow_html=True)
+
+    col1, col2 = st.columns([1, 2])
+
+    with col1:
+        pb_instrument = st.selectbox("Instrument", ["MGC", "NQ", "MPL"], key="pb_grid_instrument")
+
+        if st.button("🚀 Generate 144 PB Candidates", type="primary", use_container_width=True):
+            with st.spinner("Generating 144 PB candidates..."):
+                try:
+                    from pb_grid_generator import generate_pb_batch
+
+                    conn = get_database_connection()
+                    results = generate_pb_batch(
+                        instrument=pb_instrument,
+                        actor='user',
+                        db_connection=conn
+                    )
+                    conn.close()
+
+                    st.success(f"""
+                    ✅ **PB Grid Complete!**
+
+                    - Total combinations: {results['total']}
+                    - Candidates created: {results['inserted']}
+                    - Duplicates skipped: {results['skipped']}
+                    - Elapsed time: {results['elapsed_seconds']:.1f}s
+
+                    Go to **PIPELINE** tab to review candidates.
+                    """)
+
+                except Exception as e:
+                    logger.error(f"PB grid error: {e}")
+                    st.error(f"❌ PB grid generation failed: {str(e)}")
+
+    with col2:
+        st.info("""
+        **💡 PB Grid Parameters:**
+
+        - **ORBs:** 0900, 1000, 1100 (daytime)
+        - **Directions:** LONG, SHORT
+        - **Entry:** RETEST_ORB, MID_PULLBACK
+        - **Confirmation:** CLOSE_CONFIRM, WICK_REJECT
+        - **Stop:** STOP_ORB_OPP, STOP_SWING
+        - **Target:** 1.0R, 1.5R, 2.0R
+
+        All candidates created as DRAFT status.
+        Duplicates automatically skipped via spec-hash dedupe.
+        """)
 
 
 # ============================================================================

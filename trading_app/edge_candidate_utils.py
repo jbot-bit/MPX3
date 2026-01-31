@@ -202,7 +202,7 @@ def set_candidate_status(
     logger = logging.getLogger(__name__)
 
     # Validate status
-    valid_statuses = ['DRAFT', 'PENDING', 'APPROVED', 'REJECTED']
+    valid_statuses = ['DRAFT', 'PENDING', 'APPROVED', 'REJECTED', 'PROMOTED']
     if status not in valid_statuses:
         raise ValueError(f"Invalid status '{status}'. Must be one of: {', '.join(valid_statuses)}")
 

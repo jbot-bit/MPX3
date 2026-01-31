@@ -321,7 +321,8 @@ def promote_candidate_to_validated_setups(candidate_id: int, actor: str) -> str:
             UPDATE edge_candidates
             SET promoted_validated_setup_id = ?,
                 promoted_by = ?,
-                promoted_at = CURRENT_TIMESTAMP
+                promoted_at = CURRENT_TIMESTAMP,
+                status = 'PROMOTED'
             WHERE candidate_id = ?
         """, [setup_id, actor, candidate_id])
 
@@ -357,7 +358,8 @@ def create_edge_candidate(
     code_version: str,
     data_version: str,
     actor: str,
-    db_connection = None
+    db_connection = None,
+    notes: Optional[str] = None
 ) -> int:
     """
     Create a new edge candidate in DRAFT status.
@@ -374,6 +376,7 @@ def create_edge_candidate(
         data_version: Schema version identifier
         actor: Name of person creating candidate
         db_connection: Optional existing DuckDB connection to reuse (prevents connection conflicts)
+        notes: Optional notes (if None, auto-generated from actor)
 
     Returns:
         candidate_id: ID of newly created candidate
@@ -421,6 +424,8 @@ def create_edge_candidate(
         slippage_str = serialize_json_field(slippage_assumptions)
 
         # Insert new candidate
+        notes_value = notes if notes is not None else f"Created by {actor}"
+
         conn.execute("""
             INSERT INTO edge_candidates (
                 candidate_id, name, instrument, hypothesis_text,
@@ -442,7 +447,7 @@ def create_edge_candidate(
             slippage_str,
             code_version,
             data_version,
-            f"Created by {actor}"
+            notes_value
         ])
 
         conn.commit()

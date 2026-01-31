@@ -23,6 +23,8 @@ from typing import Dict, List, Optional
 from datetime import datetime, timedelta, date
 import json
 
+from status_translator import is_promoted
+
 
 class DriftMonitor:
     """System health monitoring and drift detection"""
@@ -219,10 +221,12 @@ class DriftMonitor:
         issues = []
         warnings = []
 
-        # Get all PROMOTED edges
+        # Get all PROMOTED edges (canonical: edge_candidates)
         try:
             promoted = self.conn.execute("""
-                SELECT edge_id FROM edge_registry WHERE status = 'PROMOTED'
+                SELECT candidate_id, name
+                FROM edge_candidates
+                WHERE promoted_validated_setup_id IS NOT NULL
             """).fetchall()
 
             if not promoted:

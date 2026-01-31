@@ -233,7 +233,7 @@ def get_all_candidates(
         List of candidate dicts
     """
 
-    query = "SELECT * FROM edge_registry WHERE 1=1"
+    query = "SELECT * FROM edge_candidates WHERE 1=1"
     params = []
 
     if status_filter:
@@ -244,7 +244,7 @@ def get_all_candidates(
         query += " AND instrument = ?"
         params.append(instrument_filter)
 
-    query += " ORDER BY created_at DESC"
+    query += " ORDER BY created_at_utc DESC"
 
     result = db_connection.execute(query, params).fetchdf()
 
@@ -254,13 +254,13 @@ def get_all_candidates(
 
 def get_candidate_by_id(
     db_connection: duckdb.DuckDBPyConnection,
-    edge_id: str
+    candidate_id: int
 ) -> Optional[Dict]:
-    """Get single candidate by edge_id"""
+    """Get single candidate by candidate_id"""
 
     result = db_connection.execute(
-        "SELECT * FROM edge_registry WHERE edge_id = ?",
-        [edge_id]
+        "SELECT * FROM edge_candidates WHERE candidate_id = ?",
+        [candidate_id]
     ).fetchdf()
 
     if result.empty:

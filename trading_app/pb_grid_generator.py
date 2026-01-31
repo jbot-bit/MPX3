@@ -102,23 +102,30 @@ def generate_pb_grid(instrument: str = 'MGC') -> List[Dict[str, Any]]:
 # CANDIDATE CREATION (WITH DEDUPLICATION)
 # =============================================================================
 
-def _candidate_exists(edge_id: str) -> bool:
+def _candidate_exists(edge_id: str, db_connection) -> bool:
     """
     Check if candidate with given edge_id already exists in edge_candidates.
 
+    Uses spec-hash stored in notes field for deduplication.
+    NO SCHEMA CHANGES - uses existing notes VARCHAR field.
+
     Args:
         edge_id: Deterministic hash of parameters
+        db_connection: DuckDB connection
 
     Returns:
         True if exists, False otherwise
-
-    Note: Currently simplified to always return False for first-time generation.
-          Production implementation would use proper hash-based deduplication.
     """
-    # TODO: Implement proper hash-based deduplication
-    # Would require storing edge_id hash in edge_candidates table
-    # For now, allow all candidates (first-time generation)
-    return False
+    # Query edge_candidates for matching spec-hash in notes
+    # Format: "spec_hash:{edge_id}" in notes field
+    result = db_connection.execute("""
+        SELECT candidate_id
+        FROM edge_candidates
+        WHERE notes LIKE ?
+        LIMIT 1
+    """, [f"%spec_hash:{edge_id}%"]).fetchone()
+
+    return result is not None
 
 
 def create_pb_candidate(combo: Dict[str, Any], actor: str, db_connection=None) -> Optional[int]:
@@ -182,7 +189,7 @@ def create_pb_candidate(combo: Dict[str, Any], actor: str, db_connection=None) -
     )
 
     # Check if already exists
-    if _candidate_exists(edge_id):
+    if _candidate_exists(edge_id, db_connection):
         logger.info(f"Skipping duplicate: {name}")
         return None
 
@@ -192,6 +199,9 @@ def create_pb_candidate(combo: Dict[str, Any], actor: str, db_connection=None) -
         f"{combo['stop_token']} stop, {combo['tp_token']} target. "
         f"Grid-generated candidate for {combo['instrument']} {combo['orb_time']} ORB."
     )
+
+    # Append spec_hash to notes for deduplication (NO SCHEMA CHANGE - uses existing notes field)
+    notes_with_hash = f"spec_hash:{edge_id}\n{hypothesis_text}"
 
     # Build filter_spec (store PB tokens here)
     filter_spec = {
@@ -241,7 +251,8 @@ def create_pb_candidate(combo: Dict[str, Any], actor: str, db_connection=None) -
             code_version='UPDATE22',
             data_version='v1',
             actor=actor,
-            db_connection=db_connection
+            db_connection=db_connection,
+            notes=notes_with_hash  # Include spec_hash for dedupe
         )
 
         logger.info(f"Created candidate {candidate_id}: {name}")

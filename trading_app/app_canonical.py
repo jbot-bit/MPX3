@@ -1209,260 +1209,58 @@ For RR-specific win rates, use `validated_setups` or run a full backtest.
     st.divider()
 
     # ========================================================================
-    # PB FAMILY GRID GENERATOR (UPDATE22)
+    # RESEARCH LAB REDIRECT (Phase 1 - Single Owner)
+    # Full candidate management moved to Research Lab app
     # ========================================================================
-    st.subheader("🔬 PB Family Grid Generator")
-    st.markdown("""
-    Generate all 144 PB (Pullback) family parameter combinations for systematic testing.
+    st.subheader("🔬 Edge Candidate Management")
 
-    **Parameters:**
-    - ORBs: First 3 daytime ORBs from time_spec.ORBS
-    - Directions: LONG, SHORT
-    - Entry: RETEST_ORB, MID_PULLBACK
-    - Confirmation: CLOSE_CONFIRM, WICK_REJECT
-    - Stop: STOP_ORB_OPP, STOP_SWING
-    - Target: TP_FIXED_R_1_0, TP_FIXED_R_1_5, TP_FIXED_R_2_0
-
-    **Output:** 3 × 2 × 2 × 2 × 2 × 3 = 144 candidates (DRAFT status)
-    """)
-
-    col_pb1, col_pb2 = st.columns([1, 2])
-    with col_pb1:
-        pb_instrument = st.selectbox("Instrument", ["MGC", "NQ", "MPL"], key="pb_instrument")
-
-        if st.button("🚀 Generate PB Grid", use_container_width=True, type="primary"):
-            with st.spinner("Generating 144 PB candidates..."):
-                try:
-                    from pb_grid_generator import generate_pb_batch
-
-                    results = generate_pb_batch(
-                        instrument=pb_instrument,
-                        actor='user',
-                        db_connection=app_state.db_connection  # Pass singleton to prevent conflicts
-                    )
-
-                    st.success(f"""
-                    ✅ **PB Grid Generation Complete!**
-
-                    - Total combinations: {results['total']}
-                    - Candidates created: {results['inserted']}
-                    - Duplicates skipped: {results['skipped']}
-                    - Elapsed time: {results['elapsed_seconds']:.1f}s
-
-                    All candidates set to DRAFT status. Review them in the candidate list below.
-                    """)
-
-                except Exception as e:
-                    st.error(f"❌ PB grid generation failed: {e}")
-                    logger.error(f"PB grid error: {e}")
-
-    with col_pb2:
-        st.info("""
-        **💡 Usage Notes:**
-
-        - First run: Creates 144 new candidates
-        - Subsequent runs: Skips duplicates (0 inserted)
-        - Deduplication: Based on parameter hash
-        - Status: All created as DRAFT
-        - Next step: Review candidates, send best to Validation
-        """)
-
-    st.divider()
-
-    # Candidate Draft Form
-    st.subheader("📝 New Candidate Draft")
-
-    # Entry Rule Quick Buttons (OUTSIDE form to avoid premature submission)
-    st.markdown("#### 🎯 Entry Rule (Quick Fill)")
-    col_btn1, col_btn2, col_btn3, col_btn4 = st.columns(4)
-
-    # Initialize session state for trigger template
-    if 'trigger_template' not in st.session_state:
-        st.session_state.trigger_template = ''
-
-    with col_btn1:
-        if st.button("🟢 1st Close", use_container_width=True, key="btn_1st_close"):
-            st.session_state.trigger_template = "First 1-min close outside ORB range"
-            st.rerun()
-
-    with col_btn2:
-        if st.button("🟡 2nd Close", use_container_width=True, key="btn_2nd_close"):
-            st.session_state.trigger_template = "Second consecutive 1-min close outside ORB range"
-            st.rerun()
-
-    with col_btn3:
-        if st.button("🔵 Limit at ORB", use_container_width=True, key="btn_limit_orb"):
-            st.session_state.trigger_template = "Limit order at ORB boundary (no slippage)"
-            st.rerun()
-
-    with col_btn4:
-        if st.button("Custom", use_container_width=True, key="btn_custom"):
-            st.session_state.trigger_template = ""
-            st.rerun()
-
-    st.caption("💡 Click buttons above to auto-fill trigger definition below")
-    st.divider()
-
-    with st.form("candidate_form"):
-        col1, col2 = st.columns(2)
-
-        with col1:
-            # SCOPE LOCK: Only MGC validated (NQ/MPL blocked - wrong multipliers!)
-            candidate_instrument = st.selectbox(
-                "Instrument",
-                ["MGC"],
-                help="⚠️ NQ and MPL blocked (unvalidated contract specs - wrong multipliers = fake R)"
-            )
-            candidate_orb = st.selectbox("ORB Time", ["0900", "1000", "1100", "1800", "2300", "0030"])
-            candidate_direction = st.selectbox("Direction", ["LONG", "SHORT", "BOTH"])
-
-        with col2:
-            candidate_rr = st.number_input("Risk:Reward", min_value=1.0, max_value=5.0, value=1.5, step=0.5)
-            candidate_sl_mode = st.selectbox("SL Mode", ["FULL", "HALF"])
-
-        st.divider()
-
-        # Use template if available, otherwise empty
-        trigger_definition = st.text_area(
-            "Trigger Definition",
-            value=st.session_state.trigger_template,
-            placeholder="e.g., 'First 1-min close outside ORB range with L4_CONSOLIDATION filter'",
-            height=100,
-            key="trigger_text_area"
-        )
-
-        st.divider()
-
-        # ORB Size Filter Toggle
-        st.markdown("#### 🔍 ORB Size Filter")
-
-        filter_enabled = st.checkbox("Enable ORB Size Filter", value=False, key="draft_filter_enabled")
-
-        if filter_enabled:
-            candidate_filter = st.slider(
-                "Filter ORBs > this % of ATR",
-                min_value=5,
-                max_value=20,
-                value=10,
-                step=1,
-                key="draft_filter_threshold"
-            )
-            st.caption(f"✅ Active: Will use {candidate_filter}% ATR filter")
-        else:
-            candidate_filter = 0.0  # No filter
-            st.caption("🔓 No ORB size filter (accepts all ORB sizes)")
-
-        st.divider()
-
-        notes = st.text_area("Notes (Optional)", placeholder="Research hypothesis, inspiration, etc.")
-
-        submitted = st.form_submit_button("📥 Draft Candidate", type="primary")
-
-        if submitted:
-            # Validate required fields
-            if not trigger_definition.strip():
-                st.error("❌ Trigger definition is required!")
-            else:
-                try:
-                    # Save to edge_candidates
-                    edge_id, message = create_candidate(
-                        db_connection=app_state.db_connection,
-                        instrument=candidate_instrument,
-                        orb_time=candidate_orb,
-                        direction=candidate_direction,
-                        trigger_definition=trigger_definition.strip(),
-                        rr=candidate_rr,
-                        sl_mode=candidate_sl_mode,
-                        orb_filter=candidate_filter / 100.0 if candidate_filter > 0 else None,
-                        session=None,  # Optional, add later if needed
-                        notes=notes.strip() if notes.strip() else None
-                    )
-
-                    if "already exists" in message:
-                        st.warning(f"⚠️ {message}")
-                        st.info(f"Edge ID: `{edge_id[:16]}...`")
-                        st.caption("This exact edge configuration has already been tested. Check the candidate list below.")
-                    else:
-                        st.success(f"✅ Candidate drafted successfully!")
-                        st.info(f"Edge ID: `{edge_id[:16]}...`")
-                        st.balloons()
-                        # Refresh stats
-                        st.rerun()
-
-                except Exception as e:
-                    st.error(f"❌ Failed to save candidate: {e}")
-                    logger.error(f"Candidate save error: {e}")
-
-    st.divider()
-
-    # Candidate List
-    st.subheader("📋 Candidate List")
-
-    # Filters
-    col_filter1, col_filter2 = st.columns(2)
-    with col_filter1:
-        status_filter = st.selectbox(
-            "Filter by Status",
-            ["ALL", "NEVER_TESTED", "TESTED_FAILED", "VALIDATED", "PROMOTED", "RETIRED"],
-            index=0
-        )
-    with col_filter2:
-        instrument_filter = st.selectbox(
-            "Filter by Instrument",
-            ["ALL", "MGC", "NQ", "MPL"],
-            index=0
-        )
-
-    # Get candidates from database
+    # Quick stats from edge_candidates
     try:
-        candidates = get_all_candidates(
-            db_connection=app_state.db_connection,
-            status_filter=None if status_filter == "ALL" else status_filter,
-            instrument_filter=None if instrument_filter == "ALL" else instrument_filter
-        )
+        stats = app_state.db_connection.execute("""
+            SELECT
+                COUNT(*) as total,
+                SUM(CASE WHEN status = 'DRAFT' THEN 1 ELSE 0 END) as draft,
+                SUM(CASE WHEN status = 'PENDING' THEN 1 ELSE 0 END) as pending,
+                SUM(CASE WHEN status = 'APPROVED' THEN 1 ELSE 0 END) as approved,
+                SUM(CASE WHEN status = 'REJECTED' THEN 1 ELSE 0 END) as rejected,
+                SUM(CASE WHEN promoted_validated_setup_id IS NOT NULL THEN 1 ELSE 0 END) as promoted
+            FROM edge_candidates
+        """).fetchone()
 
-        if candidates:
-            st.caption(f"Showing {len(candidates)} candidate(s)")
-
-            # Display as cards
-            for candidate in candidates:
-                status_colors = {
-                    'NEVER_TESTED': '#6c757d',
-                    'TESTED_FAILED': '#dc3545',
-                    'VALIDATED': '#198754',
-                    'PROMOTED': '#0d6efd',
-                    'RETIRED': '#6c757d'
-                }
-                status_color = status_colors.get(candidate['status'], '#666')
-
-                with st.expander(f"{candidate['instrument']} {candidate['orb_time']} {candidate['direction']} - {candidate['status']}"):
-                    col1, col2 = st.columns([2, 1])
-
-                    with col1:
-                        st.markdown(f"**Edge ID:** `{candidate['edge_id'][:16]}...`")
-                        st.markdown(f"**Trigger:** {candidate['trigger_definition']}")
-                        st.markdown(f"**RR:** {candidate['rr']}  |  **SL Mode:** {candidate['sl_mode']}")
-                        if candidate.get('notes'):
-                            st.caption(f"Notes: {candidate['notes']}")
-
-                    with col2:
-                        st.markdown(f"<div style='background: {status_color}22; border-left: 4px solid {status_color}; padding: 12px; border-radius: 4px;'>"
-                                    f"<strong>Status:</strong> {candidate['status']}<br>"
-                                    f"<strong>Tests:</strong> {candidate.get('test_count', 0)}<br>"
-                                    f"<strong>Created:</strong> {str(candidate['created_at'])[:10] if candidate['created_at'] else 'N/A'}"
-                                    f"</div>", unsafe_allow_html=True)
-
-                        if candidate.get('failure_reason_text'):
-                            st.error(f"❌ {candidate['failure_reason_text']}")
-                        elif candidate.get('pass_reason_text'):
-                            st.success(f"✅ {candidate['pass_reason_text']}")
-
-        else:
-            st.info("No candidates found. Create your first candidate above!")
+        col1, col2, col3, col4, col5 = st.columns(5)
+        with col1:
+            st.metric("Total", stats[0] or 0)
+        with col2:
+            st.metric("Draft", stats[1] or 0)
+        with col3:
+            st.metric("Pending", stats[2] or 0)
+        with col4:
+            st.metric("Approved", stats[3] or 0)
+        with col5:
+            st.metric("Promoted", stats[5] or 0)
 
     except Exception as e:
-        st.error(f"Failed to load candidates: {e}")
-        logger.error(f"Candidate list error: {e}")
+        st.warning(f"Could not load stats: {e}")
+
+    st.divider()
+
+    st.info("""
+    **📍 Research Lab is the single owner for:**
+    - PB Family Grid Generator (144 candidates)
+    - Manual Candidate Draft
+    - Candidate List & Filtering
+
+    **Run:** `streamlit run trading_app/app_research_lab.py --server.port 8502`
+    """)
+
+    # Quick action to open Research Lab
+    st.markdown("### Quick Actions")
+
+    if st.button("🔬 Open Research Lab Instructions", use_container_width=True):
+        st.code("streamlit run trading_app/app_research_lab.py --server.port 8502", language="bash")
+        st.caption("Run this command in your terminal to open the Research Lab app.")
+
+    st.caption("💡 This zone focuses on Search integration. Full candidate management is in Research Lab.")
 
 # ============================================================================
 # ZONE B: VALIDATION GATE (Yellow Zone - Deterministic)
@@ -1857,7 +1655,7 @@ with tab_validation:
     try:
         never_tested = get_all_candidates(
             db_connection=app_state.db_connection,
-            status_filter='NEVER_TESTED'
+            status_filter='DRAFT'  # Translated: NEVER_TESTED → DRAFT
         )
 
         if never_tested:
@@ -2972,7 +2770,7 @@ with tab_production:
     try:
         validated = get_all_candidates(
             db_connection=app_state.db_connection,
-            status_filter='VALIDATED'
+            status_filter='APPROVED'  # Translated: VALIDATED → APPROVED
         )
 
         if validated:
