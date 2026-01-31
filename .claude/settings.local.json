@@ -72,7 +72,8 @@
       "Bash(Get-Service -Name sshd -ErrorAction SilentlyContinue)",
       "Bash(Select-Object Name, Status, StartType)",
       "Bash(Format-List)",
-      "Bash(powershell.exe:*)"
+      "Bash(powershell.exe:*)",
+      "Skill(code-guardian)"
     ]
   }
 }
