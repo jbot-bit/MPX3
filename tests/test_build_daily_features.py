@@ -17,7 +17,7 @@ Tests cover:
 import pytest
 from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
-from pipeline.build_daily_features import FeatureBuilderV2
+from pipeline.build_daily_features import FeatureBuilder
 
 TZ_LOCAL = ZoneInfo("Australia/Brisbane")
 TZ_UTC = ZoneInfo("UTC")
@@ -64,8 +64,8 @@ def feature_builder_with_bars(test_db):
     conn.close()
 
     # Return builder connected to test database
-    builder = FeatureBuilderV2(db_path=test_db, sl_mode="full", table_name="daily_features")
-    builder.init_schema_v2()
+    builder = FeatureBuilder(db_path=test_db, sl_mode="full", table_name="daily_features")
+    builder.init_schema()
 
     yield builder
 
@@ -612,7 +612,7 @@ class TestTypeCodeClassification:
         atr_20 = 2.0
 
         # Act
-        code = FeatureBuilderV2.classify_asia_code(asia_range, atr_20)
+        code = FeatureBuilder.classify_asia_code(asia_range, atr_20)
 
         # Assert
         # ratio = 0.5 / 2.0 = 0.25 < 0.3 → A1_TIGHT
@@ -625,7 +625,7 @@ class TestTypeCodeClassification:
         atr_20 = 2.0
 
         # Act
-        code = FeatureBuilderV2.classify_asia_code(asia_range, atr_20)
+        code = FeatureBuilder.classify_asia_code(asia_range, atr_20)
 
         # Assert
         # ratio = 2.0 / 2.0 = 1.0 > 0.8 → A2_EXPANDED
@@ -640,7 +640,7 @@ class TestTypeCodeClassification:
         asia_low = 2648.0
 
         # Act
-        code = FeatureBuilderV2.classify_london_code(london_high, london_low, asia_high, asia_low)
+        code = FeatureBuilder.classify_london_code(london_high, london_low, asia_high, asia_low)
 
         # Assert
         assert code == 'L1_SWEEP_HIGH', "Should classify as L1_SWEEP_HIGH"
@@ -654,7 +654,7 @@ class TestTypeCodeClassification:
         asia_low = 2648.0
 
         # Act
-        code = FeatureBuilderV2.classify_london_code(london_high, london_low, asia_high, asia_low)
+        code = FeatureBuilder.classify_london_code(london_high, london_low, asia_high, asia_low)
 
         # Assert
         assert code == 'L3_EXPANSION', "Should classify as L3_EXPANSION"

@@ -691,20 +691,12 @@ def render_intelligence_view():
         else:
             st.warning("⚠ Please enter a query", icon="⚠️")
 
-    # Recent insights (mock data)
+    # Recent insights (real data required)
     render_section_divider("RECENT INSIGHTS")
 
     st.markdown("""
-    <div class="info-panel">
-        <h4>Market Overview</h4>
-        <p>Liquidity conditions are optimal for trading during London/NY sessions.
-        ORB setups have 65% win rate over last 30 days.</p>
-
-        <h4>Risk Assessment</h4>
-        <p>Current volatility is within normal ranges. Position sizing recommendations are standard.</p>
-
-        <h4>Strategy Performance</h4>
-        <p>0900 ORB strategy performing well. 1000 ORB showing strong results in trending markets.</p>
+    <div class="info-panel" style="color: #6c757d;">
+        <p>No recent insights available. Ask the AI Assistant for market analysis.</p>
     </div>
     """, unsafe_allow_html=True)
 

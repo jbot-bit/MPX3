@@ -10,6 +10,7 @@ Priority Version: 1.0 (audit3)
 import duckdb
 from typing import Dict, List, Optional
 import logging
+from trading_app.time_spec import ORBS  # TSOT: Canonical ORB time source
 
 logger = logging.getLogger(__name__)
 
@@ -310,15 +311,16 @@ if __name__ == "__main__":
     print()
 
     # Test combination scoring
+    test_orb = ORBS[1]  # Use canonical second ORB for test
     test_combo = {
-        'orb_time': '1000',
+        'orb_time': test_orb,
         'rr_target': 2.0,
         'filters': {}
     }
 
     score = engine.score_combination(test_combo)
     print(f"Test combination score: {score:.3f}")
-    print(f"  ORB: 1000, RR: 2.0, Filters: none")
+    print(f"  ORB: {test_orb}, RR: 2.0, Filters: none")
 
     print()
     print("[OK] Priority engine initialized successfully")

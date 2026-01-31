@@ -23,6 +23,7 @@ from typing import Dict, List, Optional
 from datetime import datetime, date, timedelta
 from zoneinfo import ZoneInfo
 import logging
+from trading_app.time_spec import ORBS  # TSOT: Canonical ORB time source
 
 logger = logging.getLogger(__name__)
 
@@ -191,7 +192,7 @@ class ExperimentalScanner:
             - prev_asia_ratio: prev_asia_range / prev_atr
             - current_atr: Today's ATR(20)
             - atr_percentile_75: 75th percentile of ATR (last 100 days)
-            - prev_0900_outcome: Previous trading day's 0900 ORB outcome
+            - prev_first_orb_outcome: Previous trading day's first ORB outcome
             - orb_data: Today's ORB sizes (when available)
         """
         # Get previous trading day (skips weekends/holidays)
@@ -243,22 +244,19 @@ class ExperimentalScanner:
             """, [current_date, instrument]).fetchone()
 
             if today_row:
-                current_atr, orb_0900_size, orb_1000_size, orb_1100_size = today_row
+                current_atr = today_row[0]
+                orb_sizes = today_row[1:4]  # orb_0900, orb_1000, orb_1100 sizes
                 conditions['current_atr'] = current_atr
 
-                # Store ORB sizes
-                conditions['orb_data'] = {
-                    '0900': orb_0900_size,
-                    '1000': orb_1000_size,
-                    '1100': orb_1100_size
-                }
+                # Store ORB sizes using canonical ORBS (first 3 = day ORBs)
+                day_orbs = ORBS[:3]
+                conditions['orb_data'] = dict(zip(day_orbs, orb_sizes))
 
                 # Calculate ORB size ratios (for COMBINED filters)
                 if current_atr and current_atr > 0:
                     conditions['orb_ratios'] = {
-                        '0900': orb_0900_size / current_atr if orb_0900_size else None,
-                        '1000': orb_1000_size / current_atr if orb_1000_size else None,
-                        '1100': orb_1100_size / current_atr if orb_1100_size else None
+                        orb: (size / current_atr if size else None)
+                        for orb, size in zip(day_orbs, orb_sizes)
                     }
 
             # Get ATR 75th percentile (for VOLATILITY_REGIME filters)
@@ -365,11 +363,12 @@ class ExperimentalScanner:
             if prev_0900_outcome is None:
                 return (False, "No previous 0900 outcome data")
 
-            # Check for previous 0900 failure
-            if 'Previous day 0900 ORB failed' in filter_condition:
+            # Check for previous first ORB failure
+            first_orb = ORBS[0]
+            if f'Previous day {first_orb} ORB failed' in filter_condition:
                 if prev_0900_outcome == 'LOSS':
-                    return (True, "Previous 0900 ORB failed (mean reversion setup)")
-                return (False, f"Previous 0900 was {prev_0900_outcome}, not LOSS")
+                    return (True, f"Previous {first_orb} ORB failed (mean reversion setup)")
+                return (False, f"Previous {first_orb} was {prev_0900_outcome}, not LOSS")
 
             return (False, "Unknown multi-day filter")
 

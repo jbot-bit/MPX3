@@ -19,6 +19,7 @@ from typing import Dict, List, Optional
 from datetime import datetime, date, time, timedelta
 import json
 import logging
+from trading_app.time_spec import ORBS, ORB_FORMATION  # TSOT: Canonical ORB time source
 
 # Phase 3A: Explicit logging for fail-closed visibility
 logger = logging.getLogger(__name__)
@@ -46,18 +47,11 @@ class LiveScanner:
         today_date = now_local.date()
         current_time = now_local.time()
 
-        # Check which ORBs have completed
-        orb_times = {
-            '0900': time(9, 5),   # 09:00-09:05
-            '1000': time(10, 5),  # 10:00-10:05
-            '1100': time(11, 5),  # 11:00-11:05
-            '1800': time(18, 5),  # 18:00-18:05
-            '2300': time(23, 5),  # 23:00-23:05
-            '0030': time(0, 35)   # 00:30-00:35
-        }
+        # Check which ORBs have completed (use canonical ORB_FORMATION end times)
+        orb_end_times = {orb: ORB_FORMATION[orb]['end'] for orb in ORBS}
 
         available_orbs = []
-        for orb_name, orb_end_time in orb_times.items():
+        for orb_name, orb_end_time in orb_end_times.items():
             if current_time >= orb_end_time:
                 available_orbs.append(orb_name)
 
@@ -87,14 +81,16 @@ class LiveScanner:
                 atr = row[1]
                 orb_data['atr_20'] = atr
 
-                orb_columns = [
-                    ('0900', row[2], row[3], row[4], row[5], row[6], row[7], row[8]),
-                    ('1000', row[9], row[10], row[11], row[12], row[13], row[14], row[15]),
-                    ('1100', row[16], row[17], row[18], row[19], row[20], row[21], row[22]),
-                    ('1800', row[23], row[24], row[25], row[26], row[27], row[28], row[29]),
-                    ('2300', row[30], row[31], row[32], row[33], row[34], row[35], row[36]),
-                    ('0030', row[37], row[38], row[39], row[40], row[41], row[42], row[43])
-                ]
+                # Build orb_columns dynamically using canonical ORBS
+                # Row structure: [date_local, atr_20, then 7 cols per ORB]
+                orb_columns = []
+                for i, orb_name in enumerate(ORBS):
+                    base_idx = 2 + (i * 7)
+                    orb_columns.append((
+                        orb_name,
+                        row[base_idx], row[base_idx+1], row[base_idx+2], row[base_idx+3],
+                        row[base_idx+4], row[base_idx+5], row[base_idx+6]
+                    ))
 
                 for orb_name, high, low, orb_size, break_dir, entry, stop, target in orb_columns:
                     if orb_name in available_orbs and orb_size is not None:
@@ -532,14 +528,16 @@ class LiveScanner:
 
             orb_data = {'atr_20': atr}
 
-            orb_columns = [
-                ('0900', row[2], row[3], row[4], row[5], row[6], row[7], row[8]),
-                ('1000', row[9], row[10], row[11], row[12], row[13], row[14], row[15]),
-                ('1100', row[16], row[17], row[18], row[19], row[20], row[21], row[22]),
-                ('1800', row[23], row[24], row[25], row[26], row[27], row[28], row[29]),
-                ('2300', row[30], row[31], row[32], row[33], row[34], row[35], row[36]),
-                ('0030', row[37], row[38], row[39], row[40], row[41], row[42], row[43])
-            ]
+            # Build orb_columns dynamically using canonical ORBS
+            # Row structure: [date_local, atr_20, then 7 cols per ORB]
+            orb_columns = []
+            for i, orb_name in enumerate(ORBS):
+                base_idx = 2 + (i * 7)
+                orb_columns.append((
+                    orb_name,
+                    row[base_idx], row[base_idx+1], row[base_idx+2], row[base_idx+3],
+                    row[base_idx+4], row[base_idx+5], row[base_idx+6]
+                ))
 
             for orb_name, high, low, orb_size, break_dir, entry, stop, target in orb_columns:
                 if orb_size is not None:

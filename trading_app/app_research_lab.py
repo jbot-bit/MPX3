@@ -41,6 +41,7 @@ from strategy_discovery import StrategyDiscovery, DiscoveryConfig
 # Import terminal theme
 from terminal_theme import inject_terminal_theme
 from terminal_components import *
+from time_spec import ORBS  # TSOT: Canonical ORB time source
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -244,8 +245,8 @@ def render_discovery_view():
     with col2:
         orb_times = st.multiselect(
             "ORB TIMES",
-            ["0900", "1000", "1100", "1800", "2300", "0030"],
-            default=["0900", "1000", "1100"],
+            ORBS,
+            default=ORBS[:3],  # First 3 ORBs as default
             key="disc_orb_times"
         )
 
@@ -440,10 +441,10 @@ def render_discovery_view():
                     st.error(f"❌ PB grid generation failed: {str(e)}")
 
     with col2:
-        st.info("""
+        st.info(f"""
         **💡 PB Grid Parameters:**
 
-        - **ORBs:** 0900, 1000, 1100 (daytime)
+        - **ORBs:** {', '.join(ORBS[:3])} (daytime)
         - **Directions:** LONG, SHORT
         - **Entry:** RETEST_ORB, MID_PULLBACK
         - **Confirmation:** CLOSE_CONFIRM, WICK_REJECT

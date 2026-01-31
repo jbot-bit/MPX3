@@ -17,8 +17,9 @@ import os
 logger = logging.getLogger(__name__)
 
 # Phase 3B: ORB_TIME allowlist for safe SQL column interpolation
-# Source: trading_app/config.py ORB_TIMES (canonical definition)
-VALID_ORB_TIMES = frozenset({'0900', '1000', '1100', '1800', '2300', '0030'})
+# Source: trading_app/time_spec.py ORBS (canonical definition)
+from trading_app.time_spec import ORBS
+VALID_ORB_TIMES = frozenset(ORBS)
 
 # Add paths for execution_engine and cost_model imports
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -44,7 +45,7 @@ def generate_edge_id(
 
     Args:
         instrument: MGC, NQ, MPL
-        orb_time: 0900, 1000, etc.
+        orb_time: One of ORBS (e.g., first, second, etc.)
         direction: LONG, SHORT, BOTH
         trigger_definition: Human-readable trigger
         filters_applied: Dict of all filters (normalized)

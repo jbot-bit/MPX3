@@ -35,6 +35,7 @@ from trading_app.ai_chat import TradingAssistant
 from trading_app.edge_tracker import EdgeTracker
 from trading_app.memory import TradingMemory
 from trading_app.config import TZ_LOCAL, MGC_ORB_CONFIGS
+from trading_app.time_spec import ORBS  # TSOT: Canonical ORB time source
 from trading_app.error_logger import initialize_error_log, log_error
 
 # Initialize error logging (clears file on startup)
@@ -236,13 +237,13 @@ with tab2:
 
     # Help
     with st.expander("ℹ️ Available Commands"):
-        st.markdown("""
+        st.markdown(f"""
         **Performance Queries:**
-        - "How did 0900 ORB perform recently?"
-        - "1100 ORB performance last 60 days"
+        - "How did {ORBS[0]} ORB perform recently?"
+        - "{ORBS[2]} ORB performance last 60 days"
 
         **Edge Health:**
-        - "Edge health for 0900 ORB"
+        - "Edge health for {ORBS[0]} ORB"
         - "System health"
 
         **Market Analysis:**

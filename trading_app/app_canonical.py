@@ -71,6 +71,7 @@ from orb_time_logic import (
     get_status_emoji,
     get_status_color
 )
+from time_spec import ORBS  # TSOT: Canonical ORB time source
 
 # Configure logging
 logging.basicConfig(
@@ -516,7 +517,7 @@ with tab_live:
             with st.expander("📏 ORB Levels (Click to expand)", expanded=False):
                 st.caption("Opening Range Breakout levels for completed ORBs")
 
-                for orb_name in ['0900', '1000', '1100', '1800', '2300', '0030']:
+                for orb_name in ORBS:
                     if orb_name in available_orbs and orb_name in orb_data:
                         orb = orb_data[orb_name]
                         high = orb.get('high')
@@ -728,7 +729,7 @@ with tab_live:
         st.subheader("⏱️ ORB Completion Status")
 
         completed_orbs = market_state['available_orbs']
-        all_orbs = ['0900', '1000', '1100', '1800', '2300', '0030']
+        all_orbs = ORBS
 
         orb_cols = st.columns(6)
         for idx, orb_name in enumerate(all_orbs):
@@ -807,18 +808,9 @@ with tab_research:
         st.session_state.quick_search_selected_orbs = []
 
     # Create 6 toggle buttons for ORB times
-    col1, col2, col3, col4, col5, col6 = st.columns(6)
+    orb_columns = st.columns(len(ORBS))
 
-    orb_buttons = [
-        (col1, '0900'),
-        (col2, '1000'),
-        (col3, '1100'),
-        (col4, '1800'),
-        (col5, '2300'),
-        (col6, '0030')
-    ]
-
-    for col, orb_time in orb_buttons:
+    for col, orb_time in zip(orb_columns, ORBS):
         with col:
             is_selected = orb_time in st.session_state.quick_search_selected_orbs
             button_type = "primary" if is_selected else "secondary"

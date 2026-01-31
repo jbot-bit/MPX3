@@ -239,7 +239,7 @@ class DriftMonitor:
                 }
 
             # For each promoted edge, check recent performance vs baseline
-            for (edge_id,) in promoted:
+            for (edge_id, edge_name) in promoted:
                 # Get original validation metrics
                 original_run = self.conn.execute("""
                     SELECT metrics FROM experiment_run
