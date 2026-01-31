@@ -69,6 +69,7 @@ def load_pipeline_summary() -> Dict[str, int]:
         conn = get_database_connection(read_only=True)
 
         # P2-5: Combined into single query with conditional aggregation
+        # Schema uses status column for all states including PROMOTED
         result = conn.execute("""
             SELECT
                 SUM(CASE WHEN status = 'DRAFT' THEN 1 ELSE 0 END) as draft,
@@ -76,7 +77,7 @@ def load_pipeline_summary() -> Dict[str, int]:
                 SUM(CASE WHEN status = 'PENDING' THEN 1 ELSE 0 END) as pending,
                 SUM(CASE WHEN status = 'APPROVED' THEN 1 ELSE 0 END) as approved,
                 SUM(CASE WHEN status = 'REJECTED' THEN 1 ELSE 0 END) as rejected,
-                SUM(CASE WHEN promoted_validated_setup_id IS NOT NULL THEN 1 ELSE 0 END) as promoted
+                SUM(CASE WHEN status = 'PROMOTED' THEN 1 ELSE 0 END) as promoted
             FROM edge_candidates
         """).fetchone()
 
@@ -111,10 +112,10 @@ def load_candidates(
         conn = get_database_connection(read_only=True)
 
         # P2-2: Reduced payload - scalar columns only for list view
+        # Schema: candidate_id, created_at_utc, instrument, name, status, notes (scalar only)
         sql = """
             SELECT
-                candidate_id, created_at_utc, instrument, name,
-                status, approved_at, approved_by, promoted_validated_setup_id
+                candidate_id, created_at_utc, instrument, name, status
             FROM edge_candidates
             WHERE status != 'REJECTED'
         """
@@ -151,15 +152,18 @@ def load_candidate_detail(candidate_id: int) -> Optional[Dict]:
     try:
         conn = get_database_connection(read_only=True)
 
+        # Convert numpy.int32/int64 to Python int for DuckDB compatibility
+        cid = int(candidate_id)
+
+        # Fetch all columns that exist in the schema
         row = conn.execute("""
             SELECT
                 candidate_id, created_at_utc, instrument, name, hypothesis_text,
                 status, test_window_start, test_window_end,
-                approved_at, approved_by, promoted_validated_setup_id,
                 metrics_json, robustness_json, filter_spec_json, notes
             FROM edge_candidates
             WHERE candidate_id = ?
-        """, [candidate_id]).fetchone()
+        """, [cid]).fetchone()
 
         conn.close()
 
@@ -167,7 +171,6 @@ def load_candidate_detail(candidate_id: int) -> Optional[Dict]:
             columns = [
                 'candidate_id', 'created_at_utc', 'instrument', 'name', 'hypothesis_text',
                 'status', 'test_window_start', 'test_window_end',
-                'approved_at', 'approved_by', 'promoted_validated_setup_id',
                 'metrics_json', 'robustness_json', 'filter_spec_json', 'notes'
             ]
             return dict(zip(columns, row))
@@ -587,12 +590,8 @@ def render_pipeline_view():
                         st.markdown(f"**Created:** {detail['created_at_utc']}")
                         st.markdown(f"**Status:** `{detail['status']}`")
 
-                        if detail.get('approved_at'):
-                            st.markdown(f"**Approved:** {detail['approved_at']}")
-                            st.markdown(f"**By:** {detail.get('approved_by')}")
-
-                        if detail.get('promoted_validated_setup_id'):
-                            st.markdown(f"**✅ PROMOTED** (ID: {detail['promoted_validated_setup_id']})")
+                        if detail.get('notes'):
+                            st.markdown(f"**Notes:** {detail['notes'][:100]}...")
 
                         # Action buttons
                         st.markdown("---")
@@ -627,7 +626,7 @@ def render_pipeline_view():
                                     st.success("❌ Rejected")
                                     st.rerun()
 
-                        elif detail['status'] == "APPROVED" and not detail.get('promoted_validated_setup_id'):
+                        elif detail['status'] == "APPROVED":
                             if st.button("🚀 PROMOTE TO PRODUCTION", key=f"promote_{detail['candidate_id']}", type="primary"):
                                 with st.spinner("Promoting to production..."):
                                     try:
