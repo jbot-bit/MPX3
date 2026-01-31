@@ -16,9 +16,11 @@ import os
 from pathlib import Path
 from datetime import datetime, timedelta
 
-# Change to project root
+# Change to project root and add to path for imports
 project_root = Path(__file__).parent.parent.parent
 os.chdir(project_root)
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
 
 import duckdb
 
@@ -213,9 +215,8 @@ def test_live_scanner_integration():
     print("-" * 70)
 
     try:
-        # Import LiveScanner
-        sys.path.insert(0, 'trading_app')
-        from live_scanner import LiveScanner
+        # Import LiveScanner (use full module path for proper imports)
+        from trading_app.live_scanner import LiveScanner
 
         conn = duckdb.connect(DB_PATH, read_only=True)
         scanner = LiveScanner(conn)
