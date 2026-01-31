@@ -6,11 +6,19 @@ Provides deterministic edge_id hashing and CRUD operations for edge_registry tab
 
 import hashlib
 import json
+import logging
 from datetime import datetime, date
 from typing import Dict, List, Optional
 import duckdb
 import sys
 import os
+
+# Phase 3B: Logging for validation visibility
+logger = logging.getLogger(__name__)
+
+# Phase 3B: ORB_TIME allowlist for safe SQL column interpolation
+# Source: trading_app/config.py ORB_TIMES (canonical definition)
+VALID_ORB_TIMES = frozenset({'0900', '1000', '1100', '1800', '2300', '0030'})
 
 # Add paths for execution_engine and cost_model imports
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -481,6 +489,15 @@ def run_real_validation(
     direction = edge['direction']
     rr = edge['rr']
     sl_mode = edge['sl_mode'].lower() if edge['sl_mode'] else 'full'
+
+    # Phase 3B: Validate orb_time against allowlist before SQL interpolation
+    if orb_time not in VALID_ORB_TIMES:
+        logger.error(f"Invalid orb_time '{orb_time}' - not in allowlist {VALID_ORB_TIMES}")
+        return {
+            'outcome': 'INVALID_ORB_TIME',
+            'sample_size': 0,
+            'error': f"Invalid orb_time '{orb_time}'. Valid values: {sorted(VALID_ORB_TIMES)}"
+        }
 
     # Parse filters
     filters = json.loads(edge['filters_applied']) if isinstance(edge['filters_applied'], str) else edge['filters_applied']

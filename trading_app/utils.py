@@ -8,10 +8,35 @@ import pandas as pd
 from datetime import datetime
 from typing import Optional
 import logging
+import re
 
 from config import DB_PATH, JOURNAL_TABLE, TZ_LOCAL
 
 logger = logging.getLogger(__name__)
+
+# Phase 3B: JOURNAL_TABLE allowlist for safe SQL interpolation
+VALID_JOURNAL_TABLES = frozenset({'live_journal', 'strategy_journal', 'trade_journal'})
+
+
+def _validate_journal_table(table_name: str) -> str:
+    """
+    Phase 3B: Validate JOURNAL_TABLE against allowlist.
+
+    Args:
+        table_name: Table name to validate
+
+    Returns:
+        Validated table name
+
+    Raises:
+        ValueError: If table name is not in allowlist
+    """
+    if table_name not in VALID_JOURNAL_TABLES:
+        raise ValueError(
+            f"Invalid JOURNAL_TABLE '{table_name}'. "
+            f"Valid values: {sorted(VALID_JOURNAL_TABLES)}"
+        )
+    return table_name
 
 
 def calculate_position_size(
@@ -63,11 +88,14 @@ def log_to_journal(evaluation):
         evaluation: StrategyEvaluation object
     """
     try:
+        # Phase 3B: Validate table name before SQL interpolation
+        table_name = _validate_journal_table(JOURNAL_TABLE)
+
         con = duckdb.connect(DB_PATH)
 
         # Create journal table if not exists
         con.execute(f"""
-            CREATE TABLE IF NOT EXISTS {JOURNAL_TABLE} (
+            CREATE TABLE IF NOT EXISTS {table_name} (
                 ts_local TIMESTAMPTZ NOT NULL,
                 strategy_name VARCHAR,
                 state VARCHAR,
@@ -83,7 +111,7 @@ def log_to_journal(evaluation):
 
         # Insert log entry
         con.execute(f"""
-            INSERT INTO {JOURNAL_TABLE}
+            INSERT INTO {table_name}
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, [
             datetime.now(TZ_LOCAL),
@@ -115,13 +143,16 @@ def get_recent_journal_entries(limit: int = 50):
         DataFrame of journal entries
     """
     try:
+        # Phase 3B: Validate table name before SQL interpolation
+        table_name = _validate_journal_table(JOURNAL_TABLE)
+
         # Don't use read_only to avoid connection conflicts
         con = duckdb.connect(DB_PATH)
 
         # Check if table exists first
         table_exists = con.execute(f"""
             SELECT COUNT(*) FROM information_schema.tables
-            WHERE table_name = '{JOURNAL_TABLE}'
+            WHERE table_name = '{table_name}'
         """).fetchone()[0]
 
         if not table_exists:
@@ -129,7 +160,7 @@ def get_recent_journal_entries(limit: int = 50):
             return pd.DataFrame()
 
         result = con.execute(f"""
-            SELECT * FROM {JOURNAL_TABLE}
+            SELECT * FROM {table_name}
             ORDER BY ts_local DESC
             LIMIT ?
         """, [limit]).fetchdf()

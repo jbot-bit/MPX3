@@ -105,17 +105,33 @@ def _run_app_preflight_once():
         st.warning("Preflight skipped (MPX_SKIP_PREFLIGHT=1)")
         return
 
+    # Phase 3B: Add timeout to prevent indefinite hang
+    PREFLIGHT_TIMEOUT = 30  # seconds
+
     with st.spinner("Running app preflight (sync + schema + checks)..."):
         import subprocess
-        p = subprocess.run(
-            ["python", "scripts/check/app_preflight.py"],
-            capture_output=True,
-            text=True,
-            env={**os.environ, "PYTHONUTF8": "1"},
-        )
-        output = (p.stdout or "") + ("\n" + p.stderr if p.stderr else "")
+        import sys
+        try:
+            p = subprocess.run(
+                [sys.executable, "scripts/check/app_preflight.py"],
+                capture_output=True,
+                text=True,
+                env={**os.environ, "PYTHONUTF8": "1"},
+                timeout=PREFLIGHT_TIMEOUT
+            )
+            output = (p.stdout or "") + ("\n" + p.stderr if p.stderr else "")
+            timed_out = False
+        except subprocess.TimeoutExpired:
+            output = f"Preflight timed out after {PREFLIGHT_TIMEOUT}s"
+            timed_out = True
+            p = None
 
-    if p.returncode != 0:
+    # Phase 3B: Handle timeout as failure
+    if timed_out:
+        st.error(f"❌ Preflight timed out after {PREFLIGHT_TIMEOUT}s. App blocked.")
+        st.warning("**Manual fix:** Run `python scripts/check/app_preflight.py` in terminal to diagnose.")
+        st.stop()
+    elif p.returncode != 0:
         st.error("❌ Preflight failed. App blocked until fixed.")
         st.code(output[-8000:] if len(output) > 8000 else output)
         st.stop()

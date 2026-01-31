@@ -23,12 +23,21 @@ USAGE:
 
 import duckdb
 import subprocess
+import sys
+import logging
 from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Optional, Tuple
 from zoneinfo import ZoneInfo
 
 from trading_app.config import DB_PATH, TZ_LOCAL
+
+# Phase 3B: Logging for subprocess visibility
+logger = logging.getLogger(__name__)
+
+# Phase 3B: Subprocess timeouts (seconds)
+BACKFILL_TIMEOUT = 300  # 5 minutes for backfill operations
+FEATURE_BUILD_TIMEOUT = 60  # 1 minute per day for feature building
 
 
 class DataBridge:
@@ -155,19 +164,24 @@ class DataBridge:
                     print(f"[ERROR] Databento script not found: {self.databento_script}")
                     return False
 
-                cmd = ['python', str(self.databento_script), start_str, end_str]
+                # Phase 3B: Use sys.executable, shell=False, timeout
+                cmd = [sys.executable, str(self.databento_script), start_str, end_str]
                 print(f"[CMD] {' '.join(cmd)}")
                 result = subprocess.run(
                     cmd,
                     cwd=str(self.root_dir),
                     capture_output=True,
                     text=True,
-                    shell=True  # Use shell on Windows for proper Python resolution
+                    timeout=BACKFILL_TIMEOUT
                 )
 
+                # Phase 3B: Log stdout/stderr for visibility
+                if result.stdout:
+                    logger.debug(f"Databento backfill stdout: {result.stdout[-2000:]}")
                 if result.returncode != 0:
                     print(f"[ERROR] Databento backfill failed:")
                     print(result.stderr)
+                    logger.error(f"Databento backfill failed: {result.stderr}")
                     return False
 
                 print(f"[OK] Databento backfill completed")
@@ -178,19 +192,24 @@ class DataBridge:
                     print(f"[ERROR] ProjectX script not found: {self.projectx_script}")
                     return False
 
-                cmd = ['python', str(self.projectx_script), start_str, end_str]
+                # Phase 3B: Use sys.executable, shell=False, timeout
+                cmd = [sys.executable, str(self.projectx_script), start_str, end_str]
                 print(f"[CMD] {' '.join(cmd)}")
                 result = subprocess.run(
                     cmd,
                     cwd=str(self.root_dir),
                     capture_output=True,
                     text=True,
-                    shell=True  # Use shell on Windows for proper Python resolution
+                    timeout=BACKFILL_TIMEOUT
                 )
 
+                # Phase 3B: Log stdout/stderr for visibility
+                if result.stdout:
+                    logger.debug(f"ProjectX backfill stdout: {result.stdout[-2000:]}")
                 if result.returncode != 0:
                     print(f"[ERROR] ProjectX backfill failed:")
                     print(result.stderr)
+                    logger.error(f"ProjectX backfill failed: {result.stderr}")
                     return False
 
                 print(f"[OK] ProjectX backfill completed")
@@ -200,8 +219,14 @@ class DataBridge:
                 print(f"[ERROR] Unknown source: {source}")
                 return False
 
+        except subprocess.TimeoutExpired:
+            print(f"[ERROR] Backfill timed out after {BACKFILL_TIMEOUT}s")
+            logger.error(f"Backfill timed out after {BACKFILL_TIMEOUT}s for {source}")
+            return False
+
         except Exception as e:
             print(f"[ERROR] Exception during backfill: {e}")
+            logger.error(f"Exception during backfill: {e}")
             return False
 
     def build_features(self, start_date: date, end_date: date) -> bool:
@@ -226,23 +251,39 @@ class DataBridge:
 
             # build_daily_features.py may only take single date at a time
             # Run for each date in range
+            # Phase 3B: Calculate total days for progress visibility
+            total_days = (end_date - start_date).days + 1
             current = start_date
+            day_num = 0
+
             while current <= end_date:
+                day_num += 1
                 date_str = current.isoformat()
-                cmd = ['python', str(self.features_script), date_str]
-                print(f"[CMD] {' '.join(cmd)}")
 
-                result = subprocess.run(
-                    cmd,
-                    cwd=str(self.root_dir),
-                    capture_output=True,
-                    text=True,
-                    shell=True  # Use shell on Windows
-                )
+                # Phase 3B: Progress visibility
+                print(f"[INFO] Building features: day {day_num} of {total_days} ({date_str})")
 
-                if result.returncode != 0:
-                    print(f"[WARNING] Feature build failed for {date_str}:")
-                    print(result.stderr)
+                # Phase 3B: Use sys.executable, shell=False, timeout
+                cmd = [sys.executable, str(self.features_script), date_str]
+
+                try:
+                    result = subprocess.run(
+                        cmd,
+                        cwd=str(self.root_dir),
+                        capture_output=True,
+                        text=True,
+                        timeout=FEATURE_BUILD_TIMEOUT
+                    )
+
+                    if result.returncode != 0:
+                        print(f"[WARNING] Feature build failed for {date_str}:")
+                        print(result.stderr)
+                        logger.warning(f"Feature build failed for {date_str}: {result.stderr}")
+                        # Continue with next date
+
+                except subprocess.TimeoutExpired:
+                    print(f"[WARNING] Feature build timed out for {date_str} (>{FEATURE_BUILD_TIMEOUT}s)")
+                    logger.warning(f"Feature build timed out for {date_str}")
                     # Continue with next date
 
                 current += timedelta(days=1)

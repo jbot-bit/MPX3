@@ -213,6 +213,9 @@ def render_next_step_rail(current_zone: str):
     rail = rails.get(current_zone)
 
     if rail:
+        # Phase 3B: Render as informational banner (not clickable)
+        # Removed cursor:pointer since this is not interactive
+        # Use aria-label for accessibility
         st.markdown(f"""
         <div style="
             background: linear-gradient(135deg, #fff3cd 0%, #fff3cddd 100%);
@@ -221,7 +224,7 @@ def render_next_step_rail(current_zone: str):
             padding: 18px 24px;
             margin-bottom: 24px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        ">
+        " role="status" aria-label="Next step guidance">
             <div style="display: flex; justify-content: space-between; align-items: center;">
                 <div style="font-size: 16px; font-weight: 600; color: #856404;">
                     {rail['icon']} <span style="font-weight: 700;">Next Step:</span> {rail['text']}
@@ -233,9 +236,8 @@ def render_next_step_rail(current_zone: str):
                     border-radius: 8px;
                     font-weight: 700;
                     font-size: 14px;
-                    cursor: pointer;
                     box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-                ">
+                " aria-hidden="true">
                     {rail['action']} {rail['icon']}
                 </div>
             </div>
