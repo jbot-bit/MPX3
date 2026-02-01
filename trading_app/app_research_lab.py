@@ -49,6 +49,10 @@ from terminal_theme import inject_terminal_theme
 from terminal_components import *
 from time_spec import ORBS  # TSOT: Canonical ORB time source
 
+# Import cost model for slippage assumptions (H3 fix)
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from pipeline.cost_model import get_cost_model
+
 # Setup logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -1070,27 +1074,54 @@ def render_backtester_view():
     if st.button("🧪 RUN BACKTEST", type="primary", use_container_width=True):
         with st.spinner("Running backtest..."):
             try:
-                # Create candidate for this backtest
+                # Create candidate for this backtest (H3 fix: correct signature)
                 filter_spec = {
-                    "orb_time": orb_time,
-                    "orb_min_size": orb_min,
-                    "orb_max_size": orb_max,
-                    "atr_min": atr_min,
-                    "atr_max": atr_max,
-                    "half_sl": half_sl,
-                    "extended_window": extended_window,
-                    "rr_target": rr_target
+                    "sl_mode": "HALF" if half_sl else "FULL",
+                    "orb_size_filter": None  # Backtester doesn't use size filter
                 }
 
+                test_config = {
+                    "test_window_start": start_date.strftime('%Y-%m-%d'),
+                    "test_window_end": end_date.strftime('%Y-%m-%d')
+                }
+
+                # Placeholder metrics - ResearchRunner fills real values
+                metrics = {
+                    "orb_time": orb_time,
+                    "rr": rr_target,
+                    "win_rate": None,
+                    "avg_r": None,
+                    "annual_trades": None,
+                    "tier": "UNTESTED"
+                }
+
+                # Get slippage from cost_model (no hardcoding)
+                cost = get_cost_model(instrument)
+                slippage_assumptions = {
+                    "commission": cost['commission_rt'],
+                    "spread": cost['spread_double'],
+                    "slippage": cost['slippage_rt'],
+                    "total_rt_cost": cost['total_friction']
+                }
+
+                # Get db connection
+                db_conn = get_database_connection(read_only=False)
+
                 candidate_id = create_edge_candidate(
+                    name=None,  # Auto-generate
                     instrument=instrument,
-                    name=None,  # Auto-generate using naming policy
                     hypothesis_text=f"Ad-hoc backtest: {instrument} {orb_time} ORB with {rr_target}R target",
-                    feature_spec={},
                     filter_spec=filter_spec,
-                    test_window_start=start_date.strftime('%Y-%m-%d'),
-                    test_window_end=end_date.strftime('%Y-%m-%d')
+                    test_config=test_config,
+                    metrics=metrics,
+                    slippage_assumptions=slippage_assumptions,
+                    code_version="backtester_v1",
+                    data_version="v1",
+                    actor="backtester",
+                    db_connection=db_conn
                 )
+
+                db_conn.close()
 
                 # Run backtest
                 runner = ResearchRunner()
