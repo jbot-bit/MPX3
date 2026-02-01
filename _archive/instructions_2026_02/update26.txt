@@ -1,0 +1,76 @@
+GUARDIAN MODE — MPX3 — DISCOVERY TIMEBOXED SCANS (FAIL-CLOSED, SELF-DEFINING)
+
+You are working inside the MPX3 repo on Windows.
+You MUST self-detect repo state. No assumptions. Fail-closed.
+
+AUTHORITY ORDER:
+1) GUARDIAN.md
+2) update21.txt / update22.txt / update23a.txt (and newer)
+3) Existing code + tests
+
+NON-NEGOTIABLES:
+- Two-pass only: PASS 1 = AUDIT/PLAN ONLY (NO CODE CHANGES), PASS 2 = IMPLEMENT ONLY AFTER APPROVAL
+- NO trading logic changes (execution_engine, cost_model, entry/exit math, scoring math)
+- NO schema changes / migrations / CREATE/ALTER TABLE
+- NO new DB write paths
+- NO mock/simulated/example data anywhere
+- No broad refactors, no drive-by cleanup
+- Keep UI/lifecycle single-path (do not create duplicate apps/flows)
+- TSOT enforced: no new time literals; use time_spec/ORBS-derived values only
+- If repo is dirty: STOP and ask user what to do (stash/discard/keep untracked out of commit)
+
+GOAL:
+Make Discovery scans usable by:
+A) Running in timeboxed chunks (default 120 seconds per chunk)
+B) Saving partial results safely between chunks
+C) Letting user continue from last checkpoint
+D) Keeping UI simple: “Run 2-min scan” / “Continue scan” / “View latest results”
+E) No schema changes. Prefer file-based checkpointing under an existing safe folder (e.g., artifacts/ or docs/ or .cache/) that is allowed by scope.
+
+DEFINITION OF “DISCOVERY SCAN” HERE:
+Whatever logic the Research Lab Discovery uses to evaluate combinations (e.g., PB filter finder / StrategyDiscovery / discovery scan that tested ~192 combos).
+
+PASS 1 — AUDIT / EVIDENCE (NO CHANGES)
+1) Print repo state:
+   - git rev-parse --abbrev-ref HEAD
+   - git status --porcelain
+   - git diff
+   - git log -n 15 --oneline --decorate
+2) Identify the exact entry points for Discovery scan:
+   - UI button handler(s) in trading_app/app_research_lab.py (or related file)
+   - The underlying scanning function/class (e.g., StrategyDiscovery / PB finder)
+   Output file:line references.
+3) Measure current scan behavior:
+   - Where is the main loop?
+   - What are “units of work” (combo = one config backtest?)?
+   - Does it already have progress callbacks, cancellation, partial storage?
+4) Propose a minimal design that satisfies goal:
+   - Chunk size: default 120s (configurable)
+   - Checkpoint format: JSONL or CSV (append-only)
+   - Checkpoint location: must be repo-local and safe (no DB)
+   - Resume strategy: deterministic ordering; skip already-processed combos via checkpoint index/hash
+   - UI: 3 buttons max + a status panel
+5) Plan must include:
+   - exact files to change
+   - exact functions/blocks
+   - exact data saved in checkpoint
+   - how you ensure no trading logic changes
+6) STOP and ask for approval with exactly:
+   "APPROVAL REQUIRED — reply exactly: APPROVED PASS 2: discovery-timebox"
+
+PASS 2 — IMPLEMENT (ONLY AFTER APPROVAL)
+Implement the PASS 1 plan with minimal diffs:
+- Add timeboxing using time.monotonic() checks
+- Save partial results every N combos and/or on timeout
+- Resume support (load checkpoint and continue)
+- UI: “Run 2-min scan”, “Continue”, “Reset checkpoint”
+- Add a small “last run summary” panel: combos processed, elapsed, best hits count
+- Ensure check_time_literals.py remains clean (no NEW STRUCTURAL)
+- Run gates required by project and paste raw outputs if they’re runnable on this machine:
+  - python scripts/check/check_time_literals.py
+  - pytest -q
+  - python scripts/check/app_preflight.py
+  - python test_app_sync.py
+If gates can’t run due to environment, report the exact blocking error and STOP.
+
+STOP after PASS 2 completion report + diffs + gate outputs.

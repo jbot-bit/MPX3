@@ -1,0 +1,131 @@
+What matters most (translate the noise → decisions)
+🔴 The real blocker (Rank #1)
+
+live_scanner.py:_load_promoted_conditions()
+
+Current state:
+
+DB exception → returns None
+
+Caller interprets that as “no conditions”
+
+Strategy can still appear healthy
+
+This is the exact silent-failure class you said you wanted gone.
+
+The proposed change:
+
+Add logging
+
+Explicitly mark the strategy DEGRADED
+
+Fail-closed without disabling anything
+
+✅ This is correct.
+✅ This does not change trading math.
+✅ This does not auto-disable strategies.
+
+🟠 Medium risk (worth fixing now)
+
+experimental_scanner.py:_find_prev_trading_day()
+
+Silent continue → wrong date possible
+
+Logging-only fix is perfect here
+
+No behavior change, just visibility
+
+🟢 Low risk (nice-to-have, safe)
+
+Priority engine swallowing malformed JSON
+
+Provenance utilities
+These can be logged without changing outputs.
+
+About the “structured result” idea
+
+This part:
+
+@dataclass
+class ConditionLoadResult:
+    conditions: Optional[Dict]
+    error: Optional[str]
+    is_degraded: bool
+
+
+is conceptually good, but here’s the call:
+
+⚠️ Only do this if it can be introduced without changing downstream contracts
+
+✅ If not, keep it simple:
+
+log
+
+set a degraded flag
+
+surface warning in UI
+
+In other words:
+PASS 2 should prefer minimal surface-area changes over elegance.
+
+You can tell Claude Code:
+
+“Implement the smallest possible change that achieves visibility + fail-closed behavior.”
+
+UI expectations (important)
+
+You do not want noise.
+
+What’s appropriate:
+
+A non-blocking warning banner in Production Zone
+
+A status like:
+“DEGRADED — condition data failed to load”
+
+Only shown when relevant
+
+What you don’t want:
+
+Red walls of errors
+
+Alerts on every tick
+
+Anything that looks like a crash
+
+The PASS 1 report already reflects this correctly.
+
+What to do right now (copy/paste)
+
+Send this:
+
+APPROVED — PASS 2 (Phase 3A)
+
+Proceed with implementation exactly as proposed in PASS 1 report.
+Priority order:
+1) live_scanner.py silent failure → log + degraded state
+2) experimental_scanner.py warning logs
+3) Low-risk logging only where identified
+
+No new DB writes.
+No schema changes.
+No auto-disable behavior.
+Minimal surface-area changes only.
+
+Stop after completion with report.
+
+Reality check (important)
+
+This phase is doing adult-system hygiene:
+
+You are removing false confidence
+
+You are protecting live capital
+
+You are making failure visible but controlled
+
+This is the difference between:
+
+“It looked fine”
+and
+“I know exactly why it’s degraded.”

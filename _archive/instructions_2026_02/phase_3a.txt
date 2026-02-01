@@ -1,0 +1,142 @@
+YOU ARE CLAUDE CODE OPERATING INSIDE MY MPX3 TRADING APP REPO.
+
+PRINT THIS HEADER FIRST (REQUIRED)
+- Mode: CODE GUARDIAN (ENFORCED)
+- Protocol: FAIL-CLOSED (no guessing, no invented paths, no phantom tables)
+- Two-pass only:
+  - PASS 1 = AUDIT (NO CODE CHANGES)
+  - PASS 2 = IMPLEMENTATION (CODE CHANGES)
+- Phase: PHASE 3A — LIVE COCKPIT RELIABILITY & VISIBILITY
+- Scope: LIVE / PRODUCTION ONLY
+- Naming ban: NO *_v2.py / *_new.py / *_temp.py / *_final.py
+
+AUTHORITY ORDER (ABSOLUTE)
+1) CLAUDE.md
+2) CANONICAL_LOGIC.txt (or equivalent)
+3) APP_COMPLETE_SURVEY.md
+4) GUARDIAN.md
+5) UI_CONTRACT.md / REDESIGN.TXT (if present)
+
+HARD CONSTRAINTS (FAIL-CLOSED)
+- DO NOT change trading math, execution logic, cost model, slippage, ORB logic, or entry rules.
+- DO NOT change promotion logic or lifecycle semantics.
+- DO NOT add new DB tables or columns.
+- DO NOT add new DB write paths.
+- DO NOT auto-disable strategies silently.
+- DO NOT proceed if any required file/function is missing — STOP and report.
+
+ALLOWED IN PHASE 3A
+- Error visibility improvements (logging, warnings, surfaced invalid states).
+- Fail-closed behavior where data cannot be loaded.
+- UI indicators/banners for invalid or degraded live state.
+- Read-only diagnostics.
+
+EXPLICITLY OUT OF SCOPE
+- Research cockpit
+- Validation UI
+- Performance tuning
+- Pagination
+- Schema changes
+- Strategy logic refactors
+
+========================================================
+PASS 1 — AUDIT (NO CODE CHANGES)
+========================================================
+
+TASK 1 — Locate Silent Failure Points in Live Pipeline
+1.1 Search for ALL instances of:
+- `except Exception: pass`
+- bare `except:`
+- returning None / False on error without logging
+in LIVE / PRODUCTION code paths, including but not limited to:
+- live_scanner.py
+- drift_monitor.py
+- any production condition loaders
+
+1.2 For each instance, record:
+- file_path
+- function name
+- exact behavior on failure
+- what downstream logic assumes if failure occurs
+
+TASK 2 — Identify Live Preconditions That Must Hold
+2.1 Enumerate required conditions for a strategy to be considered “active”, e.g.:
+- promoted setup loads correctly
+- spec JSON parses
+- condition data available
+- required fields present
+
+2.2 Identify where the system currently:
+- silently skips
+- partially evaluates
+- proceeds with missing data
+
+TASK 3 — UI Visibility Audit
+3.1 Identify all Live / Production UI surfaces.
+3.2 Determine:
+- where failures are currently invisible to operator
+- where warnings should be shown instead of silence
+
+TASK 4 — PASS 1 Report
+Produce a report with:
+- List of silent failure points (ranked by risk)
+- Which failures should:
+  - invalidate the strategy
+  - surface as warning
+  - halt evaluation
+- Proposed SAFE changes under constraints
+
+STOP.
+Ask explicitly: “Proceed to PASS 2 (Implementation)?”
+
+========================================================
+PASS 2 — IMPLEMENTATION (ONLY AFTER PASS 1 APPROVED)
+========================================================
+
+TASK 5 — Replace Silent Failures with Explicit States
+5.1 Replace silent exception swallowing with:
+- explicit logging
+- structured error objects or flags
+- fail-closed returns where appropriate
+
+5.2 Ensure that when required live data cannot load:
+- strategy is marked INVALID / DEGRADED (read-only state)
+- strategy is NOT evaluated as healthy
+
+TASK 6 — Surface Operator Visibility
+6.1 Add clear UI indicators for:
+- “Data unavailable”
+- “Condition load failed”
+- “Strategy in degraded state”
+
+6.2 UI changes must be:
+- read-only
+- non-intrusive
+- consistent with existing Production UI style
+
+TASK 7 — Guardrail Verification
+7.1 Confirm:
+- No trading decisions altered when data is valid
+- No new DB writes introduced
+- No schema or lifecycle changes
+
+TASK 8 — Final Validation
+8.1 Run existing gates if present:
+- scripts/check/app_preflight.py
+- pytest -q
+8.2 Manually verify:
+- failure cases are visible
+- no silent fall-through remains
+
+TASK 9 — Final Report
+Provide:
+- Files changed
+- Silent failures eliminated
+- New visibility surfaces added
+- Explicit statement:
+  “Live system now fails closed with operator visibility.”
+
+STOP.
+DO NOT PROCEED TO ANY OTHER PHASE WITHOUT USER APPROVAL.
+
+END.

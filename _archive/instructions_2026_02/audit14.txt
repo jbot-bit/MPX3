@@ -1,0 +1,170 @@
+YOU ARE CLAUDE CODE OPERATING INSIDE MY MPX3 TRADING APP REPO.
+
+PRINT THIS HEADER FIRST (REQUIRED)
+- Mode: CODE GUARDIAN (ENFORCED)
+- Protocol: FAIL-CLOSED (no guessing, no invented paths, no phantom tables)
+- Two-pass only:
+  - PASS 1 = AUDIT & VERIFICATION (NO CODE CHANGES)
+  - PASS 2 = IMPLEMENTATION (CODE CHANGES)
+- Phase: PHASE 3B — SECURITY, RELIABILITY & HARDENING
+- Scope: CORE INFRA / DATA / STARTUP / SAFETY
+- Naming ban: NO *_v2.py / *_new.py / *_temp.py / *_final.py
+
+AUTHORITY ORDER (ABSOLUTE)
+1) CLAUDE.md
+2) CANONICAL_LOGIC.txt (or equivalent)
+3) APP_COMPLETE_SURVEY.md
+4) GUARDIAN.md
+5) UI_CONTRACT.md / REDESIGN.TXT (if present)
+
+HARD CONSTRAINTS (FAIL-CLOSED)
+- DO NOT change trading math, execution logic, cost model, slippage, ORB logic, or entry rules.
+- DO NOT change lifecycle semantics, promotion rules, or validation logic.
+- DO NOT add new DB tables or columns.
+- DO NOT add new DB write paths.
+- DO NOT weaken safety checks to “make things work”.
+- DO NOT proceed if any required file/function is missing — STOP and report.
+
+ALLOWED IN PHASE 3B
+- Hardening subprocess execution (timeouts, args safety, stderr surfacing).
+- Input validation for dynamic SQL (allowlists only).
+- Startup robustness (timeouts + clear error messages).
+- Reliability improvements that DO NOT change outputs when inputs are valid.
+- Accessibility/UX fixes that are behavior-preserving.
+- Logging, warnings, and visibility improvements.
+
+EXPLICITLY OUT OF SCOPE
+- Research logic
+- Validation UI
+- Promotion paths
+- Schema changes
+- Performance pagination (already handled in Phase 2)
+
+========================================================
+PASS 1 — AUDIT & VERIFICATION (NO CODE CHANGES)
+========================================================
+
+TASK 1 — Verify Subprocess Invocation Risks (DataBridge)
+1.1 Inspect trading_app/data_bridge.py around reported subprocess calls.
+1.2 Confirm:
+- use of shell=True
+- argument passing style
+- absence of timeouts
+- whether stderr/stdout is surfaced or swallowed
+1.3 Document exact failure modes (e.g. dropped date args, hanging processes).
+
+TASK 2 — Verify Dynamic SQL Construction Safety
+2.1 Inspect trading_app/edge_utils.py dynamic column name construction:
+- orb_{orb_time}_size
+- orb_{orb_time}_outcome
+2.2 Confirm:
+- whether orb_time can be influenced outside trusted code paths
+- lack of allowlist validation
+2.3 Enumerate valid orb_time values currently supported.
+
+TASK 3 — Verify Journal Table Name Interpolation
+3.1 Inspect trading_app/utils.py for JOURNAL_TABLE usage.
+3.2 Confirm:
+- how JOURNAL_TABLE is set (env/config/default)
+- whether it is validated or blindly interpolated
+3.3 Identify safe allowlist candidate(s).
+
+TASK 4 — Verify App Startup Preflight Robustness
+4.1 Inspect app_canonical.py preflight subprocess execution.
+4.2 Confirm:
+- absence of timeout
+- failure behavior on hang or error
+- current user feedback mechanism.
+
+TASK 5 — Verify Feature Rebuild Execution Model
+5.1 Inspect daily feature rebuild logic in trading_app/data_bridge.py.
+5.2 Confirm:
+- per-day sequential subprocess invocation
+- failure handling mid-run
+- progress visibility or resumability.
+
+TASK 6 — Verify DuckDB Placeholder Consistency
+6.1 Inspect trading_app/ai_memory.py placeholder usage.
+6.2 Confirm whether $1 vs ? mismatch exists and current runtime behavior.
+
+TASK 7 — Verify UX Accessibility Issue
+7.1 Inspect trading_app/redesign_components.py “Next step” rail.
+7.2 Confirm whether it renders as non-interactive but appears actionable.
+
+TASK 8 — PASS 1 REPORT
+Produce a ranked report:
+- Verified issues (with file:function:line)
+- Severity (HIGH / MEDIUM / LOW)
+- Proposed SAFE fixes under constraints
+- Explicit list of what will be changed in PASS 2
+
+STOP.
+Ask explicitly: “Proceed to PASS 2 (Implementation)?”
+
+========================================================
+PASS 2 — IMPLEMENTATION (ONLY AFTER PASS 1 APPROVED)
+========================================================
+
+IMPLEMENT FIXES IN THIS ORDER (NO REORDERING)
+
+TASK 9 — Harden DataBridge Subprocess Execution (HIGH)
+9.1 Replace shell=True with shell=False.
+9.2 Use sys.executable and explicit arg lists.
+9.3 Add timeouts.
+9.4 Surface stderr/stdout to logs.
+9.5 Preserve existing behavior when args are valid.
+
+TASK 10 — Validate orb_time for Dynamic SQL (HIGH)
+10.1 Create explicit allowlist for orb_time values.
+10.2 Reject or error loudly if orb_time not in allowlist.
+10.3 Map to safe column names; do NOT interpolate unchecked strings.
+
+TASK 11 — Guard Journal Table Name (MEDIUM)
+11.1 Validate JOURNAL_TABLE against allowlist.
+11.2 Fail closed if invalid.
+11.3 Do NOT allow arbitrary identifiers.
+
+TASK 12 — Add Timeout + Recovery to App Preflight (MEDIUM)
+12.1 Add timeout to preflight subprocess.
+12.2 On failure:
+- show clear, recoverable error message
+- do NOT hang app startup.
+
+TASK 13 — Improve Feature Rebuild Reliability (MEDIUM)
+13.1 Reduce sequential subprocess risk:
+- chunked execution OR
+- batch ranges where safe
+13.2 Add clear progress reporting.
+13.3 Ensure failures are visible and resumable.
+
+TASK 14 — Standardize DuckDB Parameter Placeholders (MEDIUM)
+14.1 Replace non-standard placeholders with ?.
+14.2 Ensure behavior matches existing queries.
+
+TASK 15 — Fix Next-Step Rail Accessibility (LOW)
+15.1 Make UI semantic:
+- real button or link
+- keyboard accessible
+15.2 Preserve visual intent.
+
+TASK 16 — Validation & Gates
+16.1 Confirm:
+- No schema changes
+- No new DB write paths
+- No behavior changes for valid inputs
+16.2 Run gates if present:
+- scripts/check/app_preflight.py
+- pytest -q
+
+TASK 17 — Final Report
+Provide:
+- Files changed
+- Risks mitigated
+- Before/after failure behavior
+- Explicit statement:
+  “Security, reliability, and startup hardening complete. No logic or schema changes.”
+
+STOP.
+DO NOT PROCEED TO ANY OTHER PHASE WITHOUT USER APPROVAL.
+
+END.

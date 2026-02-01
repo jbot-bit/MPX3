@@ -1,0 +1,79 @@
+What Phase 0 proves (objectively)
+
+Canonical truth restored
+
+edge_candidates is now the single registry.
+
+Lifecycle semantics unified
+
+Translation layer prevents schema churn.
+
+Duplication stopped
+
+PB dedupe works without schema changes.
+
+Live monitoring repaired
+
+drift_monitor reads the right source.
+
+No irreversible damage
+
+No deletes, no schema changes, no new write paths.
+
+This is the definition of a successful stabilization phase.
+
+Are we in over our head?
+
+No.
+You uncovered real blockers early and fixed them correctly. This is normal for a system that’s grown organically. The danger would’ve been doing UI work before Phase 0. You didn’t.
+
+Who should handle the next phase?
+
+Claude Code for Phase 1.
+Reason:
+
+Phase 1 is UI composition + ownership enforcement, not forensic discovery.
+
+Codex was great for finding the cracks.
+
+Claude Code is better for executing a constrained refactor under Guardian.
+
+Keep Codex as a spot-check / second-opinion auditor, not the driver.
+
+What Phase 1 should be (and not be)
+
+Phase 1 = UI only.
+
+Stage routing
+
+Single worklists
+
+Kill duplicate buttons/views
+
+Make the flow obvious
+
+Phase 1 is NOT:
+
+New logic
+
+New tables
+
+New lifecycles
+
+Performance tuning (that’s Phase 2)
+
+Guardian stays ON.
+
+Recommended next steps (in order)
+
+Approve Phase 0 (you effectively already have).
+
+Lock Phase 1 scope:
+
+Stage-based UI (Search → Candidates → Validation → Production)
+
+Single owner per action
+
+Hand Phase 1 prompt to Claude Code.
+
+Stop after Phase 1 and reassess before Phase 2 (pagination/perf).

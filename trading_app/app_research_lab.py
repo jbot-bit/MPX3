@@ -186,6 +186,7 @@ def _clear_checkpoint():
 
 def load_pipeline_summary() -> Dict[str, int]:
     """Load candidate pipeline status summary (P2-5: single query optimization)"""
+    conn = None
     try:
         conn = get_database_connection(read_only=True)
 
@@ -202,8 +203,6 @@ def load_pipeline_summary() -> Dict[str, int]:
             FROM edge_candidates
         """).fetchone()
 
-        conn.close()
-
         return {
             "DRAFT": result[0] or 0,
             "TESTED": result[1] or 0,
@@ -215,6 +214,9 @@ def load_pipeline_summary() -> Dict[str, int]:
     except Exception as e:
         logger.error(f"Error loading pipeline summary: {e}")
         return {"DRAFT": 0, "TESTED": 0, "PENDING": 0, "APPROVED": 0, "REJECTED": 0, "PROMOTED": 0}
+    finally:
+        if conn:
+            conn.close()
 
 
 def load_candidates(
@@ -229,6 +231,7 @@ def load_candidates(
     P2-1/P2-2: Pagination + reduced payload for performance.
     JSON columns fetched separately on detail view.
     """
+    conn = None
     try:
         conn = get_database_connection(read_only=True)
 
@@ -257,11 +260,13 @@ def load_candidates(
         sql += f" ORDER BY created_at_utc DESC LIMIT {limit} OFFSET {offset}"
 
         df = conn.execute(sql, params).df()
-        conn.close()
         return df
     except Exception as e:
         logger.error(f"Error loading candidates: {e}")
         return None
+    finally:
+        if conn:
+            conn.close()
 
 
 def load_candidate_detail(candidate_id: int) -> Optional[Dict]:
@@ -270,6 +275,7 @@ def load_candidate_detail(candidate_id: int) -> Optional[Dict]:
 
     P2-2: Fetch heavy JSON columns only when needed (detail view).
     """
+    conn = None
     try:
         conn = get_database_connection(read_only=True)
 
@@ -286,8 +292,6 @@ def load_candidate_detail(candidate_id: int) -> Optional[Dict]:
             WHERE candidate_id = ?
         """, [cid]).fetchone()
 
-        conn.close()
-
         if row:
             columns = [
                 'candidate_id', 'created_at_utc', 'instrument', 'name', 'hypothesis_text',
@@ -299,10 +303,14 @@ def load_candidate_detail(candidate_id: int) -> Optional[Dict]:
     except Exception as e:
         logger.error(f"Error loading candidate detail: {e}")
         return None
+    finally:
+        if conn:
+            conn.close()
 
 
 def get_candidate_count(status_filter: str = "ALL", instrument_filter: str = "ALL") -> int:
     """Get total count of candidates matching filters (for pagination)."""
+    conn = None
     try:
         conn = get_database_connection(read_only=True)
 
@@ -320,11 +328,13 @@ def get_candidate_count(status_filter: str = "ALL", instrument_filter: str = "AL
             params.append(instrument_filter)
 
         count = conn.execute(sql, params).fetchone()[0]
-        conn.close()
         return count
     except Exception as e:
         logger.error(f"Error getting candidate count: {e}")
         return 0
+    finally:
+        if conn:
+            conn.close()
 
 
 def parse_metrics(metrics_json: Any) -> Dict:
@@ -557,7 +567,9 @@ def render_discovery_view():
             if res.get("total_trades", 0) >= min_trades:
                 if (res.get("win_rate", 0) / 100) >= min_win_rate:
                     if res.get("avg_r", -999) >= min_avg_r:
-                        filtered_results.append(r)
+                        if res.get("max_drawdown_r", 0) <= max_drawdown:
+                            if res.get("sharpe_ratio", -999) >= min_sharpe:
+                                filtered_results.append(r)
 
         if filtered_results:
             st.success(f"✅ Showing {len(filtered_results)} strategies matching current filters")
@@ -640,11 +652,13 @@ def render_discovery_view():
                         _save_checkpoint_line(i, config, result)
                         processed_this_chunk += 1
 
-                        # Count hits
+                        # Count hits (apply all enabled filters)
                         if result.total_trades >= min_trades:
                             if (result.win_rate / 100) >= min_win_rate:
                                 if result.avg_r >= min_avg_r:
-                                    hits_this_chunk += 1
+                                    if getattr(result, 'max_drawdown_r', 0) <= max_drawdown:
+                                        if getattr(result, 'sharpe_ratio', -999) >= min_sharpe:
+                                            hits_this_chunk += 1
 
                         progress_bar.progress((i + 1) / total_configs)
 
@@ -659,12 +673,14 @@ def render_discovery_view():
                     total_processed = start_idx + processed_this_chunk
                     total_elapsed = prior_elapsed + (time.monotonic() - chunk_start)
 
-                    # Count total hits from checkpoint
+                    # Count total hits from checkpoint (apply all enabled filters)
                     all_results, _ = _load_checkpoint()
                     total_hits = sum(1 for r in all_results
                                      if r.get("result", {}).get("total_trades", 0) >= min_trades
                                      and (r.get("result", {}).get("win_rate", 0) / 100) >= min_win_rate
-                                     and r.get("result", {}).get("avg_r", -999) >= min_avg_r)
+                                     and r.get("result", {}).get("avg_r", -999) >= min_avg_r
+                                     and r.get("result", {}).get("max_drawdown_r", 0) <= max_drawdown
+                                     and r.get("result", {}).get("sharpe_ratio", -999) >= min_sharpe)
 
                     _save_meta(total_configs, total_processed, total_hits, params_hash, started, total_elapsed)
 

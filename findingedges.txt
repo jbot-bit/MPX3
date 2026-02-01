@@ -1,0 +1,329 @@
+1.
+Based on the provided sources, here is a constructed, end-to-end “correct” framework for trading backtesting. This framework prioritizes statistical rigor and the elimination of bias over raw profitability.
+1) Required Inputs
+To function correctly, the framework requires specific data inputs before any testing begins:
+• Granular Historical Data: Time-series data including Open, High, Low, Close, and Volume. Data must include delisted assets to prevent survivorship bias.
+• Liquidity and Cost Models: Historical bid/ask spread data and a predefined commission structure (flat fee or percentage).
+• Execution Constraints: Execution Constraints:
+Slippage must be modeled explicitly as a round-trip robustness penalty.
+For robustness testing, slippage is applied as 1 tick on entry + 1 tick on exit (2 ticks round-trip), independent of baseline cost assumptions.
+This stress test is mandatory and is used to invalidate fragile strategies.
+• The "Universe" of Trials: A complete record of every strategy variation, parameter set, and rule tested—not just the final selection. This is required to calculate the Deflated Sharpe Ratio (DSR) and correct for selection bias.
+• Risk Parameters: Defined risk limits (e.g., maximum drawdown, position sizing) and investor risk aversion levels (turbulence index).
+2) Mandatory Steps (Strict Order)
+The backtesting process must follow this chronological and methodological sequence to maintain statistical integrity:
+1. Hypothesis and Plan Formulation: Before coding, establish a written plan defining entry/exit logic, risk management rules, and the specific market conditions (regimes) the strategy targets. This prevents "data snooping" or retrofitting logic to data.
+2. Data Partitioning (Purging & Embargoing): Split data into Training (In-Sample), Validation (In-Time Out-of-Sample), and Testing (Blind Out-of-Sample) sets.
+    ◦ Purging: Remove observations from the training set that overlap with the labels (outcomes) of the test set to prevent information leakage.
+    ◦ Embargoing: Delete a section of data immediately following the test set to prevent leakage from serial correlation.
+3. Event-Driven Simulation: Execute the strategy using an event-driven loop (processing data bar-by-bar or tick-by-tick) rather than vectorized calculations. This enforces strict time adherence, ensuring the system only acts on data available at the exact moment of the decision.
+4. Walk-Forward Optimization (WFO): Instead of a single static test, use a rolling-window approach. Train parameters on a past window, test on the immediate future segment, and roll the window forward. This tests the strategy's ability to adapt to non-stationary data (changing market regimes).
+5. Combinatorial Cross-Validation: Generate multiple backtest paths by splitting data into N groups and testing on all combinations of k groups (Combinatorial Purged Cross-Validation). This generates a distribution of results rather than a single historical path, simulating various market scenarios.
+6. Monte Carlo Permutation (The "Randomness" Test): Randomly shuffle the pairing of positions (entries/exits) and market returns thousands of times to create a "null distribution" of a worthless strategy. Compare the candidate strategy's performance against this distribution to ensure results are not due to luck.
+7. Paper Trading (Real-Time Simulation): Run the strategy in a live environment with real-time data (without capital) to verify that execution logic (latency, API connectivity) matches the simulation.
+3) Required Performance Metrics
+Do not rely solely on Net Profit. The following metrics are required to define the "Edge" and robustness:
+• Expectancy (in R-Multiples): Calculated as (Win Rate × Average Win) - (Loss Rate × Average Loss). This standardizes performance across different assets and volatilities.
+• Deflated Sharpe Ratio (DSR): A variance-adjusted Sharpe ratio that corrects for the number of trials attempted (selection bias) and the non-normality (skewness/kurtosis) of returns.
+• Probabilistic Sharpe Ratio (PSR): The probability that the observed Sharpe ratio exceeds a given threshold (e.g., 0) with a specific confidence level (e.g., 95%).
+• Calmar Ratio: The ratio of annualized return to Maximum Drawdown, used to assess return relative to the risk of ruin.
+• Probability of Overfitting (PBO): A metric derived from combinatorial cross-validation that estimates the likelihood the selected strategy is overfitted to specific data.
+4) Validation Rules
+A strategy must pass these specific logic gates to be considered "correct" and viable:
+• The "Zero" Threshold Rule: The strategy must reject the null hypothesis (H 
+0
+​
+ : Strategy is worthless/random) with high confidence (e.g., 95%) using the Deflated Sharpe Ratio. If the DSR is not significant after accounting for all discarded trials, the strategy is a false positive.
+• Minimum Track Record Length (MinTRL): The backtest duration must exceed the mathematically calculated MinTRL required to statistically reject the null hypothesis of a Sharpe ratio of zero.
+• Consistency Across Clusters: When clustering similar strategies or data subsets, the strategy should not be an outlier; it must pass DSR validation across the majority of data clusters/regimes.
+• Failure of Randomness: In Monte Carlo permutation tests, the strategy’s actual return must fall in the extreme right tail (e.g., top 1% or 5%) of the randomized "worthless" distribution.
+• Slippage Tolerance (Robustness Gate): A strategy must remain profitable after applying a 2-tick round-trip slippage penalty (1 tick on entry + 1 tick on exit) in addition to commissions.
+If profitability or expectancy becomes non-positive under this stress condition, the strategy is invalidated.
+
+____________________________________________________________
+
+2.
+Based on the provided sources, a genuine trading edge is defined not merely by past profitability, but by specific statistical validity, the ability to withstand realistic cost models, and the rejection of the null hypothesis (random luck) after accounting for the number of attempts made to find the strategy.
+Here is the explicit definition of a trading edge categorized by your requirements:
+1. Statistical Properties of an Edge
+To qualify as a genuine edge, a strategy must exhibit specific mathematical characteristics that differentiate it from random noise:
+• Positive Expectancy: The most fundamental property is a positive expectancy, often expressed in "R-multiples" (units of risk). It is calculated as (Win Rate × Average Win) - (Loss Rate × Average Loss). An edge exists when the winners weighted by their frequency exceed the losers weighted by their frequency.
+• Statistically Significant Deflated Sharpe Ratio (DSR): A high Sharpe ratio (SR) alone is insufficient due to non-normal returns and selection bias. A genuine edge must possess a significant Deflated Sharpe Ratio, which adjusts the SR for the number of trials attempted (selection bias) and the skewness/kurtosis of returns. It must reject the null hypothesis that the strategy is worthless with a high confidence level (e.g., 95%).
+• Rejection of Randomness (Monte Carlo Permutation): An edge is confirmed if the strategy’s return falls in the extreme tail of a null distribution generated by randomly shuffling the pairings of positions and market returns. If a strategy’s performance can be easily replicated by random permutations, it lacks a genuine edge.
+• Predictive Power Beyond Market Bias: In a biased market (e.g., a bull market), a long-only strategy might show profit without skill. A genuine edge persists after "centering" the returns (removing the average market drift) to isolate the strategy's ability to beat the odds.
+2. Minimum Sample Conditions
+An edge cannot be confirmed without sufficient data to rule out luck:
+• Minimum Trade Count: Testing with small samples (e.g., 20–30 trades) renders results unreliable. A minimum of 100 trades is suggested to achieve basic statistical reliability, with hundreds being ideal to cover various market conditions.
+• Minimum Track Record Length (MinTRL): There is a mathematically calculated minimum time required to distinguish a genuine edge from a lucky streak. MinTRL increases if the returns have negative skewness (fat tails) or if the observed Sharpe ratio is close to the threshold. For example, an observed SR of 0.95 might require approximately 3 years of data to be statistically significant.
+• The "Universe" of Trials (N): The validity of the sample depends on N, the number of independent strategies or parameter configurations tested. As N increases, the "expected maximum Sharpe ratio" (SR 
+0
+​
+ ) generated by pure noise also increases (False Strategy Theorem). Therefore, if you tested 1,000 variations to find one winner, the sample requirements for that winner are exponentially higher than if you tested only one hypothesis.
+3. Invalidators of an Edge (Even if Profitable)
+A strategy may show a profit in a backtest but still possess no genuine edge if any of the following are present:
+• Intolerance to Friction: A strategy has no edge if it becomes unprofitable after factoring in realistic transaction costs, including commissions and, crucially, slippage. If a single tick of slippage destroys the profit, the edge is likely illusory.
+• Look-Ahead Bias: An edge is invalid if the simulation used data not available at the moment of the decision (e.g., using closing prices to execute trades earlier in the day). This "leakage" inflates performance metrics.
+• Survivorship Bias: Testing only on assets that currently exist (ignoring delisted or bankrupt assets) creates a false edge by artificially removing losers from the sample.
+• Lack of Embargoing: In time-series analysis, an edge is invalidated if training data overlaps with test data. Proper validation requires "purging" overlapping observations and "embargoing" data immediately following a test set to prevent leakage from serial correlation.
+4. Overfitting vs. Robustness
+Distinguishing between a model that "memorized" history and one that found a genuine pattern is critical:
+• Definition of Overfitting: Overfitting (or curve-fitting) occurs when a strategy is tailored too closely to past noise rather than signal. It is characterized as a "high-variance" model: it fits the training data perfectly but degrades substantially when applied to out-of-sample data. Indicators of overfitting include strategies that rely on "lucky" outliers or specific market regimes that are unlikely to repeat.
+• Probability of Overfitting (PBO): This is a quantitative metric derived from combinatorial cross-validation. A low PBO (e.g., < 5%) suggests the strategy is not overfitted, whereas a high PBO indicates the results are likely a fluke.
+• Robustness: Robustness is the ability of a strategy to perform consistently across different market environments (regimes) and timeframes.
+    ◦ Walk-Forward Optimization (WFO): Robustness is tested by optimizing on a rolling window of past data and testing on a subsequent "out-of-sample" window. A robust strategy maintains performance in the forward-looking window.
+    ◦ Parameter Stability: A robust edge should not depend on a "knife-edge" parameter (e.g., a specific moving average length). If small changes to parameters cause performance to collapse, the edge is overfitted.
+
+____________________________________________________________
+
+3.
+Based on the provided sources, here are the validated backtesting and edge concepts translated into enforceable rules for a Python research engine.
+1. The "Anti-Leakage" Protocol (Purging & Embargoing)
+Concept: Preventing look-ahead bias and serial correlation leakage between training and testing sets.
+• Engine Measurement: The engine must compare the timestamps of the labels (outcomes) in the training set against the timestamps of the features in the testing set. It must also calculate the serial correlation decay of the asset.
+• Thresholds/Comparisons:
+    ◦ Purging: Train_End_Time must be strictly less than Test_Start_Time minus the duration of the trade label.
+    ◦ Embargoing: A buffer period (e.g., 1% of sample size or determined by serial correlation decay) must be inserted after the test set before any subsequent training data begins.
+• Automatic Rejection: Any detected overlap between the timestamp of a training label and a test feature triggers immediate rejection of the fold.
+2. The Cost-Adjusted Expectancy Gate
+Concept: An edge must exist after accounting for friction (slippage and commissions) and exhibit positive expectancy.
+• Engine Measurement:
+    ◦ Expectancy: (Win_Rate * Avg_Win_R) - (Loss_Rate * Avg_Loss_R).
+    ◦ Friction Impact: Performance must be evaluated under a baseline cost model and a stress cost model.
+The stress model applies 2 ticks of slippage per round-trip trade (1 tick entry, 1 tick exit).
+Expectancy must remain positive under the stress model for the strategy to pass.
+• Thresholds/Comparisons:
+    ◦ Expectancy > 0: The strategy must have a positive expectancy in R-multiples.
+    ◦ Slippage Sensitivity: The strategy must remain profitable even when Slippage = 1 Tick (or a dynamic volatility-scaled slippage model).
+• Automatic Rejection:
+    ◦ Expectancy ≤ 0.
+    ◦ Net Profit becomes negative after applying cost models.
+3. The "Trials-Adjusted" Significance Rule (Deflated Sharpe Ratio)
+Concept: Adjusting the performance metric for selection bias (the number of trials/configurations tested).
+• Engine Measurement:
+    ◦ Trial Counter (N): The engine must log the total number of backtests run (strategies and parameter sets) within the specific cluster or investment hypothesis, not just the winning one.
+    ◦ Return Properties: Skewness ($ \gamma_3 )andKurtosis( \gamma_4 $) of the returns distribution.
+    ◦ Variance: The variance of Sharpe ratios across all N trials.
+• Thresholds/Comparisons:
+    ◦ SR 
+0
+​
+  (Benchmark): Calculate the expected maximum Sharpe Ratio generated by random noise given N trials using the False Strategy Theorem.
+    ◦ DSR (Deflated Sharpe Ratio): Calculate the probability that the observed Sharpe Ratio (SR 
+∗
+ ) > SR 
+0
+​
+ .
+• Automatic Rejection: DSR confidence level < 95% (i.e., the strategy fails to reject the null hypothesis that the result is a "lucky" selection from N trials).
+4. Minimum Track Record Length (MinTRL)
+Concept: Ensuring the sample size is sufficient to rule out luck, mathematically adjusted for non-normal returns.
+• Engine Measurement:
+    ◦ Observed Sharpe Ratio (SR 
+∗
+ )
+    ◦ Skewness and Kurtosis of the strategy returns.
+    ◦ Target Confidence Level (e.g., 0.95).
+• Thresholds/Comparisons:
+    ◦ Calculate MinTRL (in years or trade count) required to reject the null hypothesis (SR=0) with 95% confidence.
+• Automatic Rejection:
+    ◦ Actual_Backtest_Length < Calculated_MinTRL.
+    ◦ Total trade count < 100 (heuristic baseline for statistical reliability).
+5. The Monte Carlo Permutation Test (Randomness Check)
+Concept: Verifying that the pairing of entry signals with market returns is intelligent and not random.
+• Engine Measurement:
+    ◦ Generate a null distribution by randomly shuffling the trade entry timestamps (or positions) while keeping market returns fixed (or vice versa) M times (e.g., 1,000 iterations).
+    ◦ Calculate the performance metric (e.g., Total Return) for the candidate strategy vs. the M random permutations.
+• Thresholds/Comparisons:
+    ◦ Rank: Where does the candidate strategy fall in the distribution of random permutations?
+• Automatic Rejection: If the candidate strategy's return falls below the 95th percentile of the randomized distribution (p-value > 0.05), it is indistinguishable from luck.
+6. Robustness via Walk-Forward Efficiency
+Concept: Ensuring the strategy performs on unseen data and is not curve-fitted to a specific regime.
+• Engine Measurement:
+    ◦ IS/OOS Ratio: Compare the Sharpe Ratio (or CAGR) of the In-Sample (optimization) window vs. the Out-of-Sample (validation) window.
+    ◦ Parameter Stability: Variance of optimal parameters across different rolling windows.
+• Thresholds/Comparisons:
+    ◦ Performance Decay: If OOS performance drops by > 50% compared to IS performance (indicative of overfitting).
+    ◦ Probability of Overfitting (PBO): If using Combinatorial Cross-Validation, calculate PBO.
+• Automatic Rejection:
+    ◦ PBO > 50%.
+    ◦ Strategy fails to generate profit in the majority of OOS windows (e.g., < 50% profitable windows).
+
+______________________________________________________
+
+4.
+Based on the comparison between the hypothetical automated research system and the "correct" framework derived from the sources, here is the assessment:
+1. Where the System is Aligned
+The hypothetical system aligns with the framework in its fundamental reliance on computational verification and objective metric analysis.
+• Programmatic Execution: The system aligns with the necessity of avoiding manual testing errors. The sources confirm that programmatic, event-driven backtesting is superior to manual methods because it allows for extensive scale and the integration of complex logic that manual testing cannot handle.
+• Exploration of Strategy Space: By auto-generating candidates (likely via methods similar to Genetic Algorithms or Deep Reinforcement Learning), the system adheres to the modern approach of using solvers to navigate high-dimensional parameter spaces, which human researchers cannot do efficiently.
+• Quantitative promotion: The system promotes/rejects based on "edges," which aligns with the framework's requirement to use quantitative metrics (Sharpe Ratio, Expectancy) rather than intuition to validate performance.
+2. Where the System is Under-Constrained
+The "auto-generation" feature inherently violates the hypothesis-first constraint of the rigorous framework, leading to several critical deficits:
+• Lack of Economic Hypothesis: The framework requires a "written plan" and clear hypothesis to prevent data snooping. Auto-generating strategies often indiscriminately mines data for patterns, creating a high risk that the "edge" is merely a statistical artifact of the specific dataset rather than a repeatable market behavior.
+• Inadequate Cost Modeling: Auto-generators often optimize for raw metric maximization (e.g., highest Net Profit), frequently neglecting the impact of slippage and variable spreads. The sources warn that strategies showing high returns often turn into losses once realistic liquidity constraints and worst-case execution costs are applied. If the system optimizes for a 1-tick profit in a market with a 2-tick spread, the edge is illusory.
+• Ignoring the "Universe of Trials" (N): The system likely discards rejected strategies and only presents the winners. The framework requires a complete log of every failed strategy (the variable N) to calculate the Deflated Sharpe Ratio (DSR). Without knowing how many strategies were rejected to find the winner, it is impossible to determine if the result is statistically significant.
+3. Where it Risks False Positives
+The system is highly vulnerable to Multiple Testing Bias and Overfitting, which are the primary sources of false positives in automated research.
+• Selection Bias (The "Lucky" Survivor): By testing thousands of auto-generated candidates, the system guarantees finding a strategy with a high Sharpe ratio purely by chance (The False Strategy Theorem). Without adjusting for the number of trials (N), the system will promote a "false strategy" that is mathematically indistinguishable from a lucky coin toss.
+• Data Leakage via Standard Cross-Validation: If the auto-generation process uses standard k-fold cross-validation (randomly shuffling data), it destroys the time-series order. This allows the model to "learn" from the future (look-ahead bias), resulting in inflated performance metrics that collapse in live trading.
+• Curve-Fitting (Over-Optimization): The system risks tweaking parameters to fit historical noise perfectly. A strategy that adapts too well to a specific past market regime (e.g., a specific bull run) without proving robustness across different regimes (via Walk-Forward Optimization) is likely overfitted.
+4. Non-Negotiable Constraints
+To align this automated system with the correct framework, the following constraints must be hard-coded into the logic:
+• The Deflated Sharpe Ratio (DSR) Threshold: The acceptance criteria must not be a static Sharpe Ratio (e.g., > 2.0). It must be the Deflated Sharpe Ratio, calculated using the total count of all generated/discarded strategies (N) and the skewness/kurtosis of the returns. The system must reject any edge where the DSR confidence is < 95%.
+• Purging and Embargoing: When splitting data for training and testing, the system must purge overlapping data points and embargo data immediately following a test set. This is non-negotiable to prevent serial correlation leakage.
+• Walk-Forward Optimization (WFO): The system cannot rely on a single static backtest. It must use WFO or Combinatorial Purged Cross-Validation to verify that the strategy holds up on "unseen" data that respects chronological ordering.
+• Execution Friction: The backtest engine must simulate worst-case slippage and full commissions. If a strategy's edge disappears with a 1-tick slippage penalty, it must be automatically rejected.
+
+
+
+________________________________________________________
+
+5. 
+
+1. Selection Bias (Multiple Testing Bias)
+• Why it looks valid: The engine tests thousands of strategy variations and eventually finds one with a high Sharpe ratio (e.g., > 2.0). The result appears statistically significant because it outperforms the market baseline on historical data,.
+• Why it is wrong: According to the False Strategy Theorem, the expected maximum Sharpe ratio increases purely as a function of the number of trials (N). If an engine runs enough tests, it is mathematically guaranteed to find a strategy that looks profitable by random chance, even on noise,. The "best" strategy is often just the "luckiest" one, not the most skillful.
+• How a system should detect and prevent it:
+    ◦ Log All Trials: The system must record every strategy configuration and parameter set tested, not just the winners.
+    ◦ Deflated Sharpe Ratio (DSR): Apply the DSR formula, which adjusts the Sharpe ratio threshold based on the total number of independent trials (N) and the non-normality of returns (skewness/kurtosis). Reject any strategy that does not pass the DSR confidence level (e.g., 95%),.
+    ◦ Split Data: Utilize a true "blind" hold-out set that is never used during the selection process.
+2. Look-Ahead Bias (Data Leakage)
+• Why it looks valid: The strategy exhibits exceptional predictive accuracy and a smooth equity curve. Standard machine learning cross-validation (like random k-fold) often produces these robust metrics,.
+• Why it is wrong: The model inadvertently used information from the future to make decisions in the past. Common causes include:
+    ◦ Feature Engineering: Calculating indicators (e.g., Z-scores or normalization) using the mean/standard deviation of the entire dataset rather than a rolling window,.
+    ◦ Shuffling: Randomly shuffling time-series data for cross-validation destroys chronological order, allowing the model to train on future data points,.
+    ◦ Timestamp Mismatch: Using closing prices to execute trades assumed to occur earlier in the day.
+• How a system should detect and prevent it:
+    ◦ Purging and Embargoing: When splitting data, "purge" training observations that overlap with the label computation of the test set. Add an "embargo" (buffer period) after the test set to prevent leakage from serial correlation,.
+    ◦ Event-Driven Architecture: Use an event-driven backtester that processes data tick-by-tick or bar-by-bar, strictly forbidding access to future array indices,.
+    ◦ Rolling Statistics: Enforce that all feature transformations are calculated strictly on data available up to the current moment.
+3. Overfitting (Curve-Fitting)
+• Why it looks valid: The strategy fits the historical data perfectly, capturing every major market turn and showing high returns with low drawdown. It may have complex rules or many parameters that seem to "solve" the market.
+• Why it is wrong: The model has "memorized" the noise of a specific historical dataset rather than learning a generalizable economic signal. These strategies fail immediately in live markets because the specific pattern of noise does not repeat (non-stationarity),.
+• How a system should detect and prevent it:
+    ◦ Walk-Forward Optimization (WFO): Instead of a static split, train on a window, test on the following period, and roll this window forward. A robust strategy must perform consistently across these rolling out-of-sample periods,.
+    ◦ Combinatorial Purged Cross-Validation (CPCV): Generate a distribution of Sharpe ratios from many different backtest paths (combinations of groups) to ensure the result isn't dependent on a single specific historical path,.
+    ◦ Probability of Overfitting (PBO): Calculate the PBO metric; if high, the strategy is likely fitting noise.
+4. Unrealistic Execution Assumptions
+• Why it looks valid: The backtest shows steady profit accumulation, often with a high win rate on small price moves,.
+• Why it is wrong: It ignores slippage, spreads, and market impact.
+    ◦ Strategies that scalp small profits (e.g., 1-2 ticks) often turn into losers once the bid-ask spread and commissions are factored in.
+    ◦ Assuming execution at the "Close" or "Open" price without accounting for liquidity or latency is a major source of error,.
+• How a system should detect and prevent it:
+    ◦ Transaction Cost Modeling: Include a cost model that simulates commissions and, crucially, slippage (e.g., random or volatility-scaled slippage),.
+    ◦ Worst-Case Testing: Assume the trade always executes at the worst possible price (e.g., across the spread) to see if the edge survives.
+    ◦ Latency Simulation: Insert a time delay (e.g., a few seconds) between signal generation and trade execution.
+5. Survivorship Bias
+• Why it looks valid: The engine backtests against a dataset of currently major assets (e.g., "Current S&P 500"), showing consistent growth and stability.
+• Why it is wrong: The dataset artificially excludes companies that went bankrupt or were delisted during the historical period. The engine is testing on a pre-selected list of "winners," creating a massive upward bias that does not exist in real-time trading,.
+• How a system should detect and prevent it:
+    ◦ Delisted Data: The research environment must include data for assets that have been delisted or went bankrupt.
+    ◦ Point-in-Time Universes: Select the tradable universe based only on the list of assets that were available/listed on that specific historical date.
+6. Ignoring Non-Stationarity (Regime Changes)
+• Why it looks valid: A model trained on a specific period (e.g., a long bull market) shows high predictive accuracy and profitability.
+• Why it is wrong: Financial data is non-stationary; statistical properties (mean, variance) change over time. A strategy optimized for low volatility will likely collapse during a high-volatility crisis,.
+• How a system should detect and prevent it:
+    ◦ Regime-Based Testing: Evaluate the strategy across different defined market regimes (bull, bear, high vol, low vol) to ensure robustness.
+    ◦ Structural Break Detection: The system should monitor for structural breaks in time series and trigger retraining or halting if the market environment shifts significantly from the training data.
+
+
+______________________________________________________________
+
+6.
+
+Based on the provided sources, specifically the mathematical definitions of the Deflated Sharpe Ratio (DSR) and the False Strategy Theorem, here is an implementable design for logging and gating in an automated Python research engine.
+1) Minimum Fields to Log Per Trial
+To calculate the Deflated Sharpe Ratio (DSR) and prevent selection bias, the system must log statistical properties of every backtest run, not just the successful ones. The database schema must capture the following for every single iteration:
+• strategy_family_id: A unique identifier grouping all variations of a specific logic (e.g., "MeanReversion_v1"). This defines the specific "Universe" for calculating N.
+• trial_params: A JSON/Dictionary of the specific parameters used (e.g., {"lookback": 50, "threshold": 2.5}).
+• returns_series: The full array of period returns (daily/hourly). Crucial for clustering strategies to find the effective N and calculating variance.
+• sample_length (T): The number of return observations in the backtest.
+• sharpe_ratio (SR): The non-annualized Sharpe ratio of the trial.
+• skewness (γ 
+3
+​
+ ): The skewness of the returns distribution.
+• kurtosis (γ 
+4
+​
+ ): The kurtosis of the returns distribution.
+• timestamp: To audit the sequence of trials.
+2) Rules for Counting N (The Universe size)
+The variable N represents the number of independent trials. In an automated engine, simple counting is often insufficient due to correlation between trials (e.g., Moving Average 50 vs. Moving Average 51).
+• The Raw Count (N 
+raw
+​
+ ): The system queries the database for the count of distinct trial_params entries associated with a specific strategy_family_id.
+• Handling Duplicates:
+    ◦ If a backtest is run with identical parameters and identical data range as a previous entry, it is excluded from the count (it provides no new information).
+    ◦ If a backtest is run with identical parameters but on new data (e.g., Walk-Forward), it is treated as a validation step, not a new trial for selection bias purposes.
+• The Effective Count (N 
+eff
+​
+ ): The engine must apply a clustering algorithm (like Optimal Number of Clusters or Hierarchical Clustering) to the returns_series of all trials within the family. N is defined as the number of distinct clusters found.
+    ◦ Implementation Rule: If computational resources allow, use N 
+eff
+​
+ . If not, use N 
+raw
+​
+  as a conservative upper bound, as this will result in a higher, stricter hurdle for acceptance.
+3) How the Log Prevents Selection Bias
+The log is used to dynamically adjust the performance threshold required for acceptance. Instead of comparing a strategy against a fixed Sharpe Ratio (e.g., 2.0), the engine compares it against a variable benchmark (SR 
+0
+​
+ ) derived from the log of failed and mediocre trials.
+• Variance Calculation: The engine queries the sharpe_ratio of all trials in the strategy_family_id to calculate the variance of Sharpe ratios (V[SR 
+n
+​
+ ]) across the entire universe of attempts.
+• Threshold Adjustment: Using the False Strategy Theorem, the engine calculates the Expected Maximum Sharpe Ratio (SR 
+0
+​
+ ) generated purely by noise given the number of trials (N) and the variance (V[SR 
+n
+​
+ ]): 
+SR 
+0
+​
+ = 
+V[SR 
+n
+​
+ ]
+
+​
+ ((1−γ)Φ 
+−1
+ [1− 
+N
+1
+​
+ ]+γΦ 
+−1
+ [1− 
+Ne
+1
+​
+ ])
+• Result: As the engine generates more automated candidates (increasing N), SR 
+0
+​
+  rises. A strategy that looked good as the 10th trial might be rejected if it is the 1,000th trial, because the log reveals it is statistically indistinguishable from the expected "lucky" result of random noise.
+4) A Fail-Closed Workflow for Promotion/Rejection
+All slippage robustness checks are evaluated using the stress cost model (2 ticks round-trip) and failures are permanently logged to the Universe of Trials.
+The research engine must default to rejection. A strategy is only promoted if it passes the DSR check, which accounts for the multiple testing documented in the log.
+1. Generation: Engine generates parameters and runs a backtest.
+2. Mandatory Logging: The results (Return, SR, Skew, Kurtosis) are committed to the database immediately, regardless of performance. No filtering allowed at this stage.
+3. Context Retrieval: The engine queries the database for:
+    ◦ N (Count of trials for this family).
+    ◦ V[SR] (Variance of SRs across this family).
+4. DSR Calculation: The engine computes the Deflated Sharpe Ratio (DSR) using the current trial's SR, T, Skew, Kurtosis, and the retrieved SR 
+0
+​
+  (derived from N).
+5. Gating Logic:
+    ◦ IF DSR Probability >0.95 (95% confidence): PROMOTE to Out-of-Sample/Paper Trading queue.
+    ◦ ELSE: REJECT. (The strategy remains in the database solely to penalize future trials by increasing N).
+6. Minimum Track Record Check: Simultaneously, the engine solves for MinTRL (Minimum Track Record Length). If the actual backtest length T<MinTRL, the strategy is REJECTED regardless of profitability.

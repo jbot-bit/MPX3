@@ -1,0 +1,110 @@
+Short answer: yes — approve this Phase 0, with two small guardrails stated explicitly before implementation.
+This is not over-engineering; this is the minimum foundation work to stop data corruption and unblock everything else.
+
+I’ve read the Phase 0 revised plan you pasted (and the written plan in PHASE0_REVISED.md). It is coherent, internally consistent, and respects your Guardian constraints. 
+
+PHASE0_REVISED
+
+Below is the clear decision and the final checks.
+
+1️⃣ Is Phase 0 the right thing to do?
+
+Yes. 100%.
+
+You cannot safely proceed to:
+
+UI refactor
+
+app split (research vs live)
+
+validation workflow cleanup
+
+while all three of these are true (and they are proven true):
+
+two candidate tables exist and the wrong one is queried
+
+lifecycle semantics are split and contradictory
+
+PB generation is producing exponential duplicates
+
+Phase 0 fixes only blockers, without schema changes, and does so in a reversible, auditable way.
+
+That’s exactly what you want.
+
+2️⃣ Is anything in this plan dangerous?
+
+Only two things need explicit guardrails, not changes.
+
+Guardrail A — New file allowance
+
+You are creating:
+
+trading_app/status_translator.py
+
+scripts/cleanup/mark_duplicate_candidates.py
+
+These are fine because:
+
+no schema changes
+
+no background automation
+
+cleanup script is manual, opt-in, and uses existing write paths
+
+Just state explicitly:
+
+“No other new files are allowed in Phase 0.”
+
+Guardrail B — Do NOT backfill history
+
+Status translation is a semantic layer, not a data migration.
+
+Good news:
+Your plan already does this correctly (no bulk UPDATEs).
+
+Just ensure:
+
+No attempt to “rewrite” old statuses in DB
+
+Translation is applied at read / logic time only
+
+3️⃣ Are we going to “remember all this”?
+
+No — and you shouldn’t.
+
+This Phase 0 document is now the memory.
+
+Once Phase 0 is implemented:
+
+candidate registry becomes singular
+
+statuses become interpretable everywhere
+
+duplicates stop growing
+
+monitoring starts seeing reality again
+
+Cognitive load drops massively after this.
+
+4️⃣ What this unlocks (important)
+
+After Phase 0:
+
+Research UI work becomes pure UX, not archaeology
+
+App split becomes trivial (shared DB, clean contract)
+
+Live scanner logic becomes trustworthy again
+
+You can safely add pagination, validation flows, and stage routing
+
+Right now, everything else is built on sand. Phase 0 pours concrete.
+
+5️⃣ What to say (copy/paste approval)
+
+Send this back:
+
+APPROVED — Phase 0 Revised Plan.
+Proceed exactly as written in PHASE0_REVISED.md.
+No schema changes, no destructive deletes, no extra refactors.
+Implement in the listed order and stop after completion with a report.

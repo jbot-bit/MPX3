@@ -1,0 +1,71 @@
+1) What Phase 2 IS
+
+Pagination + lazy loading (stop “SELECT * then render everything”)
+
+Reduce query payloads (only needed columns in lists)
+
+Caching where safe (read-only caches)
+
+UI responsiveness (spinners, debounce, avoid re-running heavy queries)
+
+Optional: indexes/ordering tweaks only if they already exist (no schema changes)
+
+2) What Phase 2 is NOT
+
+❌ No new tables/columns
+
+❌ No new write paths
+
+❌ No trading/execution/cost logic changes
+
+❌ No lifecycle redesign
+
+❌ No “new app” files
+
+3) Phase 2 priorities (do in this order)
+P2-1 — Candidate worklist pagination (biggest ROI)
+
+Default limit (e.g., 200)
+
+Sort by updated_at/created_at
+
+“Load more” / page controls
+
+Fetch detail only when selected
+
+P2-2 — Search results pagination
+
+Same approach: summary rows first, detail on click
+
+P2-3 — Avoid expensive JSON parsing in list views
+
+Lists show scalar columns only
+
+JSON rendered only in detail pane
+
+P2-4 — Cache read-only lookups
+
+Cache “status counts”, “top filters”, “recent updates”
+
+Invalidate cache on known writes (status/promote)
+
+P2-5 — Any remaining slow queries
+
+Add explain/diagnostics
+
+Optimize query shape (select columns, add WHERE, LIMIT)
+
+4) Who should execute Phase 2
+
+Claude Code (implementation) under Guardian
+
+Codex can do PASS 1 profiling (identify slow callsites)
+
+5) The exact approval message to start Phase 2
+
+Send this to Claude Code:
+
+APPROVED – Phase 2 (Performance only)
+Guardian ON. Two-pass only.
+PASS 1: identify top 5 slow UI query/render paths with file:function:line and query text.
+PASS 2: implement P2-1 and P2-2 only (pagination + reduced payload), no schema changes, no new write paths, stop with report and gates.

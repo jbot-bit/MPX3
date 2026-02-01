@@ -1,0 +1,115 @@
+GUARDIAN MODE — FAIL-CLOSED — TWO PASS ONLY
+
+PROJECT: MPX3 Trading App (Research Lab)
+REPO PATH: C:\Users\sydne\OneDrive\Desktop\MPX3
+BRANCH: feature/ui-redesign-conveyor-belt
+AUTHORITY ORDER:
+1) GUARDIAN.md (highest)
+2) update21.txt / update22.txt / update23a.txt and any newer update*.txt
+3) Existing code + tests
+
+GOAL (UI-only, simplest effective):
+Add a READ-ONLY "Discovery Diagnostics + Signal Density Map" panel to the Discovery page that answers:
+- Is there ANY signal at all?
+- Where is signal clustering by ORB / RR / SL?
+- Are filters causing low/zero hits?
+
+ABSOLUTE CONSTRAINTS (NON-NEGOTIABLE):
+- TWO PASS workflow only.
+  PASS 1 = AUDIT/DESIGN ONLY (NO CODE CHANGES).
+  PASS 2 = IMPLEMENT ONLY AFTER I TYPE: "APPROVED PASS 2: discovery-diagnostics-map".
+- NO database schema changes. NO migrations. NO new tables/columns.
+- NO trading logic changes (execution_engine, cost_model, strategy_discovery, entry_rules, etc).
+- NO changes to scanning logic, checkpoint format, or promotion flow.
+- NO mock/simulated/example data.
+- NO new DB write paths.
+- Do NOT modify .claude settings or broaden permissions.
+- TSOT enforced: do NOT introduce new hardcoded ORB time literals. Use existing constants/specs.
+- Keep changes minimal and localized.
+
+ALLOWED DATA SOURCES (READ-ONLY ONLY):
+- artifacts/discovery_checkpoint.jsonl (each line has {"idx","config","result","ts"})
+- artifacts/discovery_meta.json (progress/meta)
+- In-memory current UI settings (Explore/Refine + optional soft filters already present)
+
+DISALLOWED DATA SOURCES:
+- Any DB queries (do not connect to DuckDB for this feature)
+- Any new files written (other than the existing checkpoint files already produced by the scanner)
+
+DEFINITION OF "SIGNAL" (simple, user-visible):
+- Default signal rule: avg_r > 0.0
+- Provide a small UI control to change threshold (still read-only):
+  "Signal threshold" slider: -0.10 .. +0.20 (default 0.00)
+This threshold only affects DIAGNOSTICS/HEATMAP display, NOT scanning/backtest.
+
+WHAT TO BUILD (UI-ONLY):
+A) Diagnostics Summary (read-only, from checkpoint results):
+- Processed / Total, Hits, Elapsed (from meta)
+- Distribution:
+  * best avg_r (with trades)
+  * best total_r
+  * median avg_r
+  * % configs with avg_r > threshold
+  * count of configs scanned
+
+B) Signal Density Map (core deliverable):
+- A pivot table + heatmap-like display using checkpoint results only
+- Dimensions:
+  1) ORB time × RR
+  2) ORB time × SL mode
+- For each cell, compute:
+  * n_configs
+  * % signal (avg_r > threshold)
+  * mean avg_r
+  * best avg_r
+- Display:
+  - Table view (must work even without plotting libs)
+  - Optional: lightweight heatmap rendering using Streamlit primitives (e.g., st.dataframe with styling) if feasible
+- Must include a "click-to-filter" helper ONLY if it doesn't modify scanning logic:
+  - If click is hard, provide a "Copy settings" button per cell row (ORB/RR/SL) to prefill existing UI fields (session_state only).
+  - Do NOT start scans automatically from clicking.
+
+C) "Why low/zero hits?" (honest, no guessing):
+- If Explore mode: explicitly state soft filters are OFF (or fail-open).
+- If Refine mode and any soft filter is enabled: show a warning:
+  "Enabled quality filters may narrow results."
+- Do NOT claim elimination percentages unless they can be derived strictly from checkpoint distributions + the threshold.
+- If unknown, say "unknown".
+
+SCOPE / FILES:
+- Prefer 1-file change: trading_app/app_research_lab.py
+- If and only if needed to keep file tidy, allow adding ONE helper module:
+  trading_app/discovery_diagnostics.py
+  - Must contain PURE functions that take checkpoint_rows/meta and return computed summaries/pivots.
+  - No DB calls. No file writes.
+
+PASS 1 (AUDIT ONLY) REQUIRED OUTPUT:
+1) Repo state:
+   - git rev-parse --abbrev-ref HEAD
+   - git status --porcelain
+   - git diff --stat
+   - git log -n 10 --oneline --decorate
+   If dirty, STOP and ask stash/commit/discard.
+2) Locate checkpoint load code + Discovery view render location (file + line ranges).
+3) Confirm which fields exist in checkpoint row "config" and "result" by inspecting a real JSONL line.
+4) Specify exact UI placement (where the panel goes).
+5) Provide a high-level diff plan (no diffs).
+6) Explicitly restate constraints and confirm compliance.
+
+STOP after PASS 1 with:
+"APPROVAL REQUIRED — reply: APPROVED PASS 2: discovery-diagnostics-map"
+
+PASS 2 (IMPLEMENT) REQUIREMENTS:
+- Apply only the planned minimal edits
+- Run and report exact outputs (or tail) of:
+  - python scripts/check/check_time_literals.py
+  - python test_app_sync.py
+  - python scripts/check/app_preflight.py
+  - Syntax/import verification
+  - pytest -q may be skipped ONLY if it hangs; report it hung.
+- Provide:
+  - commit hash + message
+  - files changed
+  - smoke-test checklist results (Streamlit)
+
+BEGIN NOW WITH PASS 1 AUDIT ONLY. STOP.

@@ -1,0 +1,150 @@
+YOU ARE CLAUDE CODE OPERATING INSIDE MY MPX3 TRADING APP REPO.
+
+PRINT THIS HEADER FIRST (REQUIRED)
+- Mode: CODE GUARDIAN (ENFORCED)
+- Protocol: FAIL-CLOSED (no guessing, no invented paths, no phantom tables)
+- Two-pass only:
+  - PASS 1 = AUDIT & VERIFICATION (NO CODE CHANGES)
+  - PASS 2 = IMPLEMENTATION (CODE CHANGES)
+- Phase: PHASE 3B — SECURITY, RELIABILITY & HARDENING
+- Scope: CORE INFRA / DATA / STARTUP / SAFETY ONLY
+- Naming ban: NO *_v2.py / *_new.py / *_temp.py / *_final.py
+
+AUTHORITY ORDER (ABSOLUTE)
+1) CLAUDE.md
+2) CANONICAL_LOGIC.txt (or equivalent)
+3) APP_COMPLETE_SURVEY.md
+4) GUARDIAN.md
+5) UI_CONTRACT.md / REDESIGN.TXT (if present)
+
+HARD CONSTRAINTS (FAIL-CLOSED)
+- DO NOT change trading math/execution/cost/slippage/ORB/entry rules.
+- DO NOT change pipelines that populate daily_features / validated_setups / archives (logic/output shape).
+- DO NOT add new DB tables.
+- DO NOT add new DB write paths.
+- DO NOT create parallel UI apps.
+- DO NOT introduce new “workflow” concepts. This phase is hardening only.
+- If any required file/function/constant is not found: STOP and report exactly what is missing.
+
+PHASE 3B TARGET ISSUES (YOU MUST SELF-VERIFY EACH WITH REPO TRUTH)
+ID 1 (HIGH): data_bridge.py subprocess.run uses shell=True + no timeout + poor stderr surfacing.
+ID 2 (HIGH): edge_utils.py dynamic SQL column names using orb_time without allowlist validation.
+ID 3 (MED): utils.py JOURNAL_TABLE interpolated into SQL without validation.
+ID 4 (MED): app_canonical.py preflight subprocess has no timeout.
+ID 5 (MED): data_bridge.py feature rebuild loops per-day sequential subprocess (needs timeout + progress visibility; no batching unless already supported).
+ID 6 (MED): ai_memory.py uses $N placeholders (standardize to ? if DuckDB path uses ? elsewhere).
+ID 7 (LOW): redesign_components.py “Next step rail” looks clickable but is not accessible/semantic.
+
+========================================================
+PASS 1 — AUDIT & VERIFICATION (NO CODE CHANGES)
+========================================================
+GOAL: Confirm ALL 7 issues with exact file:function:line and show the exact code excerpts. If ANY mismatch vs claims, record the true state and adjust the PASS 2 plan accordingly (fail-closed).
+
+TASK P1.1 — Authority files check (STOP if missing)
+- Open: CLAUDE.md, GUARDIAN.md, APP_COMPLETE_SURVEY.md.
+- If CANONICAL_LOGIC.txt or equivalent exists, open it; if not, explicitly note the actual canonical file name.
+- If any required authority file is missing: list missing and STOP.
+
+TASK P1.2 — Confirm each target issue (7 items)
+For each ID 1–7:
+- Provide:
+  - file path
+  - function name (if applicable)
+  - exact line range
+  - exact code snippet (small excerpt only)
+  - why it is risky (1–2 sentences)
+  - “Fix intent” (1 sentence), but DO NOT write code.
+
+TASK P1.3 — Constraints check
+- Confirm planned fixes do NOT:
+  - add schema/tables
+  - add new DB write paths
+  - touch trading math/execution/cost logic
+- If any planned fix would violate constraints: propose an alternative that stays within constraints.
+
+OUTPUT REQUIRED FOR PASS 1
+- A “PASS1_PHASE3B_AUDIT.md” report containing the above evidence + an ordered PASS 2 change plan (exact files to edit).
+STOP. Ask: “Proceed to PASS 2?”
+
+========================================================
+PASS 2 — IMPLEMENTATION (CODE CHANGES)
+========================================================
+ONLY PROCEED AFTER PASS 1 IS COMPLETE AND I SAY “APPROVED — PHASE 3B PASS 2”.
+
+GLOBAL RULES FOR PASS 2
+- Minimal diffs.
+- No new tables, no new write paths.
+- Prefer refactor-in-place.
+- If any edit requires inventing a path/function/table: STOP.
+
+TASK P2.1 — Harden DataBridge subprocess execution (ID 1 + ID 5)
+File: trading_app/data_bridge.py
+Requirements:
+- Replace shell=True usage with shell=False where currently used (unless repo truth proves otherwise).
+- Use sys.executable instead of "python" if repo already does this elsewhere; otherwise implement safely.
+- Add explicit timeout values:
+  - backfill/rebuild: default 300s unless repo has existing standard.
+  - per-day rebuild calls: timeout per call (same default).
+- Always capture stdout/stderr and log them on failure; on success, optionally log stdout at debug level only.
+- Preserve existing behavior and CLI arguments exactly.
+- Ensure date-range args cannot be silently dropped due to shell parsing.
+- Add progress visibility to per-day loop (e.g., day X of Y) WITHOUT changing outputs or schema.
+
+TASK P2.2 — Validate orb_time allowlist before dynamic SQL (ID 2)
+File: trading_app/edge_utils.py
+Requirements:
+- Identify the true source of orb_time (DB value / config / UI).
+- Add an explicit allowlist of valid orb_time values using the repo’s existing ORB spec source if present (prefer central config, do not duplicate if already defined).
+- Validate orb_time BEFORE using it inside any f-string SQL column interpolation.
+- Fail-closed:
+  - Raise a clear exception OR return a safe empty result with an explicit logged error (choose the existing pattern used in this file; do not invent a new error-handling style).
+- Ensure no behavior change for valid orb_time values.
+
+TASK P2.3 — Guard JOURNAL_TABLE interpolation (ID 3)
+File: trading_app/utils.py
+Requirements:
+- Confirm where JOURNAL_TABLE originates (config constant vs env).
+- Add validation (allowlist or identifier check) before using it in f-string SQL.
+- Fail-closed if invalid, with clear error message.
+- No schema change.
+
+TASK P2.4 — Add timeout to app preflight subprocess (ID 4)
+File: trading_app/app_canonical.py
+Requirements:
+- Add timeout (default 30s unless repo has a standard).
+- Catch TimeoutExpired and show a recoverable Streamlit error message that instructs the user what to run manually.
+- Preserve fail-closed behavior (app should stop if preflight fails).
+- Do not change what preflight checks.
+
+TASK P2.5 — Standardize DuckDB parameter placeholders (ID 6)
+File: trading_app/ai_memory.py
+Requirements:
+- Verify DuckDB parameter style used across repo.
+- Convert $1..$N placeholders to ? placeholders if and only if this file executes against DuckDB connection in current code path.
+- Keep the parameter order identical.
+- Add a tiny sanity test call (existing tests preferred; do not add new heavy frameworks).
+
+TASK P2.6 — Make “Next step rail” accessible/true (ID 7)
+File: trading_app/redesign_components.py
+Requirements:
+- If it is meant to be clickable: convert to st.button or st.link_button and wire to existing callback/navigation (do not invent new navigation system).
+- If it is NOT meant to be clickable: remove misleading cursor/pointer styling and add clear label (e.g., “Next:”).
+- Must improve keyboard/accessibility and remove misleading semantics.
+
+TASK P2.7 — Gates (MANDATORY)
+Run (only if present in repo; otherwise explicitly report missing and STOP):
+- scripts/check/app_preflight.py
+- python -m py_compile on modified files
+- pytest -q
+- scripts/check/check_time_literals.py
+- python test_app_sync.py
+
+TASK P2.8 — Final report (MANDATORY)
+Create “PHASE_3B_COMPLETE_REPORT.md” including:
+- exact files changed
+- per-task summary
+- confirmation of constraints (no schema/new write paths/trading logic untouched)
+- gates run + results
+- any follow-ups explicitly deferred
+
+END.

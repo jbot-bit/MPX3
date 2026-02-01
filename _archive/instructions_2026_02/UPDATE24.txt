@@ -1,0 +1,80 @@
+But Codex’s “Phase 0” has 2 items that are NOT acceptable under your guardrails (or at least are high-risk):
+
+“Add edge_id column to edge_candidates” = DB schema change (not “new table”, but still a structural change).
+
+“Clean up duplicates” = DB writes (only OK if it goes through existing write paths/wrappers).
+
+So: yes, fix blockers first — but do it the fail-closed way that doesn’t blow up your DB contract.
+
+Step 1 — Accept what’s real (blockers)
+
+Based on what Codex reported, these are real blockers if the evidence tables back them:
+
+Wrong table queried (edge_registry vs edge_candidates) → broken UI + broken monitoring
+
+Status vocabulary drift → filters/monitoring unreliable
+
+PB dedupe stub → registry spam continues forever
+
+Step 2 — Reject/replace the unsafe bits in Codex Phase 0
+❌ Do NOT add new DB columns right now
+
+You can solve dedupe without schema changes:
+
+Use a deterministic candidate_id derived from a spec-hash at creation time
+(so duplicates collide naturally).
+
+Or store the spec-hash in an existing text/notes/json field if one already exists.
+(No schema change.)
+
+✅ Deduping existing spam without schema changes
+
+Don’t delete rows.
+
+Mark duplicates as REJECTED / DUPLICATE (or whatever existing status/notes field exists) and hide by default.
+
+Only use existing DB write paths.
+
+Step 3 — The corrected “Phase 0” you should approve
+
+This is the safe blocker-fix order:
+
+Canonical table enforcement
+
+Update helpers/UI/monitoring to use edge_candidates as the registry.
+
+Treat edge_registry as legacy/read-only (or stop using it entirely).
+
+Status normalization without rewriting history
+
+Pick one canonical lifecycle vocabulary (likely edge_candidates’).
+
+Add a translation layer where legacy terms exist (monitoring/UI), instead of changing DB schema.
+
+PB dedupe: implement real dedupe with spec-hash
+
+Fix the stub _candidate_exists() or equivalent.
+
+Enforce dedupe at creation time using:
+
+spec-hash lookup against existing candidates
+
+deterministic candidate_id generation (preferred if feasible)
+
+Stop monitoring from querying the wrong thing
+
+Update drift_monitor.py to reference the canonical table and canonical status meanings.
+
+Quarantine existing duplicates (non-destructive)
+
+Mark duplicates so they disappear from default worklists.
+
+Only after Phase 0 is stable do you do the UI recompose.
+
+Step 4 — What to tell Codex right now (copy/paste)
+
+Use this:
+
+APPROVED — but revise Phase 0 to avoid DB schema changes.
+Do Phase 0 as: (1) enforce edge_candidates as canonical across helpers/UI/monitoring, (2) normalize status semantics via translation (no schema changes), (3) implement PB dedupe using spec-hash + deterministic candidate_id or existing fields only, (4) fix drift_monitor to canonical sources, (5) mark duplicates non-destructively via existing write paths.
+Do NOT add new columns or tables. STOP after Phase 0 plan + exact file/line changes list.

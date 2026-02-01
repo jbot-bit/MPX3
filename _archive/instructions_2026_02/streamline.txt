@@ -1,0 +1,154 @@
+YOU ARE CLAUDE CODE OPERATING INSIDE MY MPX3 TRADING APP REPO.
+
+PRINT THIS HEADER FIRST (REQUIRED)
+- Mode: CODE GUARDIAN (ENFORCED)
+- Protocol: FAIL-CLOSED (no guessing, no invented paths, no phantom tables)
+- Two-pass only:
+  - PASS 1 = AUDIT & TASK LIST (NO CODE CHANGES)
+  - PASS 2 = IMPLEMENTATION (CODE CHANGES)
+- Decision: STRICT STAGE SEPARATION (A)
+- Naming ban: NO *_v2.py / *_new.py / *_temp.py / *_final.py
+
+AUTHORITY ORDER (ABSOLUTE)
+1) CLAUDE.md
+2) CANONICAL_LOGIC.txt (or equivalent)
+3) APP_COMPLETE_SURVEY.md
+4) GUARDIAN.md
+5) UI_CONTRACT.md / REDESIGN.TXT (if present)
+
+HARD CONSTRAINTS (FAIL-CLOSED)
+- DO NOT change trading math/execution/cost/slippage/ORB/entry rules.
+- DO NOT change pipelines that populate daily_features / validated_setups / archives.
+- DO NOT add new DB tables.
+- DO NOT add new DB write paths.
+- DO NOT create parallel UI apps.
+- If any required file/table/function is not found: STOP and report exactly what is missing.
+
+NON-NEGOTIABLE OWNERSHIP RULES
+- Search stage:
+  - shows ONLY transient search results (whatever your repo uses for search output)
+  - can “Create Candidate” via existing path only
+  - NEVER shows candidate registry
+  - NEVER approves/rejects/promotes
+- Candidates stage:
+  - the ONLY place with the canonical candidate registry worklist
+  - allowed actions: review/refine, notes, “mark ready for validation” (only if existing)
+  - NEVER approves/rejects/promotes
+- Validation stage:
+  - decision-only: Kill/Reject/Approve
+  - consumes ONLY items ready for validation (queue or filtered view)
+  - NEVER shows full registry
+  - NEVER promotes
+- Production stage:
+  - shows ONLY validated_setups (read-only)
+  - promotion/retire ONLY through the single canonical promotion path already present
+
+PB / rare bundles:
+- PB is presets in Search; chips/spec in Candidates/Production using existing JSON fields only.
+- No PB table. No PB-only screens.
+
+========================================================
+PASS 1 — AUDIT & TASK LIST (NO CODE CHANGES)
+========================================================
+TASK 1 — Repo truth inventory (STOP if missing)
+1.1 Open and summarize the guardrail docs in priority order:
+- CLAUDE.md
+- CANONICAL_LOGIC.txt (or whatever canonical logic file exists)
+- GUARDIAN.md
+- APP_COMPLETE_SURVEY.md
+If any are missing, list which and STOP.
+
+TASK 2 — UI entry-point map (no assumptions)
+2.1 Find ALL Streamlit entry points and UI modules.
+2.2 Produce a table:
+- file_path
+- how it is invoked (imported by what / main entry)
+- what “areas” it renders (research/candidates/validation/production/live etc.)
+
+TASK 3 — Object surface map (this kills duplication)
+3.1 Search for and list every UI surface that displays any of:
+- search results table/object (whatever it’s called in repo)
+- candidate registry table/object (edge_candidates or equivalent)
+- validation queue/table/object (validation_queue or equivalent)
+- production table/object (validated_setups)
+3.2 For each surface, record:
+- file + function/section
+- objects read
+- actions available (create/mark ready/approve/reject/promote)
+- whether action is DB write or session_state only (must be verified by code)
+
+TASK 4 — Canonical owners selection (based only on PASS 1 evidence)
+4.1 Decide which is the true candidate registry:
+- Prefer the table/object that stores candidate specs + metrics + lifecycle status.
+- validation_queue is staging only unless the code proves otherwise.
+4.2 Identify ALL promotion functions callable from UI.
+4.3 Select ONE canonical promotion path based on existing safety checks.
+If multiple exist, choose the one currently used by the safest/most-guarded UI path and mark the others “UI-disallowed”.
+
+TASK 5 — Stage router integration plan
+5.1 Identify where the left sidebar nav is implemented today.
+5.2 Propose EXACT stage rail integration using existing nav (do not invent a new framework):
+- Search / Candidates / Validation / Production
+- Advanced/Legacy collapsed
+5.3 For each stage, specify:
+- which existing render blocks will be moved under it
+- which blocks will be deleted or converted to summary/deep-link
+- what the “next action” hint text will be
+
+TASK 6 — Change list and risk check
+6.1 Output an ordered change list with:
+- exact files to edit
+- exact duplicated surfaces to remove
+- what becomes canonical
+6.2 Confirm no protected logic will be touched.
+
+STOP. DO NOT IMPLEMENT ANYTHING YET.
+Ask: “Proceed to PASS 2?”
+
+========================================================
+PASS 2 — IMPLEMENTATION (ONLY AFTER PASS 1 APPROVED)
+========================================================
+TASK 7 — Implement stage rail + router (reuse existing sidebar)
+7.1 Add/modify stage state:
+- st.session_state["stage"] with default to Search (or whatever current default is, if required)
+7.2 Implement stage router within the canonical UI entry point (likely app_canonical, but ONLY if PASS 1 confirms).
+
+TASK 8 — Recompose screens (move existing blocks, no logic changes)
+8.1 Search stage:
+- search controls + transient results
+- Create Candidate button uses existing function (do not reimplement)
+- scratchpad is UI-only (session_state)
+8.2 Candidates stage:
+- the ONE canonical candidate worklist + detail pane
+- allow mark-ready only if existing
+8.3 Validation stage:
+- decision-only UI (kill/approve/defer) using existing paths
+- MUST NOT show full registry list
+8.4 Production stage:
+- validated_setups grid (read-only)
+- promote/retire only through canonical promotion function (chosen in PASS 1)
+
+TASK 9 — Kill duplication everywhere
+9.1 For every other UI module found in PASS 1:
+- remove approve/reject/promote actions
+- replace with summary-only or deep-link to canonical stage
+9.2 Ensure there is only ONE candidate worklist in the entire app.
+
+TASK 10 — Enforce promotion-path single home
+10.1 Ensure only the canonical promotion function is reachable from UI.
+10.2 Add inline comments marking deprecated UI access for alternate promotion functions.
+
+TASK 11 — Cleanup & gates
+11.1 Remove dead routes/imports.
+11.2 Run mandatory gates:
+- scripts/check/app_preflight.py
+- pytest -q (if present)
+- scripts/check/check_time_literals.py (if present)
+
+TASK 12 — Final report
+- list files changed
+- list removed duplicate surfaces
+- confirm ownership rules enforced
+- confirm no schema/new write paths/protected logic changes
+
+END.

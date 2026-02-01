@@ -1,0 +1,95 @@
+MPX3 — PASS 2 (BUILD) — FAIL-CLOSED / SELF-DEFINING — “GET TO GREEN”
+You are Claude Code operating inside the MPX3 repository.
+
+ACKNOWLEDGEMENT (print first, exactly):
+"ACKNOWLEDGED — MPX3 Guarded Execution Prompt. PASS 2 only after PASS 1 evidence."
+
+AUTHORITY (must obey, in order):
+1) GUARDIAN.md
+2) latest update*.txt (update21.txt, update22.txt, update23a.txt, and any newer)
+3) APP_COMPLETE_SURVEY.md
+4) Existing code + tests
+
+NON-NEGOTIABLE CONSTRAINTS (fail-closed):
+- Two-pass policy: PASS 2 = IMPLEMENT ONLY what PASS 1 proved.
+- NO trading logic changes (execution_engine, cost_model, entry/exit rules, strategy math, sizing, slippage math).
+- NO schema changes (NO migrations, NO CREATE/ALTER TABLE, NO new tables/columns).
+- NO new DB write paths.
+- NO mock/simulated/example data anywhere.
+- NO broad refactors, no formatting-only sweeps, no “while we’re here”.
+- NO new duplicate flows or duplicate apps; NO *_v2.py / *_new.py / *_temp.py / *_final.py.
+- TSOT enforced: NO new hardcoded ORB literals/time windows; use time_spec-derived values only.
+- Diff budget: touch the fewest files possible; max 8 files unless a failing gate proves more.
+
+STOP CONDITIONS (auto-stop immediately):
+- Working tree not clean (unless the ONLY changes are the approved PASS2 scope and explicitly listed).
+- Any ambiguity about authority docs or DB/table existence.
+- Any requirement that implies schema changes or trading logic changes.
+- Any gate failure that can’t be fixed within constraints (STOP and report).
+
+SELF-DETECT (must do before edits):
+1) git rev-parse --abbrev-ref HEAD
+2) git status --porcelain
+3) git diff
+4) git log -n 15 --oneline --decorate
+5) list repo root docs: GUARDIAN.md, APP_COMPLETE_SURVEY.md, update*.txt, audit*.txt (if present)
+RULE: If working tree is dirty due to local-only files (audit notes, drafts) or .claude/settings.local.json changes:
+- DO NOT “fix” them automatically.
+- STOP and ask the user for an explicit instruction: (A) stash, (B) discard, or (C) keep and proceed while excluding them from commits.
+
+MANDATORY GATES (run, capture raw output + exit code):
+1) python scripts/check/app_preflight.py
+2) python test_app_sync.py
+3) pytest -q
+4) python scripts/check/check_time_literals.py
+
+IMPORTANT ABOUT gold.db:
+- You must NOT fabricate a DB.
+- You must NOT pretend gates pass.
+- If gates fail ONLY because gold.db is missing locally, you may ONLY:
+  - make the gate output fail-closed with an actionable message, OR
+  - make DB-dependent checks SKIP safely IF authority docs explicitly allow it.
+- Never weaken checks to “pass” without DB.
+
+PASS 2 SCOPE (implement in this order; smallest diff wins):
+(1) Pytest collection hard-fail
+- If any file aborts pytest via sys.exit() at import time, move CLI-only logic behind:
+  if __name__ == "__main__": main()
+- Goal: pytest -q can collect and run.
+
+(2) Confirmed runtime crash: drift_monitor tuple unpacking
+- Align SELECT columns with loop unpacking (either select single column OR unpack both).
+- No behavior changes beyond fixing the crash.
+
+(3) TSOT structural violations (must reach 0 NEW STRUCTURAL)
+- Replace hardcoded ORB strings/times with canonical time_spec/ORBS-derived values.
+- Remove template tokens like orb_{{time}} / {{orb_time}} from UI strings.
+- Avoid introducing any new time literals.
+
+(4) Remove mock data blocks
+- Delete mock performance claims / mock “recent insights”.
+- Replace with empty/“no data available” UI states that do not invent data.
+
+(5) Phase3b hardening items (ONLY if proven in PASS 1 and within constraints)
+- subprocess: no shell=True, use sys.executable where appropriate, enforce timeouts, log stderr/stdout
+- SQL allowlists: validate dynamic table/column selection against explicit allowlists, fail closed
+
+IMPLEMENTATION RULES:
+- Make one change at a time, then rerun the relevant gate(s).
+- Keep edits localized; do not rename/move modules unless required by a failing gate.
+- Never add new dependencies.
+- Any file edit must be directly tied to a failing gate or a proven crash.
+
+REQUIRED OUTPUT (end of PASS 2):
+1) Re-run all 4 gates and paste raw outputs + exit codes.
+2) Create PASS2_COMPLETE_REPORT.md in repo root containing:
+   - exact files changed
+   - why each change was required (tie to a gate/crash)
+   - confirmation: no trading logic changes, no schema changes, no mock data
+   - gate outputs summary + any remaining failures (with reasons)
+3) Commit ONLY the approved PASS2 changes:
+   - commit message: "phase3b: get-to-green + hardening (no schema/trading changes)"
+4) If remote exists: push current branch.
+5) STOP.
+
+BEGIN NOW.

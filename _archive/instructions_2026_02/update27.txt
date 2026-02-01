@@ -1,0 +1,82 @@
+GUARDIAN MODE — MPX3 — DISCOVERY UX IMPROVEMENT
+
+You are working inside the MPX3 repository.
+You MUST self-detect repo state and FAIL-CLOSED.
+
+AUTHORITY ORDER:
+1) GUARDIAN.md
+2) update21.txt / update22.txt / update23a.txt (and newer)
+3) Existing code + tests
+
+ABSOLUTE CONSTRAINTS:
+- Two-pass only:
+  PASS 1 = AUDIT / PLAN (NO CODE CHANGES)
+  PASS 2 = IMPLEMENT (ONLY after approval)
+- NO trading logic changes
+- NO execution math, scoring math, or cost logic changes
+- NO schema changes / migrations
+- NO new DB write paths
+- NO mock or simulated data
+- UI / Discovery behavior only
+- TSOT enforced (no new time literals)
+
+GOAL:
+Improve Discovery UX so users do not accidentally filter out all results.
+Discovery must be fail-open, noisy, and feedback-rich by default.
+
+DESIGN REQUIREMENTS:
+1) Split Discovery filters into:
+   - HARD (always-on, structural)
+   - SOFT (quality filters, opt-in only)
+
+2) SOFT FILTER RULES:
+   - Each soft filter has a checkbox to enable it
+   - Slider/input is disabled until checkbox is checked
+   - Default values are visible but inactive
+   - Disabled = muted/greyed
+   - Enabled = active/bright
+
+3) DISCOVERY MODE TOGGLE (UI STATE ONLY):
+   - "Explore" (default): all soft filters OFF, fail-open
+   - "Refine": soft filters allowed
+   - This is a mental model aid, not trading logic
+
+4) INLINE WARNINGS:
+   - When a soft filter is enabled, show a small inline hint:
+     "This filter can eliminate most results. Use after an initial scan."
+   - No popups or modals
+
+5) RESULTS-FIRST FEEDBACK:
+   - While scan runs, always show "Top N so far" (e.g. Top 10)
+   - Update live from existing scan results / checkpoints
+   - Even when soft filters are disabled
+
+6) DEFAULTS (FAIL-OPEN):
+   - Min Avg R: 0.0 (disabled)
+   - Min Win Rate: 0.0 (disabled)
+   - Max Drawdown: disabled
+   - Min Sharpe: disabled
+   - Min Trades: 20–30
+
+7) EXPECTATION SETTER:
+   - Add a small label near "Run Scan":
+     "Discovery scans are meant to be messy. Refinement comes later."
+
+PASS 1 — AUDIT / PLAN (NO CHANGES):
+- Print repo state (branch, git status, diff, recent commits)
+- Identify Discovery UI code paths (file + line numbers)
+- Identify where filters are defined and applied
+- Propose minimal UI-only changes to meet the above
+- List exact files to modify
+- Confirm no trading logic or schema impact
+- STOP and request approval with:
+  "APPROVAL REQUIRED — reply: APPROVED DISCOVERY UX PASS 2"
+
+PASS 2 — IMPLEMENT (ONLY AFTER APPROVAL):
+- Implement checkbox-gated soft filters
+- Add Explore / Refine mode toggle
+- Adjust defaults to fail-open
+- Add inline warnings
+- Add Top-N-so-far panel (read-only)
+- Run applicable gates and report raw output
+- STOP with summary + diffs
