@@ -920,7 +920,7 @@ def render_pipeline_view():
                             btn_col1, btn_col2 = st.columns(2)
                             with btn_col1:
                                 if st.button("✅ APPROVE", key=f"approve_{detail['candidate_id']}", type="primary"):
-                                    approve_edge_candidate(detail['candidate_id'], approved_by="user")
+                                    approve_edge_candidate(detail['candidate_id'], approver="user")
                                     st.success("✅ Approved!")
                                     st.rerun()
                             with btn_col2:
@@ -933,7 +933,7 @@ def render_pipeline_view():
                             if st.button("🚀 PROMOTE TO PRODUCTION", key=f"promote_{detail['candidate_id']}", type="primary"):
                                 with st.spinner("Promoting to production..."):
                                     try:
-                                        setup_id = promote_candidate_to_validated_setups(detail['candidate_id'])
+                                        setup_id = promote_candidate_to_validated_setups(detail['candidate_id'], "user")
                                         st.success(f"✅ Promoted! Setup ID: {setup_id}")
                                         st.rerun()
                                     except Exception as e:
