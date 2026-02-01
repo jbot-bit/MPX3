@@ -1,17 +1,53 @@
 """
 STRATEGY DISCOVERY ENGINE
 Backtest new ORB configurations and add profitable setups to production.
+
+Edge Engine V1: Append-only trial logging with fail-closed gates.
 """
 
 import duckdb
 import pandas as pd
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
 from typing import List, Optional, Dict
 import logging
 from pathlib import Path
 import os
+import hashlib
+import json
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
+
+# Edge Engine V1 Constants
+EDGE_ENGINE_VERSION = "v1.0.0"
+SCHEMA_VERSION = "1.0"
+GATES_VERSION = "v1_exp>0_trades>=100_stress2x"
+
+
+def compute_candidate_hash(config: 'DiscoveryConfig', date_start: str, date_end: str) -> str:
+    """
+    Compute deterministic SHA256 hash for candidate deduplication.
+
+    Edge Engine V1: Algorithm locked forever.
+    - Inputs: config params + date window
+    - Floats rounded to 6 decimals
+    - Sorted JSON for determinism
+    """
+    # Build hashable dict with floats rounded to 6 decimals
+    hash_data = {
+        "instrument": config.instrument,
+        "orb_time": config.orb_time,
+        "rr": round(config.rr, 6),
+        "sl_mode": config.sl_mode,
+        "orb_size_filter": round(config.orb_size_filter, 6) if config.orb_size_filter else None,
+        "date_start": date_start,
+        "date_end": date_end,
+    }
+
+    # Sort keys for determinism
+    json_str = json.dumps(hash_data, sort_keys=True)
+    return hashlib.sha256(json_str.encode()).hexdigest()[:16]  # First 16 chars
+
 
 @dataclass
 class DiscoveryConfig:
@@ -34,6 +70,13 @@ class BacktestResult:
     annual_trades: int  # Trades per year
     tier: str        # S+, S, A, B, C
     total_r: float   # Sum of all R multiples
+    # Edge Engine V1 fields
+    date_start: Optional[str] = None  # Effective data window start (ISO format)
+    date_end: Optional[str] = None    # Effective data window end (ISO format)
+    max_dd_R: Optional[float] = None  # Maximum drawdown in R-multiples
+    survives_stress: Optional[bool] = None  # Survives 2-tick stress test?
+    stress_avg_r: Optional[float] = None    # Avg R under stress conditions
+    candidate_hash: Optional[str] = None    # SHA256 hash for deduplication
 
     def to_dict(self):
         """Convert to dictionary for display"""
@@ -202,6 +245,19 @@ class StrategyDiscovery:
 
         tier = self._assign_tier(win_rate, avg_r)
 
+        # Edge Engine V1: Compute effective data window
+        date_start = str(df['date_local'].min().date()) if not df.empty else None
+        date_end = str(df['date_local'].max().date()) if not df.empty else None
+
+        # Edge Engine V1: Compute max drawdown in R
+        max_dd_R = self._compute_max_drawdown(r_values)
+
+        # Edge Engine V1: Run stress test (2x slippage)
+        survives_stress, stress_avg_r = self.run_stress_test(config, con)
+
+        # Edge Engine V1: Compute candidate hash for deduplication
+        candidate_hash = compute_candidate_hash(config, date_start, date_end) if date_start and date_end else None
+
         return BacktestResult(
             config=config,
             total_trades=total_trades,
@@ -211,7 +267,13 @@ class StrategyDiscovery:
             avg_r=avg_r,
             annual_trades=annual_trades,
             tier=tier,
-            total_r=total_r
+            total_r=total_r,
+            date_start=date_start,
+            date_end=date_end,
+            max_dd_R=max_dd_R,
+            survives_stress=survives_stress,
+            stress_avg_r=stress_avg_r,
+            candidate_hash=candidate_hash
         )
 
     def _assign_tier(self, win_rate: float, avg_r: float) -> str:
@@ -226,6 +288,100 @@ class StrategyDiscovery:
             return "B"
         else:
             return "C"
+
+    def _compute_max_drawdown(self, r_values: List[float]) -> float:
+        """
+        Compute maximum drawdown in R-multiples from equity curve.
+
+        Edge Engine V1: Observational metric only.
+        """
+        if not r_values:
+            return 0.0
+
+        # Build equity curve (cumulative R)
+        equity = 0.0
+        peak = 0.0
+        max_dd = 0.0
+
+        for r in r_values:
+            equity += r
+            if equity > peak:
+                peak = equity
+            dd = peak - equity
+            if dd > max_dd:
+                max_dd = dd
+
+        return round(max_dd, 4)
+
+    def run_stress_test(self, config: DiscoveryConfig, con) -> tuple:
+        """
+        Run stress test with 2x slippage (stress_level='moderate').
+
+        Edge Engine V1: Fail-closed gate - must survive stress to pass.
+
+        Returns:
+            (survives_stress: bool, stress_avg_r: float)
+        """
+        from strategies.execution_engine import simulate_orb_trade, ExecutionMode
+        from pipeline.cost_model import get_cost_model
+
+        table = self.feature_tables.get(config.instrument)
+        if not table:
+            return False, 0.0
+
+        orb_prefix = f"orb_{config.orb_time}"
+        query = f"""
+        SELECT date_local, CAST({orb_prefix}_size AS DOUBLE) as orb_size, atr_20 as atr
+        FROM {table}
+        WHERE {orb_prefix}_high IS NOT NULL
+          AND {orb_prefix}_low IS NOT NULL
+          AND {orb_prefix}_break_dir IS NOT NULL
+          AND {orb_prefix}_break_dir != 'NONE'
+        ORDER BY date_local
+        """
+
+        df = con.execute(query).df()
+        if df.empty:
+            return False, 0.0
+
+        # Apply ORB size filter
+        if config.orb_size_filter is not None:
+            df = df[df['orb_size'] <= (df['atr'] * config.orb_size_filter)]
+
+        if len(df) == 0:
+            return False, 0.0
+
+        # Get STRESS cost model (2x slippage)
+        stress_cost_model = get_cost_model(config.instrument, stress_level='moderate')
+
+        trades = []
+        for _, row in df.iterrows():
+            result = simulate_orb_trade(
+                con=con,
+                date_local=row['date_local'],
+                orb=config.orb_time,
+                mode='1m',
+                confirm_bars=1,
+                rr=config.rr,
+                sl_mode=config.sl_mode.lower(),
+                exec_mode=ExecutionMode.MARKET_ON_CLOSE,
+                slippage_ticks=stress_cost_model['slippage_ticks'],
+                commission_per_contract=stress_cost_model['commission_rt'] / 2
+            )
+            if result.outcome in ['WIN', 'LOSS']:
+                trades.append(result)
+
+        if len(trades) == 0:
+            return False, 0.0
+
+        # Calculate stress avg_r
+        r_values = [t.r_multiple - t.cost_r for t in trades]
+        stress_avg_r = sum(r_values) / len(r_values)
+
+        # Survives if avg_r > 0 under stress
+        survives = stress_avg_r > 0
+
+        return survives, round(stress_avg_r, 4)
 
     def discover_best_setups(
         self,
@@ -393,3 +549,173 @@ def generate_config_snippet(result: BacktestResult) -> str:
 """
 
     return snippet
+
+
+# =============================================================================
+# EDGE ENGINE V1: JSONL TRIAL LOGGING
+# =============================================================================
+
+TRIALS_LOG_PATH = Path("data/db/edge_engine_trials.jsonl")
+
+
+def get_cost_model_snapshot(instrument: str) -> Dict:
+    """
+    Get cost model snapshot for logging (frozen at trial time).
+
+    Edge Engine V1: Captures exact costs used for reproducibility.
+    """
+    try:
+        from pipeline.cost_model import get_cost_model
+        cm = get_cost_model(instrument)
+        return {
+            "instrument": instrument,
+            "tick_size": cm.get("tick_size"),
+            "tick_value": cm.get("tick_value"),
+            "point_value": cm.get("point_value"),
+            "commission_rt": cm.get("commission_rt"),
+            "slippage_ticks": cm.get("slippage_ticks"),
+            "spread_double": cm.get("spread_double"),
+            "friction_total": cm.get("friction_total"),
+        }
+    except Exception as e:
+        logger.warning(f"Could not get cost model: {e}")
+        return {"instrument": instrument, "error": str(e)}
+
+
+def evaluate_gates(result: BacktestResult) -> tuple:
+    """
+    Evaluate fail-closed gates for Edge Engine V1.
+
+    Gates (ALL must pass):
+    1. Expectancy > 0 (avg_r > 0)
+    2. Total trades >= 100
+    3. Survives 2x slippage stress test
+
+    Returns:
+        (verdict: str, fail_reason: Optional[str])
+        verdict: "PASS" or "FAIL"
+    """
+    reasons = []
+
+    # Gate 1: Expectancy > 0
+    if result.avg_r <= 0:
+        reasons.append(f"expectancy_negative:{result.avg_r:.4f}")
+
+    # Gate 2: Trades >= 100
+    if result.total_trades < 100:
+        reasons.append(f"trades_insufficient:{result.total_trades}")
+
+    # Gate 3: Survives stress
+    if not result.survives_stress:
+        stress_r = result.stress_avg_r if result.stress_avg_r else 0.0
+        reasons.append(f"stress_fail:{stress_r:.4f}")
+
+    if reasons:
+        return "FAIL", "|".join(reasons)
+    else:
+        return "PASS", None
+
+
+def build_trial_log_entry(result: BacktestResult, execution_mode: str = "MARKET_ON_CLOSE") -> Dict:
+    """
+    Build complete trial log entry for JSONL.
+
+    Edge Engine V1: Immutable schema - fields cannot be removed or renamed.
+    """
+    verdict, fail_reason = evaluate_gates(result)
+
+    return {
+        # Schema metadata (locked forever)
+        "schema_version": SCHEMA_VERSION,
+        "engine_version": EDGE_ENGINE_VERSION,
+        "gates_version": GATES_VERSION,
+        "logged_at": datetime.utcnow().isoformat() + "Z",
+
+        # Candidate identification
+        "candidate_hash": result.candidate_hash,
+        "instrument": result.config.instrument,
+        "orb_time": result.config.orb_time,
+        "rr": result.config.rr,
+        "sl_mode": result.config.sl_mode,
+        "orb_size_filter": result.config.orb_size_filter,
+
+        # Data window
+        "date_start": result.date_start,
+        "date_end": result.date_end,
+
+        # Performance metrics
+        "total_trades": result.total_trades,
+        "wins": result.wins,
+        "losses": result.losses,
+        "win_rate": round(result.win_rate, 4),
+        "avg_r": round(result.avg_r, 6),
+        "total_r": round(result.total_r, 4),
+        "max_dd_R": result.max_dd_R,
+        "annual_trades": result.annual_trades,
+        "tier": result.tier,
+
+        # Stress test results
+        "survives_stress": result.survives_stress,
+        "stress_avg_r": result.stress_avg_r,
+
+        # Execution context
+        "execution_mode": execution_mode,
+        "cost_model_snapshot": get_cost_model_snapshot(result.config.instrument),
+
+        # Gate verdict
+        "verdict": verdict,
+        "fail_reason": fail_reason,
+    }
+
+
+def append_trial_log(result: BacktestResult, execution_mode: str = "MARKET_ON_CLOSE") -> bool:
+    """
+    Atomically append trial to JSONL log (Windows-safe).
+
+    Edge Engine V1: Append-only, no modifications to existing entries.
+    Uses atomic write pattern for Windows compatibility.
+
+    Returns:
+        True if logged successfully, False otherwise.
+    """
+    try:
+        # Ensure directory exists
+        TRIALS_LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+
+        # Build log entry
+        entry = build_trial_log_entry(result, execution_mode)
+        json_line = json.dumps(entry, separators=(',', ':')) + "\n"
+
+        # Windows-safe atomic append
+        # Open in append+binary mode, write encoded bytes, then flush+sync
+        with open(TRIALS_LOG_PATH, "ab") as f:
+            f.write(json_line.encode("utf-8"))
+            f.flush()
+            os.fsync(f.fileno())  # Force write to disk
+
+        logger.info(f"Logged trial {entry['candidate_hash']}: {entry['verdict']}")
+        return True
+
+    except Exception as e:
+        logger.error(f"Failed to log trial: {e}")
+        return False
+
+
+def log_discovery_trial(result: BacktestResult, execution_mode: str = "MARKET_ON_CLOSE") -> Dict:
+    """
+    Complete trial logging workflow with gate evaluation.
+
+    Edge Engine V1: Entry point for strategy discovery logging.
+
+    Returns:
+        Dict with verdict, fail_reason, and logged status.
+    """
+    verdict, fail_reason = evaluate_gates(result)
+    logged = append_trial_log(result, execution_mode)
+
+    return {
+        "verdict": verdict,
+        "fail_reason": fail_reason,
+        "logged": logged,
+        "candidate_hash": result.candidate_hash,
+    }
