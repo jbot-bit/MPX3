@@ -59,8 +59,8 @@ def get_motherduck_connection(read_only: bool = True):
     try:
         import streamlit as st
         token = st.secrets.get("MOTHERDUCK_TOKEN", os.getenv("MOTHERDUCK_TOKEN"))
-    except (ImportError, AttributeError, KeyError) as e:
-        # Streamlit not available or secrets not configured
+    except Exception:
+        # Streamlit not available, secrets not configured, or no secrets file
         token = os.getenv("MOTHERDUCK_TOKEN")
 
     if not token:
@@ -160,8 +160,8 @@ def get_database_path() -> str:
         try:
             import streamlit as st
             token = st.secrets.get("MOTHERDUCK_TOKEN", os.getenv("MOTHERDUCK_TOKEN"))
-        except (ImportError, AttributeError, KeyError) as e:
-            # Streamlit not available or secrets not configured
+        except Exception:
+            # Streamlit not available, secrets not configured, or no secrets file
             token = os.getenv("MOTHERDUCK_TOKEN")
 
         if token:

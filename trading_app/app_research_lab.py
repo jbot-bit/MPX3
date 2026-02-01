@@ -11,7 +11,11 @@ This is where the real work happens.
 """
 
 import sys
+import os
 from pathlib import Path
+
+# Force local database (avoid MotherDuck)
+os.environ['FORCE_LOCAL_DB'] = '1'
 
 # Add paths for imports
 if __name__ == "__main__" or "streamlit" in sys.modules:
@@ -260,7 +264,7 @@ def render_discovery_view():
     with col1:
         min_win_rate = st.slider("MIN WIN RATE", 0.0, 1.0, 0.50, 0.01)
     with col2:
-        min_avg_r = st.slider("MIN AVG R", 0.0, 5.0, 1.0, 0.1)
+        min_avg_r = st.slider("MIN AVG R", -1.0, 2.0, 0.0, 0.05)  # Realistic range: edges are 0.05-0.30R
     with col3:
         max_drawdown = st.slider("MAX DRAWDOWN R", 0.0, 10.0, 5.0, 0.5)
     with col4:
