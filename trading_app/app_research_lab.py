@@ -1057,10 +1057,10 @@ def render_backtester_view():
 
     with col1:
         st.markdown("### ENTRY FILTERS")
-        orb_min = st.number_input("Min ORB Size", min_value=0.0, max_value=10.0, value=0.0, step=0.05)
-        orb_max = st.number_input("Max ORB Size", min_value=0.0, max_value=20.0, value=99.0, step=0.05)
-        atr_min = st.number_input("Min ATR", min_value=0.0, max_value=10.0, value=0.0, step=0.1)
-        atr_max = st.number_input("Max ATR", min_value=0.0, max_value=20.0, value=99.0, step=0.1)
+        orb_min = st.number_input("Min ORB Size", min_value=0.0, max_value=10.0, value=0.0, step=0.05, disabled=True, help="⚠️ Not implemented")
+        orb_max = st.number_input("Max ORB Size", min_value=0.0, max_value=20.0, value=99.0, step=0.05, disabled=True, help="⚠️ Not implemented")
+        atr_min = st.number_input("Min ATR", min_value=0.0, max_value=10.0, value=0.0, step=0.1, disabled=True, help="⚠️ Not implemented")
+        atr_max = st.number_input("Max ATR", min_value=0.0, max_value=20.0, value=99.0, step=0.1, disabled=True, help="⚠️ Not implemented")
 
     with col2:
         st.markdown("### TEST WINDOW")
@@ -1069,7 +1069,7 @@ def render_backtester_view():
 
         st.markdown("### ADVANCED")
         half_sl = st.checkbox("Use Half Stop Loss", value=False, help="Use 50% of ORB as stop")
-        extended_window = st.checkbox("Extended Profit Window", value=False, help="Allow 24h for targets")
+        extended_window = st.checkbox("Extended Profit Window", value=False, disabled=True, help="⚠️ Not implemented")
 
     render_section_divider()
 
