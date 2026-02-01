@@ -53,6 +53,10 @@ class SearchSettings:
     min_expected_r: float = 0.15
     date_start: Optional[date] = None
     date_end: Optional[date] = None
+    # UPDATE28: New controls
+    min_rr: Optional[float] = None  # Filter out RR targets below this value
+    scan_mode: str = 'full'  # 'full', 'coarse', 'focused'
+    focus_orb_times: List[str] = None  # For 'focused' mode: only scan these ORBs
 
     def __post_init__(self):
         # Defaults
@@ -235,7 +239,11 @@ class AutoSearchEngine:
             min_sample_size=settings.get('min_sample_size', 30),
             min_expected_r=settings.get('min_expected_r', 0.15),
             date_start=settings.get('date_start'),
-            date_end=settings.get('date_end')
+            date_end=settings.get('date_end'),
+            # UPDATE28: New controls
+            min_rr=settings.get('min_rr'),
+            scan_mode=settings.get('scan_mode', 'full'),
+            focus_orb_times=settings.get('focus_orb_times')
         )
 
         # Create run record
@@ -386,10 +394,23 @@ class AutoSearchEngine:
         """Generate all parameter combinations to test"""
         combinations = []
 
+        # UPDATE28: Determine which ORB times to scan based on scan_mode
+        if settings.scan_mode == 'focused' and settings.focus_orb_times:
+            orb_times_to_scan = settings.focus_orb_times
+        elif settings.scan_mode == 'coarse':
+            # Coarse mode: only primary ORBs (0900, 1000, 1100)
+            orb_times_to_scan = [t for t in settings.orb_times if t in ['0900', '1000', '1100']]
+        else:
+            orb_times_to_scan = settings.orb_times
+
         # Simple baseline: ORB × RR (no filters)
         # PROXY MODE: No RR-specific data, use stored model from daily_features
-        for orb_time in settings.orb_times:
+        for orb_time in orb_times_to_scan:
             for rr_target in settings.rr_targets:
+                # UPDATE28: Filter by min_rr if set
+                if settings.min_rr is not None and rr_target is not None:
+                    if rr_target < settings.min_rr:
+                        continue
                 # Accept None (proxy mode) or skip non-None values
                 if rr_target is not None and rr_target != 1.0:
                     logger.warning(f"Skipping RR={rr_target} for {orb_time} (proxy mode only, no RR-specific data)")
@@ -404,7 +425,9 @@ class AutoSearchEngine:
                     'filters': {}
                 })
 
-                # Generate filter combinations
+                # Generate filter combinations (skip in coarse mode)
+                if settings.scan_mode == 'coarse':
+                    continue  # UPDATE28: Coarse mode skips filters
                 if settings.filter_types and settings.filter_ranges:
                     # Generate all filter combinations for this ORB + RR pair
                     for filter_type in settings.filter_types:
