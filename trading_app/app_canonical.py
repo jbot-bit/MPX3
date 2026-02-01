@@ -879,7 +879,7 @@ with tab_research:
         search_max_seconds_custom = st.number_input(
             "Timeout (seconds)",
             min_value=30,
-            max_value=300,
+            max_value=3600,
             value=300,
             step=30,
             key="advanced_timeout"
@@ -891,6 +891,37 @@ with tab_research:
             index=0,
             key="advanced_setup_family"
         )
+
+        # UPDATE28: Min RR filter
+        min_rr_filter = st.slider(
+            "Min RR Target",
+            min_value=1.0,
+            max_value=8.0,
+            value=1.5,
+            step=0.5,
+            key="min_rr_filter",
+            help="Filter out RR targets below this value"
+        )
+
+        # UPDATE28: Scan mode
+        scan_mode = st.radio(
+            "Scan Mode",
+            options=["full", "coarse", "focused"],
+            index=0,
+            horizontal=True,
+            key="scan_mode",
+            help="full=all combos, coarse=primary ORBs only (fast), focused=specific ORBs"
+        )
+
+        # UPDATE28: Focus ORBs (only shown in focused mode)
+        if scan_mode == "focused":
+            focus_orb_times = st.multiselect(
+                "Focus ORBs",
+                options=ORBS,
+                default=[ORBS[1]],  # Default to second ORB
+                key="focus_orb_times",
+                help="Only scan these specific ORB times"
+            )
 
     st.markdown("---")
 
@@ -934,6 +965,10 @@ with tab_research:
                 search_max_seconds = st.session_state.get('advanced_timeout', 300)
 
                 # Build settings dict with new parameters
+                # UPDATE28: Get new controls from session state
+                scan_mode_val = st.session_state.get('scan_mode', 'full')
+                focus_orbs = st.session_state.get('focus_orb_times') if scan_mode_val == 'focused' else None
+
                 search_settings = {
                     'family': setup_family,  # Default ORB_BASELINE, overridable in Advanced Mode
                     'orb_times': orb_times,  # NEW: User-selected ORB times
@@ -941,6 +976,10 @@ with tab_research:
                     'entry_rule': entry_rule_value,  # NEW: Entry rule selection
                     'direction_bias': direction_bias,  # NEW: Direction filter
                     'min_sample_size': min_sample_size,  # NEW: Sample size threshold
+                    # UPDATE28: New controls
+                    'min_rr': st.session_state.get('min_rr_filter'),
+                    'scan_mode': scan_mode_val,
+                    'focus_orb_times': focus_orbs,
                     **filter_settings  # Merge ORB size filter if enabled
                 }
 

@@ -15,6 +15,7 @@ import os
 import hashlib
 import json
 from datetime import datetime
+from trading_app.time_spec import NIGHT_ORBS
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +54,7 @@ def compute_candidate_hash(config: 'DiscoveryConfig', date_start: str, date_end:
 class DiscoveryConfig:
     """Configuration for backtesting"""
     instrument: str  # MGC, NQ, MPL
-    orb_time: str    # 0900, 1000, 1100, 1800, 2300, 0030
+    orb_time: str    # One of ORBS from time_spec
     rr: float        # Risk/Reward multiple (1.0, 1.5, 3.0, 6.0, 8.0, etc.)
     sl_mode: str     # FULL or HALF
     orb_size_filter: Optional[float] = None  # % of ATR (0.10, 0.15, etc.) or None
@@ -526,7 +527,7 @@ def generate_config_snippet(result: BacktestResult) -> str:
     orb = result.config.orb_time
 
     # Determine tier string for config
-    if result.config.orb_time in ['2300', '0030']:
+    if result.config.orb_time in NIGHT_ORBS:
         tier_str = "NIGHT"
     else:
         tier_str = "DAY"

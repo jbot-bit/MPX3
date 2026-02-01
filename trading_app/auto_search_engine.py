@@ -36,6 +36,7 @@ import math
 from trading_app.result_classifier import classify_result, RULESET_VERSION
 from trading_app.priority_engine import PriorityEngine, PRIORITY_VERSION
 from trading_app.provenance import create_provenance_dict
+from trading_app.time_spec import ORBS, PRIMARY_ORBS
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +46,7 @@ class SearchSettings:
     """Search configuration"""
     instrument: str = 'MGC'
     setup_family: str = 'ORB_BASELINE'  # ORB_BASELINE, ORB_L4, ORB_RSI, etc.
-    orb_times: List[str] = None  # ['0900', '1000', '1100']
+    orb_times: List[str] = None  # e.g., PRIMARY_ORBS or ORBS
     rr_targets: List[float] = None  # [1.5, 2.0, 2.5, 3.0]
     filter_types: List[str] = None  # ['SIZE', 'TRAVEL', 'SESSION_TYPE']
     filter_ranges: Dict[str, List[float]] = None  # {'orb_size': [0.05, 0.10, 0.15]}
@@ -61,7 +62,7 @@ class SearchSettings:
     def __post_init__(self):
         # Defaults
         if self.orb_times is None:
-            self.orb_times = ['0900', '1000', '1100']
+            self.orb_times = PRIMARY_ORBS
         if self.rr_targets is None:
             self.rr_targets = [1.5, 2.0]
         if self.filter_types is None:
@@ -398,8 +399,8 @@ class AutoSearchEngine:
         if settings.scan_mode == 'focused' and settings.focus_orb_times:
             orb_times_to_scan = settings.focus_orb_times
         elif settings.scan_mode == 'coarse':
-            # Coarse mode: only primary ORBs (0900, 1000, 1100)
-            orb_times_to_scan = [t for t in settings.orb_times if t in ['0900', '1000', '1100']]
+            # Coarse mode: only primary ORBs
+            orb_times_to_scan = [t for t in settings.orb_times if t in PRIMARY_ORBS]
         else:
             orb_times_to_scan = settings.orb_times
 
@@ -855,7 +856,7 @@ def test_engine():
     params1 = {
         'instrument': 'MGC',
         'setup_family': 'ORB_BASELINE',
-        'orb_time': '0900',
+        'orb_time': PRIMARY_ORBS[0],  # First primary ORB
         'rr_target': 1.5,
         'filters': {}
     }
@@ -872,7 +873,7 @@ def test_engine():
         instrument='MGC',
         settings={
             'family': 'ORB_BASELINE',
-            'orb_times': ['0900', '1000'],
+            'orb_times': PRIMARY_ORBS[:2],  # First two primary ORBs
             'rr_targets': [1.5, 2.0],
             'min_sample_size': 30,
             'min_expected_r': 0.15

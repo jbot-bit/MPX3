@@ -57,6 +57,12 @@ SESSIONS = {
 # All 6 ORBs with formation windows
 ORBS = ['0900', '1000', '1100', '1800', '2300', '0030']
 
+# Primary ORBs (day session, used for coarse scanning)
+PRIMARY_ORBS = ['0900', '1000', '1100']
+
+# Night ORBs (evening/overnight session)
+NIGHT_ORBS = ['2300', '0030']
+
 # ORB formation windows (start_time, duration_minutes)
 ORB_FORMATION = {
     '0900': {
