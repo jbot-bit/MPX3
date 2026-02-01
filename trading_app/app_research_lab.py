@@ -642,11 +642,13 @@ def render_discovery_view():
                             "annual_trades": res.get("annual_trades"),
                             "tier": res.get("tier", "C")
                         }
+                        # Get slippage from cost_model (no hardcoding)
+                        cost = get_cost_model(cfg.get("instrument", "MGC"))
                         slippage_assumptions = {
-                            "commission": 2.40,
-                            "spread": 2.00,
-                            "slippage": 4.00,
-                            "total_rt_cost": 8.40
+                            "commission": cost['commission_rt'],
+                            "spread": cost['spread_double'],
+                            "slippage": cost['slippage_rt'],
+                            "total_rt_cost": cost['total_friction']
                         }
 
                         # Get db connection from app state
