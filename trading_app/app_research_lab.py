@@ -357,6 +357,21 @@ def render_discovery_view():
 
     render_section_divider("SCAN PARAMETERS")
 
+    # Explore/Refine mode toggle (UI state only)
+    discovery_mode = st.radio(
+        "Discovery Mode",
+        ["🔍 Explore", "🎯 Refine"],
+        horizontal=True,
+        key="discovery_mode",
+        help="Explore: quality filters OFF (see all results). Refine: enable filters to narrow."
+    )
+    is_explore_mode = (discovery_mode == "🔍 Explore")
+
+    if is_explore_mode:
+        st.caption("**Explore mode:** Quality filters disabled. All results shown.")
+    else:
+        st.caption("**Refine mode:** Enable quality filters below to narrow results.")
+
     col1, col2, col3 = st.columns(3)
 
     with col1:
@@ -371,20 +386,54 @@ def render_discovery_view():
         )
 
     with col3:
-        min_trades = st.number_input("MIN TRADES", min_value=10, value=50, key="disc_min_trades")
+        min_trades = st.number_input("MIN TRADES (required)", min_value=10, value=30, key="disc_min_trades",
+                                     help="Hard filter: minimum sample size for statistical validity")
 
-    render_section_divider()
+    render_section_divider("QUALITY FILTERS (optional)")
 
-    col1, col2, col3, col4 = st.columns(4)
+    st.caption("⚠️ These filters can eliminate most results. Enable only after an initial Explore scan.")
+
+    # Soft filters: checkbox-gated, disabled by default
+    # In Explore mode: force all checkboxes OFF
+    col1, col2 = st.columns(2)
 
     with col1:
-        min_win_rate = st.slider("MIN WIN RATE", 0.0, 1.0, 0.50, 0.01)
+        # Min Win Rate
+        use_win_rate = st.checkbox("Enable Min Win Rate", value=False, key="use_win_rate",
+                                   disabled=is_explore_mode)
+        if use_win_rate and not is_explore_mode:
+            min_win_rate = st.slider("Min Win Rate", 0.0, 1.0, 0.40, 0.01, key="slider_win_rate")
+        else:
+            min_win_rate = 0.0  # Fail-open: no filter
+            st.slider("Min Win Rate", 0.0, 1.0, 0.40, 0.01, key="slider_win_rate_disabled", disabled=True)
+
+        # Min Avg R
+        use_avg_r = st.checkbox("Enable Min Avg R", value=False, key="use_avg_r",
+                                disabled=is_explore_mode)
+        if use_avg_r and not is_explore_mode:
+            min_avg_r = st.slider("Min Avg R", -1.0, 2.0, 0.0, 0.05, key="slider_avg_r")
+        else:
+            min_avg_r = -999.0  # Fail-open: no filter
+            st.slider("Min Avg R", -1.0, 2.0, 0.0, 0.05, key="slider_avg_r_disabled", disabled=True)
+
     with col2:
-        min_avg_r = st.slider("MIN AVG R", -1.0, 2.0, 0.0, 0.05)  # Realistic range: edges are 0.05-0.30R
-    with col3:
-        max_drawdown = st.slider("MAX DRAWDOWN R", 0.0, 10.0, 5.0, 0.5)
-    with col4:
-        min_sharpe = st.slider("MIN SHARPE", 0.0, 3.0, 0.5, 0.1)
+        # Max Drawdown
+        use_drawdown = st.checkbox("Enable Max Drawdown", value=False, key="use_drawdown",
+                                   disabled=is_explore_mode)
+        if use_drawdown and not is_explore_mode:
+            max_drawdown = st.slider("Max Drawdown R", 0.0, 20.0, 5.0, 0.5, key="slider_drawdown")
+        else:
+            max_drawdown = 999.0  # Fail-open: no filter
+            st.slider("Max Drawdown R", 0.0, 20.0, 5.0, 0.5, key="slider_drawdown_disabled", disabled=True)
+
+        # Min Sharpe
+        use_sharpe = st.checkbox("Enable Min Sharpe", value=False, key="use_sharpe",
+                                 disabled=is_explore_mode)
+        if use_sharpe and not is_explore_mode:
+            min_sharpe = st.slider("Min Sharpe", 0.0, 3.0, 0.3, 0.1, key="slider_sharpe")
+        else:
+            min_sharpe = -999.0  # Fail-open: no filter
+            st.slider("Min Sharpe", 0.0, 3.0, 0.3, 0.1, key="slider_sharpe_disabled", disabled=True)
 
     render_section_divider("FILTER TESTING")
 
@@ -453,6 +502,31 @@ def render_discovery_view():
             <div>No checkpoint or settings changed. Ready for new scan.</div>
         </div>
         """, unsafe_allow_html=True)
+
+    # Top-N panel (read-only from checkpoint)
+    if checkpoint_results and len(checkpoint_results) > 0:
+        # Sort by total_r descending, show top 5
+        sorted_results = sorted(
+            checkpoint_results,
+            key=lambda r: r.get("result", {}).get("total_r", -999),
+            reverse=True
+        )[:5]
+
+        st.markdown("**📊 Top 5 so far:**")
+        top_n_text = []
+        for r in sorted_results:
+            cfg = r.get("config", {})
+            res = r.get("result", {})
+            total_r = res.get("total_r", 0)
+            if total_r > 0:
+                top_n_text.append(f"• {cfg.get('orb_time', '?')} RR={cfg.get('rr', '?')} SL={cfg.get('sl_mode', '?')} → **{total_r:+.1f}R**")
+        if top_n_text:
+            st.markdown("  \n".join(top_n_text))
+        else:
+            st.caption("No profitable configs found yet.")
+
+    # Expectation setter
+    st.caption("💡 Discovery scans are meant to be messy. Refinement comes later.")
 
     # Three buttons: Run/Continue, View Results, Reset
     btn_col1, btn_col2, btn_col3 = st.columns(3)
