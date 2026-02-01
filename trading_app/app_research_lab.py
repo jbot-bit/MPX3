@@ -145,7 +145,8 @@ def _save_checkpoint_line(idx: int, config: 'DiscoveryConfig', result: 'Backtest
             "win_rate": result.win_rate,
             "avg_r": result.avg_r,
             "total_r": result.total_r,
-            "tier": result.tier
+            "tier": result.tier,
+            "max_drawdown_r": getattr(result, 'max_dd_R', None)  # L1 fix: persist max_dd_R
         },
         "ts": datetime.now().isoformat()
     }
@@ -436,14 +437,11 @@ def render_discovery_view():
             max_drawdown = 999.0  # Fail-open: no filter
             st.slider("Max Drawdown R", 0.0, 20.0, 5.0, 0.5, key="slider_drawdown_disabled", disabled=True)
 
-        # Min Sharpe
-        use_sharpe = st.checkbox("Enable Min Sharpe", value=False, key="use_sharpe",
-                                 disabled=is_explore_mode)
-        if use_sharpe and not is_explore_mode:
-            min_sharpe = st.slider("Min Sharpe", 0.0, 3.0, 0.3, 0.1, key="slider_sharpe")
-        else:
-            min_sharpe = -999.0  # Fail-open: no filter
-            st.slider("Min Sharpe", 0.0, 3.0, 0.3, 0.1, key="slider_sharpe_disabled", disabled=True)
+        # Min Sharpe (L2 fix: Disabled - sharpe_ratio not computed in Discovery scans)
+        st.checkbox("Enable Min Sharpe", value=False, key="use_sharpe",
+                    disabled=True, help="⚠️ Sharpe ratio not available in Discovery scans. Use Research Pipeline for Sharpe filtering.")
+        min_sharpe = -999.0  # Always fail-open: sharpe not computed in Discovery
+        st.slider("Min Sharpe", 0.0, 3.0, 0.3, 0.1, key="slider_sharpe_disabled", disabled=True)
 
     render_section_divider("FILTER TESTING")
 
