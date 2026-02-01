@@ -103,6 +103,7 @@ def _log_discovery_trial(
         trial_id = hashlib.sha256(config_str.encode()).hexdigest()[:12]
 
         entry = {
+            "entry_type": "progressive_eval",
             "trial_id": trial_id,
             "logged_at": datetime.utcnow().isoformat() + "Z",
             "config": {
@@ -1038,7 +1039,7 @@ def generate_config_snippet(result: BacktestResult) -> str:
 # EDGE ENGINE V1: JSONL TRIAL LOGGING
 # =============================================================================
 
-TRIALS_LOG_PATH = Path("data/db/edge_engine_trials.jsonl")
+TRIALS_LOG_PATH = Path("artifacts/discovery_trials.jsonl")
 
 
 def get_cost_model_snapshot(instrument: str) -> Dict:
@@ -1108,6 +1109,8 @@ def build_trial_log_entry(result: BacktestResult, execution_mode: str = "MARKET_
     verdict, fail_reason = evaluate_gates(result)
 
     return {
+        # Entry type discriminator (for mixed log files)
+        "entry_type": "edge_engine_v1",
         # Schema metadata (locked forever)
         "schema_version": SCHEMA_VERSION,
         "engine_version": EDGE_ENGINE_VERSION,
