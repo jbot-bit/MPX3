@@ -42,7 +42,7 @@ from cloud_mode import get_database_connection, get_database_path
 from research_runner import ResearchRunner, BacktestMetrics
 from edge_candidate_utils import parse_json_field, approve_edge_candidate, set_candidate_status
 from edge_pipeline import promote_candidate_to_validated_setups, create_edge_candidate
-from strategy_discovery import StrategyDiscovery, DiscoveryConfig
+from strategy_discovery import StrategyDiscovery, DiscoveryConfig, ProgressiveEvalSettings
 
 # Import terminal theme
 from terminal_theme import inject_terminal_theme
@@ -476,6 +476,47 @@ def render_discovery_view():
     chunk_seconds = st.slider("SCAN CHUNK (seconds)", 30, 300, 120, 30,
                               help="Run scan in chunks to avoid timeouts. Results saved between chunks.")
 
+    render_section_divider("PROGRESSIVE EVALUATION (Speed Optimization)")
+
+    st.caption("⚡ Progressive evaluation tests configs in stages, pruning losers early to save time.")
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        enable_progressive = st.checkbox(
+            "Enable Progressive Evaluation",
+            value=False,
+            key="enable_progressive_eval",
+            help="Stage 1→2→3 evaluation. Prunes configs that fail early gates."
+        )
+        min_trades_stage = st.number_input(
+            "Min Trades per Stage",
+            min_value=20,
+            max_value=200,
+            value=50,
+            key="min_trades_stage",
+            help="Minimum trades required to pass each stage gate",
+            disabled=not enable_progressive
+        )
+
+    with col2:
+        enable_early_exit = st.checkbox(
+            "Enable Early Exit",
+            value=False,
+            key="enable_early_exit",
+            help="Stop backtest early if strongly negative (OFF by default)",
+            disabled=not enable_progressive
+        )
+        early_exit_floor = st.number_input(
+            "Early Exit Trade Floor",
+            min_value=20,
+            max_value=200,
+            value=50,
+            key="early_exit_floor",
+            help="Minimum trades before early exit can trigger",
+            disabled=not enable_progressive or not enable_early_exit
+        )
+
     # Generate configs for hash calculation (needed for checkpoint validation)
     rr_targets = [1.0, 1.5, 2.0, 3.0, 4.0, 5.0, 6.0, 8.0] if test_rr_targets else [4.0]
     sl_modes = ["FULL", "HALF"]
@@ -719,15 +760,45 @@ def render_discovery_view():
                 else:
                     st.info(f"Testing configs {start_idx + 1} to {total_configs}...")
 
+                    # Build progressive eval settings from UI
+                    prog_settings = ProgressiveEvalSettings(
+                        enable_progressive_eval=enable_progressive,
+                        min_trades_stage=min_trades_stage,
+                        stage_1_avg_r_threshold=-0.05,
+                        stage_2_avg_r_threshold=0.0,
+                        enable_early_exit=enable_early_exit if enable_progressive else False,
+                        early_exit_trade_floor=early_exit_floor if enable_progressive else 50,
+                        early_exit_avg_r_threshold=-0.5
+                    )
+
                     # Run timeboxed loop
                     progress_bar = st.progress(start_idx / total_configs)
                     hits_this_chunk = 0
                     processed_this_chunk = 0
+                    pruned_this_chunk = 0
                     chunk_start = time.monotonic()
 
                     for i in range(start_idx, total_configs):
                         config = configs[i]
-                        result = discovery.backtest_configuration(config)
+
+                        # Use progressive evaluation if enabled
+                        if enable_progressive:
+                            result, outcome, stage = discovery.backtest_configuration_progressive(
+                                config, prog_settings
+                            )
+                            if result is None:
+                                # Config was pruned - still count as processed
+                                pruned_this_chunk += 1
+                                processed_this_chunk += 1
+                                progress_bar.progress((i + 1) / total_configs)
+
+                                # Check timebox
+                                elapsed_chunk = time.monotonic() - chunk_start
+                                if elapsed_chunk >= chunk_seconds:
+                                    break
+                                continue
+                        else:
+                            result = discovery.backtest_configuration(config)
 
                         # Save to checkpoint (every result, not just hits)
                         _save_checkpoint_line(i, config, result)
@@ -749,6 +820,10 @@ def render_discovery_view():
                             break
 
                     progress_bar.empty()
+
+                    # Show pruning stats if progressive eval was used
+                    if enable_progressive and pruned_this_chunk > 0:
+                        st.caption(f"⚡ Progressive eval pruned {pruned_this_chunk} configs early")
 
                     # Update meta
                     total_processed = start_idx + processed_this_chunk
