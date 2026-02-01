@@ -63,3 +63,7 @@ gold.db.backup*
 .worktrees/
 .security-key
 logs/security/
+_local_junk/
+.claude/hooks/
+artifacts/*.json
+artifacts/*.jsonl
