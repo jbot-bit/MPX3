@@ -33,6 +33,8 @@ import plotly.express as px
 from datetime import datetime, timedelta
 import json
 import logging
+import time
+import hashlib
 from typing import Dict, List, Optional, Any
 
 # Import research infrastructure
@@ -67,6 +69,120 @@ inject_terminal_theme()
 # ============================================================================
 # HELPER FUNCTIONS
 # ============================================================================
+
+# ----------------------------------------------------------------------------
+# DISCOVERY CHECKPOINT HELPERS (timeboxed scans)
+# ----------------------------------------------------------------------------
+
+def _get_checkpoint_dir() -> Path:
+    """Get checkpoint directory (artifacts/ in repo root)."""
+    return Path(__file__).parent.parent / "artifacts"
+
+def _get_checkpoint_path() -> Path:
+    """Get path to discovery checkpoint JSONL file."""
+    return _get_checkpoint_dir() / "discovery_checkpoint.jsonl"
+
+def _get_meta_path() -> Path:
+    """Get path to discovery metadata JSON file."""
+    return _get_checkpoint_dir() / "discovery_meta.json"
+
+def _get_params_hash(instrument: str, orb_times: List[str], rr_targets: List[float],
+                     sl_modes: List[str], orb_filters: List[Optional[float]]) -> str:
+    """Hash of scan parameters to detect if settings changed."""
+    params_str = f"{instrument}|{sorted(orb_times)}|{sorted(rr_targets)}|{sorted(sl_modes)}|{sorted(str(f) for f in orb_filters)}"
+    return hashlib.md5(params_str.encode()).hexdigest()[:12]
+
+def _load_checkpoint() -> tuple[List[Dict], Dict]:
+    """
+    Load checkpoint data.
+    Returns (results_list, meta_dict).
+    """
+    results = []
+    meta = {}
+
+    checkpoint_path = _get_checkpoint_path()
+    meta_path = _get_meta_path()
+
+    if checkpoint_path.exists():
+        try:
+            with open(checkpoint_path, 'r') as f:
+                for line in f:
+                    line = line.strip()
+                    if line:
+                        results.append(json.loads(line))
+        except Exception as e:
+            logger.warning(f"Error loading checkpoint: {e}")
+            results = []
+
+    if meta_path.exists():
+        try:
+            with open(meta_path, 'r') as f:
+                meta = json.load(f)
+        except Exception as e:
+            logger.warning(f"Error loading meta: {e}")
+            meta = {}
+
+    return results, meta
+
+def _save_checkpoint_line(idx: int, config: 'DiscoveryConfig', result: 'BacktestResult'):
+    """Append one result line to checkpoint file."""
+    checkpoint_path = _get_checkpoint_path()
+    checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
+
+    line = {
+        "idx": idx,
+        "config": {
+            "instrument": config.instrument,
+            "orb_time": config.orb_time,
+            "rr": config.rr,
+            "sl_mode": config.sl_mode,
+            "orb_size_filter": config.orb_size_filter
+        },
+        "result": {
+            "total_trades": result.total_trades,
+            "wins": result.wins,
+            "losses": result.losses,
+            "win_rate": result.win_rate,
+            "avg_r": result.avg_r,
+            "total_r": result.total_r,
+            "tier": result.tier
+        },
+        "ts": datetime.now().isoformat()
+    }
+
+    with open(checkpoint_path, 'a') as f:
+        f.write(json.dumps(line) + "\n")
+
+def _save_meta(total_configs: int, processed: int, hits: int, params_hash: str,
+               started: str, elapsed_seconds: float):
+    """Save checkpoint metadata."""
+    meta_path = _get_meta_path()
+    meta_path.parent.mkdir(parents=True, exist_ok=True)
+
+    meta = {
+        "total_configs": total_configs,
+        "processed": processed,
+        "hits": hits,
+        "params_hash": params_hash,
+        "started": started,
+        "updated": datetime.now().isoformat(),
+        "elapsed_seconds": elapsed_seconds
+    }
+
+    with open(meta_path, 'w') as f:
+        json.dump(meta, f, indent=2)
+
+def _clear_checkpoint():
+    """Delete checkpoint files to start fresh."""
+    checkpoint_path = _get_checkpoint_path()
+    meta_path = _get_meta_path()
+
+    if checkpoint_path.exists():
+        checkpoint_path.unlink()
+    if meta_path.exists():
+        meta_path.unlink()
+
+# ----------------------------------------------------------------------------
 
 def load_pipeline_summary() -> Dict[str, int]:
     """Load candidate pipeline status summary (P2-5: single query optimization)"""
@@ -290,30 +406,119 @@ def render_discovery_view():
         test_time_windows = st.checkbox("Test Extended Windows", value=False, help="Test longer profit windows")
         test_rr_targets = st.checkbox("Test R:R Ratios", value=True, help="Optimize reward:risk targets")
 
-    render_section_divider()
+    render_section_divider("TIMEBOXED SCAN")
 
-    # Discovery button
-    if st.button("🔬 START DISCOVERY SCAN", type="primary", use_container_width=True):
-        st.warning("⚠ Discovery scan will run multiple backtests. This may take a few minutes...", icon="⚠️")
+    # Chunk duration slider
+    chunk_seconds = st.slider("SCAN CHUNK (seconds)", 30, 300, 120, 30,
+                              help="Run scan in chunks to avoid timeouts. Results saved between chunks.")
 
-        with st.spinner("Running discovery scan..."):
+    # Generate configs for hash calculation (needed for checkpoint validation)
+    rr_targets = [1.0, 1.5, 2.0, 3.0, 4.0, 5.0, 6.0, 8.0] if test_rr_targets else [4.0]
+    sl_modes = ["FULL", "HALF"]
+    orb_filters = [None, 0.10, 0.15, 0.20] if test_orb_size else [None]
+    params_hash = _get_params_hash(instrument, orb_times, rr_targets, sl_modes, orb_filters)
+
+    # Load existing checkpoint
+    checkpoint_results, checkpoint_meta = _load_checkpoint()
+    checkpoint_valid = (checkpoint_meta.get("params_hash") == params_hash)
+
+    # Status panel
+    if checkpoint_valid and checkpoint_meta:
+        processed = checkpoint_meta.get("processed", 0)
+        total = checkpoint_meta.get("total_configs", 0)
+        hits = checkpoint_meta.get("hits", 0)
+        elapsed = checkpoint_meta.get("elapsed_seconds", 0)
+        pct = (processed / total * 100) if total > 0 else 0
+
+        if processed >= total and total > 0:
+            status_color = "var(--profit-green)"
+            status_text = "✅ COMPLETE"
+        else:
+            status_color = "var(--text-warning)"
+            status_text = "⏸️ PAUSED"
+
+        st.markdown(f"""
+        <div style="font-family: var(--font-mono); padding: 12px; border: 1px solid {status_color};
+                    border-radius: 4px; margin-bottom: 16px;">
+            <div style="color: {status_color}; font-weight: bold; margin-bottom: 8px;">{status_text}</div>
+            <div>Processed: {processed}/{total} ({pct:.0f}%)</div>
+            <div>Hits found: {hits}</div>
+            <div>Elapsed: {elapsed:.0f}s</div>
+        </div>
+        """, unsafe_allow_html=True)
+    else:
+        st.markdown("""
+        <div style="font-family: var(--font-mono); padding: 12px; border: 1px solid var(--text-secondary);
+                    border-radius: 4px; margin-bottom: 16px; color: var(--text-secondary);">
+            <div>No checkpoint or settings changed. Ready for new scan.</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    # Three buttons: Run/Continue, View Results, Reset
+    btn_col1, btn_col2, btn_col3 = st.columns(3)
+
+    with btn_col1:
+        run_label = "▶️ Continue Scan" if (checkpoint_valid and checkpoint_meta.get("processed", 0) > 0) else "▶️ Run Scan"
+        run_clicked = st.button(run_label, type="primary", use_container_width=True)
+
+    with btn_col2:
+        view_clicked = st.button("📊 View Results", use_container_width=True,
+                                 disabled=(not checkpoint_valid or len(checkpoint_results) == 0))
+
+    with btn_col3:
+        reset_clicked = st.button("🗑️ Reset", use_container_width=True)
+
+    # Handle Reset
+    if reset_clicked:
+        _clear_checkpoint()
+        st.success("✅ Checkpoint cleared. Ready for fresh scan.")
+        st.rerun()
+
+    # Handle View Results
+    if view_clicked and checkpoint_results:
+        # Filter checkpoint results by current criteria
+        filtered_results = []
+        for r in checkpoint_results:
+            res = r.get("result", {})
+            if res.get("total_trades", 0) >= min_trades:
+                if (res.get("win_rate", 0) / 100) >= min_win_rate:
+                    if res.get("avg_r", -999) >= min_avg_r:
+                        filtered_results.append(r)
+
+        if filtered_results:
+            st.success(f"✅ Showing {len(filtered_results)} strategies matching current filters")
+
+            results_data = []
+            for r in filtered_results:
+                cfg = r.get("config", {})
+                res = r.get("result", {})
+                results_data.append({
+                    "Instrument": cfg.get("instrument", "?"),
+                    "ORB Time": cfg.get("orb_time", "?"),
+                    "R:R": cfg.get("rr", 0),
+                    "SL Mode": cfg.get("sl_mode", "?"),
+                    "Filter": f"{cfg.get('orb_size_filter', 0)*100:.0f}%" if cfg.get("orb_size_filter") else "None",
+                    "Trades": res.get("total_trades", 0),
+                    "Win Rate": f"{res.get('win_rate', 0):.1f}%",
+                    "Avg R": res.get("avg_r", 0),
+                    "Total R": res.get("total_r", 0),
+                    "Tier": res.get("tier", "?")
+                })
+
+            df = pd.DataFrame(results_data)
+            df = df.sort_values('Total R', ascending=False)
+            st.dataframe(df.head(30), use_container_width=True)
+        else:
+            st.warning("⚠ No strategies match current filter criteria.", icon="⚠️")
+
+    # Handle Run/Continue
+    if run_clicked:
+        with st.spinner(f"Running {chunk_seconds}s scan chunk..."):
             try:
-                # Initialize discovery engine
                 discovery = StrategyDiscovery()
 
-                # Generate all configuration combinations to test
+                # Generate all configs (deterministic order)
                 configs = []
-
-                # R:R targets to test
-                rr_targets = [1.0, 1.5, 2.0, 3.0, 4.0, 5.0, 6.0, 8.0] if test_rr_targets else [4.0]
-
-                # Stop loss modes to test
-                sl_modes = ["FULL", "HALF"]
-
-                # ORB size filters to test (percentage of ATR)
-                orb_filters = [None, 0.10, 0.15, 0.20] if test_orb_size else [None]
-
-                # Generate all combinations
                 for orb_time in orb_times:
                     for rr in rr_targets:
                         for sl_mode in sl_modes:
@@ -327,73 +532,76 @@ def render_discovery_view():
                                 )
                                 configs.append(config)
 
-                st.info(f"Testing {len(configs)} configurations...", icon="ℹ️")
+                total_configs = len(configs)
 
-                # Run backtests
-                results = []
-                progress_bar = st.progress(0)
-                for i, config in enumerate(configs):
-                    result = discovery.backtest_configuration(config)
-
-                    # Filter by criteria
-                    if result.total_trades >= min_trades:
-                        if (result.win_rate/100) >= min_win_rate:
-                            if result.avg_r >= min_avg_r:
-                                results.append(result)
-
-                    progress_bar.progress((i + 1) / len(configs))
-
-                progress_bar.empty()
-
-                # Display results
-                if results:
-                    st.success(f"✅ Discovery complete! Found {len(results)} profitable configurations")
-
-                    # Convert to DataFrame
-                    results_data = []
-                    for result in results:
-                        results_data.append({
-                            "Instrument": result.config.instrument,
-                            "ORB Time": result.config.orb_time,
-                            "R:R": result.config.rr,
-                            "SL Mode": result.config.sl_mode,
-                            "Filter": f"{result.config.orb_size_filter*100:.0f}%" if result.config.orb_size_filter else "None",
-                            "Trades": result.total_trades,
-                            "Win Rate": f"{result.win_rate:.1f}%",
-                            "Avg R": result.avg_r,
-                            "Total R": result.total_r,
-                            "Tier": result.tier
-                        })
-
-                    df = pd.DataFrame(results_data)
-
-                    # Sort by Total R
-                    df = df.sort_values('Total R', ascending=False)
-
-                    # Display top results
-                    st.markdown("### TOP PERFORMERS")
-                    st.dataframe(
-                        df.head(20),
-                        use_container_width=True
-                    )
-
-                    # Show summary
-                    render_section_divider("SUMMARY")
-                    col1, col2, col3, col4 = st.columns(4)
-                    with col1:
-                        st.metric("Configs Tested", len(configs))
-                    with col2:
-                        st.metric("Profitable", len(results))
-                    with col3:
-                        tier_s = len([r for r in results if r.tier in ["S+", "S"]])
-                        st.metric("Tier S/S+", tier_s)
-                    with col4:
-                        if results:
-                            best_r = max(r.total_r for r in results)
-                            st.metric("Best Total R", f"{best_r:.1f}")
-
+                # Determine start index from checkpoint
+                if checkpoint_valid:
+                    start_idx = checkpoint_meta.get("processed", 0)
+                    prior_elapsed = checkpoint_meta.get("elapsed_seconds", 0)
+                    started = checkpoint_meta.get("started", datetime.now().isoformat())
                 else:
-                    st.warning("⚠ No strategies found matching criteria. Try relaxing filters.", icon="⚠️")
+                    # New scan - clear old checkpoint
+                    _clear_checkpoint()
+                    start_idx = 0
+                    prior_elapsed = 0.0
+                    started = datetime.now().isoformat()
+
+                # Check if already complete
+                if start_idx >= total_configs:
+                    st.info("✅ Scan already complete! Use 'View Results' or 'Reset' to start fresh.")
+                else:
+                    st.info(f"Testing configs {start_idx + 1} to {total_configs}...")
+
+                    # Run timeboxed loop
+                    progress_bar = st.progress(start_idx / total_configs)
+                    hits_this_chunk = 0
+                    processed_this_chunk = 0
+                    chunk_start = time.monotonic()
+
+                    for i in range(start_idx, total_configs):
+                        config = configs[i]
+                        result = discovery.backtest_configuration(config)
+
+                        # Save to checkpoint (every result, not just hits)
+                        _save_checkpoint_line(i, config, result)
+                        processed_this_chunk += 1
+
+                        # Count hits
+                        if result.total_trades >= min_trades:
+                            if (result.win_rate / 100) >= min_win_rate:
+                                if result.avg_r >= min_avg_r:
+                                    hits_this_chunk += 1
+
+                        progress_bar.progress((i + 1) / total_configs)
+
+                        # Check timebox
+                        elapsed_chunk = time.monotonic() - chunk_start
+                        if elapsed_chunk >= chunk_seconds:
+                            break
+
+                    progress_bar.empty()
+
+                    # Update meta
+                    total_processed = start_idx + processed_this_chunk
+                    total_elapsed = prior_elapsed + (time.monotonic() - chunk_start)
+
+                    # Count total hits from checkpoint
+                    all_results, _ = _load_checkpoint()
+                    total_hits = sum(1 for r in all_results
+                                     if r.get("result", {}).get("total_trades", 0) >= min_trades
+                                     and (r.get("result", {}).get("win_rate", 0) / 100) >= min_win_rate
+                                     and r.get("result", {}).get("avg_r", -999) >= min_avg_r)
+
+                    _save_meta(total_configs, total_processed, total_hits, params_hash, started, total_elapsed)
+
+                    # Status message
+                    if total_processed >= total_configs:
+                        st.success(f"✅ Scan complete! {total_configs} configs tested, {total_hits} hits found.")
+                    else:
+                        remaining = total_configs - total_processed
+                        st.warning(f"⏸️ Chunk done. {total_processed}/{total_configs} processed, {remaining} remaining. Click 'Continue Scan' to resume.", icon="⏸️")
+
+                    st.rerun()
 
             except Exception as e:
                 logger.error(f"Discovery error: {e}")
