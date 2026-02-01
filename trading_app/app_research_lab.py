@@ -462,12 +462,12 @@ def render_discovery_view():
 
     with col1:
         test_orb_size = st.checkbox("Test ORB Size Filters", value=True, help="Scan for optimal min/max ORB size")
-        test_atr = st.checkbox("Test ATR Filters", value=True, help="Filter by average true range")
-        test_rsi = st.checkbox("Test RSI Filters", value=False, help="Filter by RSI levels")
+        st.checkbox("Test ATR Filters", value=False, disabled=True, help="⚠️ Not implemented")
+        st.checkbox("Test RSI Filters", value=False, disabled=True, help="⚠️ Not implemented")
 
     with col2:
-        test_session_move = st.checkbox("Test Session Travel", value=True, help="Filter by prior session movement")
-        test_time_windows = st.checkbox("Test Extended Windows", value=False, help="Test longer profit windows")
+        st.checkbox("Test Session Travel", value=False, disabled=True, help="⚠️ Not implemented")
+        st.checkbox("Test Extended Windows", value=False, disabled=True, help="⚠️ Not implemented")
         test_rr_targets = st.checkbox("Test R:R Ratios", value=True, help="Optimize reward:risk targets")
 
     render_section_divider("TIMEBOXED SCAN")
