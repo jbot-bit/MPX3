@@ -939,7 +939,7 @@ def render_pipeline_view():
                 else:
                     st.error("Failed to load candidate details")
     else:
-        st.info("⚡ No candidates found. Start a discovery scan to create new candidates.", icon="ℹ️")
+        st.info("⚡ No candidates found. Use Discovery to find promising configs, then Backtester to create candidates.", icon="ℹ️")
 
 
 # ============================================================================
