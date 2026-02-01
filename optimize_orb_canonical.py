@@ -147,232 +147,233 @@ def simulate_canonical(bars_1m, orb_high, orb_low, rr, stop_fraction):
     return outcome_r - cost_r
 
 
-if len(sys.argv) < 2:
-    print("Usage: python optimize_orb_canonical.py <orb_time>")
-    print("Example: python optimize_orb_canonical.py 1000")
-    sys.exit(1)
+if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        print("Usage: python optimize_orb_canonical.py <orb_time>")
+        print("Example: python optimize_orb_canonical.py 1000")
+        sys.exit(1)
 
-orb_time = sys.argv[1]
+    orb_time = sys.argv[1]
 
-ORBS = {
-    '0900': (9, 0),
-    '1000': (10, 0),
-    '1100': (11, 0),
-    '1800': (18, 0),
-    '2300': (23, 0),
-    '0030': (0, 30),
-}
+    ORBS = {
+        '0900': (9, 0),
+        '1000': (10, 0),
+        '1100': (11, 0),
+        '1800': (18, 0),
+        '2300': (23, 0),
+        '0030': (0, 30),
+    }
 
-if orb_time not in ORBS:
-    print(f"Invalid ORB time. Must be one of: {', '.join(ORBS.keys())}")
-    sys.exit(1)
+    if orb_time not in ORBS:
+        print(f"Invalid ORB time. Must be one of: {', '.join(ORBS.keys())}")
+        sys.exit(1)
 
-hour, minute = ORBS[orb_time]
+    hour, minute = ORBS[orb_time]
 
-print("="*80)
-print(f"OPTIMIZING {orb_time} ORB - CANONICAL EXECUTION LOGIC")
-print("="*80)
-print()
+    print("="*80)
+    print(f"OPTIMIZING {orb_time} ORB - CANONICAL EXECUTION LOGIC")
+    print("="*80)
+    print()
 
-conn = duckdb.connect(DB_PATH, read_only=True)
+    conn = duckdb.connect(DB_PATH, read_only=True)
 
-# Get all days with valid ORBs from CANONICAL table
-query = f"""
-    SELECT
-        date_local,
-        orb_{orb_time}_high as orb_high,
-        orb_{orb_time}_low as orb_low,
-        orb_{orb_time}_size as orb_size
-    FROM daily_features
-    WHERE instrument = 'MGC'
-      AND orb_{orb_time}_high IS NOT NULL
-      AND orb_{orb_time}_low IS NOT NULL
-    ORDER BY date_local
-"""
-
-df_days = conn.execute(query).fetchdf()
-total_days = len(df_days)
-print(f"Found {total_days} valid trading days")
-print()
-
-# Pre-load bars for each day (cache to avoid repeated queries)
-print("Pre-loading 1-minute bars...")
-
-bars_cache = {}
-
-for idx, row in df_days.iterrows():
-    trade_date = pd.to_datetime(row['date_local']).date()
-
-    # Scan window: ORB end to next 09:00 local (LOCKED ASSUMPTION)
-    # CRITICAL: Only 0030 ORB is on next day, 2300 ORB is on SAME day
-    if hour == 0 and minute == 30:
-        # 0030 ORB is on (D+1)
-        orb_start = datetime(trade_date.year, trade_date.month, trade_date.day, hour, minute, tzinfo=TZ_LOCAL) + timedelta(days=1)
-    else:
-        # All other ORBs (0900, 1000, 1100, 1800, 2300) are on D
-        orb_start = datetime(trade_date.year, trade_date.month, trade_date.day, hour, minute, tzinfo=TZ_LOCAL)
-
-    scan_start = orb_start + timedelta(minutes=5)  # After ORB completes
-
-    # Scan until next 09:00 local (trading day boundary)
-    # If ORB is before 09:00, scan to 09:00 same day
-    # If ORB is after 09:00, scan to 09:00 next day
-    if hour < 9 or (hour == 0 and minute == 30):
-        # 0030 ORB -> scan to 09:00 same calendar day
-        scan_end = datetime(orb_start.year, orb_start.month, orb_start.day, 9, 0, tzinfo=TZ_LOCAL)
-    else:
-        # 0900, 1000, 1100, 1800, 2300 -> scan to 09:00 next day
-        scan_end = datetime(orb_start.year, orb_start.month, orb_start.day, 9, 0, tzinfo=TZ_LOCAL) + timedelta(days=1)
-
-    # Convert to UTC for query
-    start_utc = scan_start.astimezone(TZ_UTC)
-    end_utc = scan_end.astimezone(TZ_UTC)
-
-    bars_query = """
-        SELECT high, low, close
-        FROM bars_1m
-        WHERE symbol = ?
-          AND ts_utc >= ?
-          AND ts_utc < ?
-        ORDER BY ts_utc
+    # Get all days with valid ORBs from CANONICAL table
+    query = f"""
+        SELECT
+            date_local,
+            orb_{orb_time}_high as orb_high,
+            orb_{orb_time}_low as orb_low,
+            orb_{orb_time}_size as orb_size
+        FROM daily_features
+        WHERE instrument = 'MGC'
+          AND orb_{orb_time}_high IS NOT NULL
+          AND orb_{orb_time}_low IS NOT NULL
+        ORDER BY date_local
     """
 
-    bars = conn.execute(bars_query, [SYMBOL, start_utc, end_utc]).fetchdf()
-    bars_cache[str(trade_date)] = bars
-
-    if (idx + 1) % 100 == 0:
-        print(f"  Loaded {idx + 1}/{total_days} days...")
-
-conn.close()
-
-print(f"  Completed! Cached {len(bars_cache)} days")
-print()
-
-# Test parameters
-STOP_FRACTIONS = [0.20, 0.25, 0.33, 0.50, 0.75, 1.00]
-RR_VALUES = [1.5, 2.0, 3.0, 4.0, 6.0, 8.0]
-
-print("Testing all stop/RR combinations...")
-print()
-
-all_results = []
-completed = 0
-total_combos = len(STOP_FRACTIONS) * len(RR_VALUES)
-
-for stop_frac in STOP_FRACTIONS:
-    for rr in RR_VALUES:
-        completed += 1
-
-        # Test this combination on ALL days
-        results = []
-
-        for idx, row in df_days.iterrows():
-            date_str = str(pd.to_datetime(row['date_local']).date())
-            orb_high = row['orb_high']
-            orb_low = row['orb_low']
-
-            bars = bars_cache.get(date_str)
-
-            if bars is not None and len(bars) > 0:
-                r_result = simulate_canonical(bars, orb_high, orb_low, rr, stop_frac)
-                # Always append result (includes NO_OUTCOME as small loss)
-                results.append(r_result)
-
-        if len(results) > 0:
-            count = len(results)
-            total_r = sum(results)
-            avg_r = total_r / count
-            wins = len([r for r in results if r > 0])
-            wr = wins / count * 100
-            be_wr = 100 / (rr + 1)
-
-            all_results.append({
-                'stop_frac': stop_frac,
-                'rr': rr,
-                'trades': count,
-                'wr': wr,
-                'be_wr': be_wr,
-                'avg_r': avg_r,
-                'total_r': total_r
-            })
-
-            # Progress update
-            if avg_r > 0.10:
-                print(f"[{completed}/{total_combos}] Stop={stop_frac:.2f}, RR={rr:.1f}: {count} trades, {wr:.1f}% WR, {avg_r:+.3f} avg R *** PROFITABLE ***")
-            elif completed % 6 == 0:  # Print every 6th
-                print(f"[{completed}/{total_combos}] Stop={stop_frac:.2f}, RR={rr:.1f}: {count} trades, {wr:.1f}% WR, {avg_r:+.3f} avg R")
-
-print()
-print("="*80)
-print("RESULTS")
-print("="*80)
-print()
-
-if len(all_results) == 0:
-    print("ERROR: No results generated")
-    sys.exit(1)
-
-df_all = pd.DataFrame(all_results)
-
-# Save raw results
-results_file = f'optimization_results_{orb_time}_canonical.json'
-with open(results_file, 'w') as f:
-    json.dump(all_results, f, indent=2)
-print(f"Saved raw results to {results_file}")
-print()
-
-# Profitable setups
-profitable = df_all[df_all['avg_r'] > 0.10].sort_values('avg_r', ascending=False)
-
-if len(profitable) > 0:
-    print(f"Found {len(profitable)} PROFITABLE combinations:")
-    print()
-    print(profitable[['stop_frac', 'rr', 'trades', 'wr', 'avg_r', 'total_r']].to_string(index=False))
+    df_days = conn.execute(query).fetchdf()
+    total_days = len(df_days)
+    print(f"Found {total_days} valid trading days")
     print()
 
-    best = profitable.iloc[0]
+    # Pre-load bars for each day (cache to avoid repeated queries)
+    print("Pre-loading 1-minute bars...")
+
+    bars_cache = {}
+
+    for idx, row in df_days.iterrows():
+        trade_date = pd.to_datetime(row['date_local']).date()
+
+        # Scan window: ORB end to next 09:00 local (LOCKED ASSUMPTION)
+        # CRITICAL: Only 0030 ORB is on next day, 2300 ORB is on SAME day
+        if hour == 0 and minute == 30:
+            # 0030 ORB is on (D+1)
+            orb_start = datetime(trade_date.year, trade_date.month, trade_date.day, hour, minute, tzinfo=TZ_LOCAL) + timedelta(days=1)
+        else:
+            # All other ORBs (0900, 1000, 1100, 1800, 2300) are on D
+            orb_start = datetime(trade_date.year, trade_date.month, trade_date.day, hour, minute, tzinfo=TZ_LOCAL)
+
+        scan_start = orb_start + timedelta(minutes=5)  # After ORB completes
+
+        # Scan until next 09:00 local (trading day boundary)
+        # If ORB is before 09:00, scan to 09:00 same day
+        # If ORB is after 09:00, scan to 09:00 next day
+        if hour < 9 or (hour == 0 and minute == 30):
+            # 0030 ORB -> scan to 09:00 same calendar day
+            scan_end = datetime(orb_start.year, orb_start.month, orb_start.day, 9, 0, tzinfo=TZ_LOCAL)
+        else:
+            # 0900, 1000, 1100, 1800, 2300 -> scan to 09:00 next day
+            scan_end = datetime(orb_start.year, orb_start.month, orb_start.day, 9, 0, tzinfo=TZ_LOCAL) + timedelta(days=1)
+
+        # Convert to UTC for query
+        start_utc = scan_start.astimezone(TZ_UTC)
+        end_utc = scan_end.astimezone(TZ_UTC)
+
+        bars_query = """
+            SELECT high, low, close
+            FROM bars_1m
+            WHERE symbol = ?
+              AND ts_utc >= ?
+              AND ts_utc < ?
+            ORDER BY ts_utc
+        """
+
+        bars = conn.execute(bars_query, [SYMBOL, start_utc, end_utc]).fetchdf()
+        bars_cache[str(trade_date)] = bars
+
+        if (idx + 1) % 100 == 0:
+            print(f"  Loaded {idx + 1}/{total_days} days...")
+
+    conn.close()
+
+    print(f"  Completed! Cached {len(bars_cache)} days")
+    print()
+
+    # Test parameters
+    STOP_FRACTIONS = [0.20, 0.25, 0.33, 0.50, 0.75, 1.00]
+    RR_VALUES = [1.5, 2.0, 3.0, 4.0, 6.0, 8.0]
+
+    print("Testing all stop/RR combinations...")
+    print()
+
+    all_results = []
+    completed = 0
+    total_combos = len(STOP_FRACTIONS) * len(RR_VALUES)
+
+    for stop_frac in STOP_FRACTIONS:
+        for rr in RR_VALUES:
+            completed += 1
+
+            # Test this combination on ALL days
+            results = []
+
+            for idx, row in df_days.iterrows():
+                date_str = str(pd.to_datetime(row['date_local']).date())
+                orb_high = row['orb_high']
+                orb_low = row['orb_low']
+
+                bars = bars_cache.get(date_str)
+
+                if bars is not None and len(bars) > 0:
+                    r_result = simulate_canonical(bars, orb_high, orb_low, rr, stop_frac)
+                    # Always append result (includes NO_OUTCOME as small loss)
+                    results.append(r_result)
+
+            if len(results) > 0:
+                count = len(results)
+                total_r = sum(results)
+                avg_r = total_r / count
+                wins = len([r for r in results if r > 0])
+                wr = wins / count * 100
+                be_wr = 100 / (rr + 1)
+
+                all_results.append({
+                    'stop_frac': stop_frac,
+                    'rr': rr,
+                    'trades': count,
+                    'wr': wr,
+                    'be_wr': be_wr,
+                    'avg_r': avg_r,
+                    'total_r': total_r
+                })
+
+                # Progress update
+                if avg_r > 0.10:
+                    print(f"[{completed}/{total_combos}] Stop={stop_frac:.2f}, RR={rr:.1f}: {count} trades, {wr:.1f}% WR, {avg_r:+.3f} avg R *** PROFITABLE ***")
+                elif completed % 6 == 0:  # Print every 6th
+                    print(f"[{completed}/{total_combos}] Stop={stop_frac:.2f}, RR={rr:.1f}: {count} trades, {wr:.1f}% WR, {avg_r:+.3f} avg R")
+
+    print()
     print("="*80)
-    print("BEST SETUP:")
+    print("RESULTS")
     print("="*80)
-    print(f"  Stop: {best['stop_frac']:.2f} x ORB (risk = {best['stop_frac']:.2f} × ORB size)")
-    print(f"  RR: {best['rr']:.1f}")
-    print(f"  Trades: {best['trades']:.0f}")
-    print(f"  Win rate: {best['wr']:.1f}% (need {best['be_wr']:.1f}%)")
-    print(f"  Avg R: {best['avg_r']:+.3f}")
-    print(f"  Total R: {best['total_r']:+.1f}")
-else:
-    print("NO PROFITABLE SETUPS FOUND")
     print()
 
-    # Show best (even if unprofitable)
-    best = df_all.nlargest(1, 'avg_r').iloc[0]
-    print("BEST SETUP (still unprofitable):")
-    print(f"  Stop: {best['stop_frac']:.2f} x ORB")
-    print(f"  RR: {best['rr']:.1f}")
-    print(f"  Trades: {best['trades']:.0f}")
-    print(f"  Win rate: {best['wr']:.1f}% (need {best['be_wr']:.1f}%)")
-    print(f"  Avg R: {best['avg_r']:+.3f}")
-    print(f"  Total R: {best['total_r']:+.1f}")
+    if len(all_results) == 0:
+        print("ERROR: No results generated")
+        sys.exit(1)
 
-print()
+    df_all = pd.DataFrame(all_results)
 
-# Analysis
-print("="*80)
-print("STOP FRACTION ANALYSIS")
-print("="*80)
-print()
+    # Save raw results
+    results_file = f'optimization_results_{orb_time}_canonical.json'
+    with open(results_file, 'w') as f:
+        json.dump(all_results, f, indent=2)
+    print(f"Saved raw results to {results_file}")
+    print()
 
-print("Average R by stop fraction (across all RR values):")
-for stop_frac in STOP_FRACTIONS:
-    frac_data = df_all[df_all['stop_frac'] == stop_frac]
-    avg = frac_data['avg_r'].mean()
-    print(f"  {stop_frac:.2f}: {avg:+.3f} avg R")
+    # Profitable setups
+    profitable = df_all[df_all['avg_r'] > 0.10].sort_values('avg_r', ascending=False)
 
-print()
-print("Average R by RR (across all stop fractions):")
-for rr_val in RR_VALUES:
-    rr_data = df_all[df_all['rr'] == rr_val]
-    avg = rr_data['avg_r'].mean()
-    print(f"  RR {rr_val:.1f}: {avg:+.3f} avg R")
+    if len(profitable) > 0:
+        print(f"Found {len(profitable)} PROFITABLE combinations:")
+        print()
+        print(profitable[['stop_frac', 'rr', 'trades', 'wr', 'avg_r', 'total_r']].to_string(index=False))
+        print()
 
-print()
+        best = profitable.iloc[0]
+        print("="*80)
+        print("BEST SETUP:")
+        print("="*80)
+        print(f"  Stop: {best['stop_frac']:.2f} x ORB (risk = {best['stop_frac']:.2f} × ORB size)")
+        print(f"  RR: {best['rr']:.1f}")
+        print(f"  Trades: {best['trades']:.0f}")
+        print(f"  Win rate: {best['wr']:.1f}% (need {best['be_wr']:.1f}%)")
+        print(f"  Avg R: {best['avg_r']:+.3f}")
+        print(f"  Total R: {best['total_r']:+.1f}")
+    else:
+        print("NO PROFITABLE SETUPS FOUND")
+        print()
+
+        # Show best (even if unprofitable)
+        best = df_all.nlargest(1, 'avg_r').iloc[0]
+        print("BEST SETUP (still unprofitable):")
+        print(f"  Stop: {best['stop_frac']:.2f} x ORB")
+        print(f"  RR: {best['rr']:.1f}")
+        print(f"  Trades: {best['trades']:.0f}")
+        print(f"  Win rate: {best['wr']:.1f}% (need {best['be_wr']:.1f}%)")
+        print(f"  Avg R: {best['avg_r']:+.3f}")
+        print(f"  Total R: {best['total_r']:+.1f}")
+
+    print()
+
+    # Analysis
+    print("="*80)
+    print("STOP FRACTION ANALYSIS")
+    print("="*80)
+    print()
+
+    print("Average R by stop fraction (across all RR values):")
+    for stop_frac in STOP_FRACTIONS:
+        frac_data = df_all[df_all['stop_frac'] == stop_frac]
+        avg = frac_data['avg_r'].mean()
+        print(f"  {stop_frac:.2f}: {avg:+.3f} avg R")
+
+    print()
+    print("Average R by RR (across all stop fractions):")
+    for rr_val in RR_VALUES:
+        rr_data = df_all[df_all['rr'] == rr_val]
+        avg = rr_data['avg_r'].mean()
+        print(f"  RR {rr_val:.1f}: {avg:+.3f} avg R")
+
+    print()
