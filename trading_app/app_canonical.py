@@ -923,6 +923,14 @@ with tab_research:
                 help="Only scan these specific ORB times"
             )
 
+        # Early pruning (Optuna-style, default OFF)
+        enable_pruning = st.checkbox(
+            "Enable early pruning",
+            value=False,
+            key="enable_pruning",
+            help="Prune combos scoring below 70% of median (Optuna-style)"
+        )
+
     st.markdown("---")
 
     # ========================================================================
@@ -980,6 +988,8 @@ with tab_research:
                     'min_rr': st.session_state.get('min_rr_filter'),
                     'scan_mode': scan_mode_val,
                     'focus_orb_times': focus_orbs,
+                    # Optuna-like pruning
+                    'enable_pruning': st.session_state.get('enable_pruning', False),
                     **filter_settings  # Merge ORB size filter if enabled
                 }
 

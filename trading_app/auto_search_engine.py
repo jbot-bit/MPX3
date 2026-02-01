@@ -58,6 +58,10 @@ class SearchSettings:
     min_rr: Optional[float] = None  # Filter out RR targets below this value
     scan_mode: str = 'full'  # 'full', 'coarse', 'focused'
     focus_orb_times: List[str] = None  # For 'focused' mode: only scan these ORBs
+    # Optuna-like early pruning (default OFF)
+    enable_pruning: bool = False
+    n_startup_trials: int = 10
+    prune_factor: float = 0.7
 
     def __post_init__(self):
         # Defaults
@@ -190,6 +194,7 @@ PARAM_HASH_VERSION = "2.0"
 RULESET_VERSION = "1.0"
 PRIORITY_VERSION = "1.0"
 EPSILON = 0.15  # Exploration budget (15% of each chunk)
+MAX_COMBO_COUNT = 10 ** 3  # Maximum combinations to return from untested pool
 
 
 class AutoSearchEngine:
@@ -203,6 +208,7 @@ class AutoSearchEngine:
             'tested': 0,
             'skipped': 0,
             'promising': 0,
+            'pruned': 0,
             'time_elapsed': 0.0
         }
 
@@ -244,7 +250,11 @@ class AutoSearchEngine:
             # UPDATE28: New controls
             min_rr=settings.get('min_rr'),
             scan_mode=settings.get('scan_mode', 'full'),
-            focus_orb_times=settings.get('focus_orb_times')
+            focus_orb_times=settings.get('focus_orb_times'),
+            # Optuna-like early pruning
+            enable_pruning=settings.get('enable_pruning', False),
+            n_startup_trials=settings.get('n_startup_trials', 10),
+            prune_factor=settings.get('prune_factor', 0.7)
         )
 
         # Create run record
@@ -362,6 +372,28 @@ class AutoSearchEngine:
 
             self.stats['tested'] += 1
 
+            # Optuna-like pruning check (fail-closed: only prunes if all conditions met)
+            if settings.enable_pruning and score:
+                trials_count, median_score = self._get_prune_context(
+                    settings.instrument, settings.setup_family
+                )
+                if (trials_count >= settings.n_startup_trials
+                    and median_score is not None
+                    and score['score_proxy'] < settings.prune_factor * median_score):
+                    # Prune: log breadcrumb and skip
+                    self._log_prune_breadcrumb(
+                        instrument=settings.instrument,
+                        setup_family=settings.setup_family,
+                        param_hash=param_hash,
+                        score_proxy=score['score_proxy'],
+                        trials_count=trials_count,
+                        median_score=median_score,
+                        prune_factor=settings.prune_factor,
+                        n_startup_trials=settings.n_startup_trials
+                    )
+                    self.stats['pruned'] += 1
+                    continue
+
             # If promising: save and add to memory
             if score and score['score_proxy'] >= settings.min_expected_r:
                 candidate = SearchCandidate(
@@ -468,6 +500,41 @@ class AutoSearchEngine:
         """, [param_hash]).fetchone()
 
         return result is not None
+
+    def _get_prune_context(self, instrument: str, setup_family: str) -> tuple:
+        """
+        Get trials count and median score for pruning.
+
+        Returns (count, median) or (0, None) on failure (fail-closed).
+        """
+        try:
+            result = self.conn.execute("""
+                SELECT COUNT(*), MEDIAN(best_score)
+                FROM search_memory
+                WHERE instrument = ? AND setup_family = ?
+            """, [instrument, setup_family]).fetchone()
+            if result:
+                return (result[0] or 0, result[1])
+            return (0, None)
+        except Exception:
+            return (0, None)  # Fail-closed
+
+    def _log_prune_breadcrumb(self, **kwargs):
+        """Append prune event to JSONL log (fail-silent)."""
+        try:
+            from pathlib import Path
+            log_path = Path("artifacts/search_prune_log.jsonl")
+            log_path.parent.mkdir(parents=True, exist_ok=True)
+            entry = {
+                "ts": datetime.utcnow().isoformat() + "Z",
+                "threshold": kwargs.get('prune_factor', 0.7) * (kwargs.get('median_score') or 0),
+                "reason": "score_proxy < threshold",
+                **kwargs
+            }
+            with open(log_path, "a") as f:
+                f.write(json.dumps(entry) + "\n")
+        except Exception:
+            pass  # Fail-silent, never block search
 
     def _score_candidate(
         self,
@@ -742,7 +809,7 @@ class AutoSearchEngine:
     def _get_untested_combinations(
         self,
         settings: SearchSettings,
-        max_count: int = 1000
+        max_count: int = MAX_COMBO_COUNT
     ) -> List[Dict]:
         """
         Get untested parameter combinations (not in search_memory)

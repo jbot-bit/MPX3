@@ -59,6 +59,11 @@ UI_ONLY_ALLOWED = [
     '.claude/',  # Claude Code IDE configuration
 ]
 
+# Audited non-UI files allowed in UI_ONLY scope (explicit, file-level, no wildcards)
+SAFE_NON_UI_ALLOWED = [
+    'trading_app/auto_search_engine.py',  # Pruning feature (approved 2026-02-02)
+]
+
 
 def get_modified_files() -> list[str]:
     """Get list of modified files from git diff."""
@@ -89,9 +94,13 @@ def get_modified_files() -> list[str]:
 
 def is_allowed_in_ui_only(file: str) -> bool:
     """Check if file is allowed in UI_ONLY scope."""
+    # Check UI allowlist (prefix matching)
     for pattern in UI_ONLY_ALLOWED:
         if file.startswith(pattern):
             return True
+    # Check audited non-UI allowlist (exact match, file-level only)
+    if file in SAFE_NON_UI_ALLOWED:
+        return True
     return False
 
 

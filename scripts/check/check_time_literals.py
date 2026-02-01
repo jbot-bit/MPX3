@@ -18,6 +18,7 @@ Exceptions:
 import re
 import sys
 import json
+import subprocess
 from pathlib import Path
 from typing import List, Tuple
 
@@ -63,6 +64,20 @@ def is_exception_file(file_path: Path, repo_root: Path) -> bool:
             return True
 
     return False
+
+
+def is_git_tracked(file_path: Path, repo_root: Path) -> bool:
+    """Check if file is tracked by git (fail-closed: assume tracked if can't check)."""
+    try:
+        rel_path = file_path.relative_to(repo_root)
+        result = subprocess.run(
+            ['git', 'ls-files', '--error-unmatch', str(rel_path)],
+            capture_output=True,
+            cwd=repo_root
+        )
+        return result.returncode == 0
+    except Exception:
+        return True  # Fail-closed: assume tracked if can't check
 
 
 def is_code_line(line: str) -> bool:
@@ -209,6 +224,9 @@ def main():
         dir_path = repo_root / directory
         if dir_path.exists():
             python_files.extend(dir_path.rglob('*.py'))
+
+    # Filter to git-tracked files only (ignore untracked files)
+    python_files = [f for f in python_files if is_git_tracked(f, repo_root)]
 
     safe_print(f"Scanning {len(python_files)} Python files...")
     safe_print("")
