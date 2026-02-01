@@ -288,6 +288,72 @@ def test_db_path():
     return config.DUCKDB_PATH
 
 
+@pytest.fixture
+def conn():
+    """Database connection fixture for what-if tests."""
+    import duckdb
+    db_path = config.DB_PATH
+    connection = duckdb.connect(str(db_path), read_only=False)
+    yield connection
+    connection.close()
+
+
+@pytest.fixture
+def snapshot_id(conn):
+    """Create a what-if snapshot using existing SnapshotManager."""
+    from analysis.what_if_engine import WhatIfEngine
+    from analysis.what_if_snapshots import SnapshotManager
+
+    engine = WhatIfEngine(conn)
+    manager = SnapshotManager(conn)
+
+    # Run analysis (same as test_snapshot_roundtrip)
+    result = engine.analyze_conditions(
+        instrument='MGC',
+        orb_time='1000',
+        direction='BOTH',
+        rr=2.0,
+        sl_mode='FULL',
+        conditions={'orb_size_min': 0.5, 'asia_travel_max': 2.5},
+        date_start='2024-01-01',
+        date_end='2025-12-31'
+    )
+
+    # Save snapshot using existing helper
+    snap_id = manager.save_snapshot(
+        result=result,
+        notes="Fixture snapshot for test_snapshot_promotion",
+        created_by="conftest.py"
+    )
+    yield snap_id
+    # Cleanup: delete the test snapshot
+    try:
+        conn.execute("DELETE FROM what_if_snapshots WHERE snapshot_id = ?", [snap_id])
+    except Exception:
+        pass
+
+
+@pytest.fixture
+def edge_id(conn, snapshot_id):
+    """Create an edge_registry entry using existing SnapshotManager."""
+    from analysis.what_if_snapshots import SnapshotManager
+
+    manager = SnapshotManager(conn)
+
+    # Promote snapshot using existing helper
+    eid = manager.promote_snapshot_to_candidate(
+        snapshot_id=snapshot_id,
+        trigger_definition="ORB breakout with What-If conditions",
+        notes="Fixture edge for test_live_gate_enforcement"
+    )
+    yield eid
+    # Cleanup: delete the test edge
+    try:
+        conn.execute("DELETE FROM edge_registry WHERE edge_id = ?", [eid])
+    except Exception:
+        pass
+
+
 # ==============================================================================
 # NEW FIXTURES FOR TRADING APP TESTS
 # ==============================================================================

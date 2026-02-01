@@ -284,9 +284,9 @@ class WhatIfEngine:
                 orb_{orb_time}_size,
                 orb_{orb_time}_break_dir,
                 pre_orb_travel,
-                asia_type,
-                london_type,
-                ny_type
+                asia_type_code,
+                london_type_code,
+                pre_ny_type_code
             FROM daily_features
             WHERE {where_clause}
             ORDER BY date_local
