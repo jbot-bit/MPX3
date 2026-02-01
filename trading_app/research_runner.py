@@ -554,14 +554,25 @@ class ResearchRunner:
         Write backtest results back to edge_candidates table.
 
         Updates:
-        - metrics_json
+        - metrics_json (MERGED with existing to preserve required keys)
         - robustness_json
         - status (DRAFT -> TESTED)
+
+        Required keys preserved: orb_time, rr, win_rate, avg_r, annual_trades, tier
         """
         con = self.get_connection(read_only=False)
 
-        # Build metrics JSON
-        metrics_json = {
+        # Fetch existing metrics_json to preserve required keys
+        existing_row = con.execute("""
+            SELECT metrics_json FROM edge_candidates WHERE candidate_id = ?
+        """, [candidate_id]).fetchone()
+
+        existing_metrics = {}
+        if existing_row and existing_row[0]:
+            existing_metrics = parse_json_field(existing_row[0])
+
+        # Build new computed metrics
+        computed_metrics = {
             "win_rate": metrics.win_rate,
             "avg_r": metrics.avg_r,
             "total_r": metrics.total_r,
@@ -572,6 +583,10 @@ class ResearchRunner:
             "sharpe_ratio": metrics.sharpe_ratio,
             "profit_factor": metrics.profit_factor
         }
+
+        # Merge: existing first (preserves orb_time, rr, annual_trades, tier),
+        # then computed overwrites matching keys
+        metrics_json = {**existing_metrics, **computed_metrics}
 
         # Build robustness JSON (with stress tests)
         robustness_json = {
