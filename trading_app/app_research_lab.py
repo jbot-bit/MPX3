@@ -146,7 +146,10 @@ def _save_checkpoint_line(idx: int, config: 'DiscoveryConfig', result: 'Backtest
             "avg_r": result.avg_r,
             "total_r": result.total_r,
             "tier": result.tier,
-            "max_drawdown_r": getattr(result, 'max_dd_R', None)  # L1 fix: persist max_dd_R
+            "max_drawdown_r": getattr(result, 'max_dd_R', None),
+            "annual_trades": getattr(result, 'annual_trades', None),
+            "date_start": getattr(result, 'date_start', None),
+            "date_end": getattr(result, 'date_end', None)
         },
         "ts": datetime.now().isoformat()
     }
@@ -590,8 +593,82 @@ def render_discovery_view():
                 })
 
             df = pd.DataFrame(results_data)
-            df = df.sort_values('Total R', ascending=False)
+            df = df.sort_values('Total R', ascending=False).reset_index(drop=True)
             st.dataframe(df.head(30), use_container_width=True)
+
+            # === CREATE CANDIDATE FROM DISCOVERY RESULT ===
+            st.markdown("---")
+            st.markdown("**➕ Create Pipeline Candidate**")
+
+            # Strategy selector (sorted by Total R, so index matches df)
+            sorted_results = sorted(filtered_results, key=lambda r: r.get("result", {}).get("total_r", -999), reverse=True)[:30]
+            strategy_options = [
+                f"{r.get('config', {}).get('orb_time', '?')} RR={r.get('config', {}).get('rr', '?')} ({r.get('result', {}).get('total_r', 0):+.1f}R)"
+                for r in sorted_results
+            ]
+
+            if strategy_options:
+                selected_idx = st.selectbox(
+                    "Select strategy to promote:",
+                    range(len(strategy_options)),
+                    format_func=lambda i: strategy_options[i],
+                    key="discovery_candidate_selector"
+                )
+
+                if st.button("➕ Create Candidate", type="secondary", key="create_candidate_from_discovery"):
+                    try:
+                        row = sorted_results[selected_idx]
+                        cfg = row.get("config", {})
+                        res = row.get("result", {})
+
+                        # Build required dicts
+                        filter_spec = {
+                            "sl_mode": cfg.get("sl_mode", "FULL"),
+                            "orb_size_filter": cfg.get("orb_size_filter")
+                        }
+                        test_config = {
+                            "test_window_start": res.get("date_start"),
+                            "test_window_end": res.get("date_end")
+                        }
+                        metrics = {
+                            "orb_time": cfg.get("orb_time"),
+                            "rr": cfg.get("rr"),
+                            "win_rate": res.get("win_rate", 0) / 100.0,  # Convert % to decimal
+                            "avg_r": res.get("avg_r", 0),
+                            "annual_trades": res.get("annual_trades"),
+                            "tier": res.get("tier", "C")
+                        }
+                        slippage_assumptions = {
+                            "commission": 2.40,
+                            "spread": 2.00,
+                            "slippage": 4.00,
+                            "total_rt_cost": 8.40
+                        }
+
+                        # Get db connection from app state
+                        from trading_app.cloud_mode import get_database_connection
+                        db_conn = get_database_connection(read_only=False)
+
+                        candidate_id = create_edge_candidate(
+                            name=None,  # Auto-generate
+                            instrument=cfg.get("instrument", "MGC"),
+                            hypothesis_text=f"Discovery scan: {cfg.get('instrument', 'MGC')} {cfg.get('orb_time', '?')} RR={cfg.get('rr', '?')}",
+                            filter_spec=filter_spec,
+                            test_config=test_config,
+                            metrics=metrics,
+                            slippage_assumptions=slippage_assumptions,
+                            code_version="discovery_v1",
+                            data_version="v1",
+                            actor="discovery_scan",
+                            db_connection=db_conn
+                        )
+
+                        db_conn.close()
+                        st.success(f"✅ Created candidate #{candidate_id}. Go to Pipeline tab to continue.")
+                        st.balloons()
+
+                    except Exception as e:
+                        st.error(f"❌ Failed to create candidate: {e}")
         else:
             st.warning("⚠ No strategies match current filter criteria.", icon="⚠️")
 
