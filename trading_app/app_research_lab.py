@@ -17,6 +17,9 @@ from pathlib import Path
 # Force local database (avoid MotherDuck)
 os.environ['FORCE_LOCAL_DB'] = '1'
 
+# Disable Streamlit file watcher (fixes OneDrive hang)
+os.environ['STREAMLIT_SERVER_FILE_WATCHER_TYPE'] = 'none'
+
 # Add paths for imports
 if __name__ == "__main__" or "streamlit" in sys.modules:
     current_dir = Path(__file__).parent
