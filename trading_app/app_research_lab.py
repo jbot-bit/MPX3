@@ -37,17 +37,25 @@ import time
 import hashlib
 from typing import Dict, List, Optional, Any
 
-# Import research infrastructure
-from cloud_mode import get_database_connection, get_database_path
-from research_runner import ResearchRunner, BacktestMetrics
-from edge_candidate_utils import parse_json_field, approve_edge_candidate, set_candidate_status
-from edge_pipeline import promote_candidate_to_validated_setups, create_edge_candidate
-from strategy_discovery import StrategyDiscovery, DiscoveryConfig, ProgressiveEvalSettings
-
-# Import terminal theme
-from terminal_theme import inject_terminal_theme
-from terminal_components import *
-from time_spec import ORBS  # TSOT: Canonical ORB time source
+# Import research infrastructure (package-safe imports)
+try:
+    from cloud_mode import get_database_connection, get_database_path
+    from research_runner import ResearchRunner, BacktestMetrics
+    from edge_candidate_utils import parse_json_field, approve_edge_candidate, set_candidate_status
+    from edge_pipeline import promote_candidate_to_validated_setups, create_edge_candidate
+    from strategy_discovery import StrategyDiscovery, DiscoveryConfig, ProgressiveEvalSettings
+    from terminal_theme import inject_terminal_theme
+    from terminal_components import *
+    from time_spec import ORBS  # TSOT: Canonical ORB time source
+except ImportError:
+    from trading_app.cloud_mode import get_database_connection, get_database_path
+    from trading_app.research_runner import ResearchRunner, BacktestMetrics
+    from trading_app.edge_candidate_utils import parse_json_field, approve_edge_candidate, set_candidate_status
+    from trading_app.edge_pipeline import promote_candidate_to_validated_setups, create_edge_candidate
+    from trading_app.strategy_discovery import StrategyDiscovery, DiscoveryConfig, ProgressiveEvalSettings
+    from trading_app.terminal_theme import inject_terminal_theme
+    from trading_app.terminal_components import *
+    from trading_app.time_spec import ORBS
 
 # Import cost model for slippage assumptions (H3 fix)
 sys.path.insert(0, str(Path(__file__).parent.parent))

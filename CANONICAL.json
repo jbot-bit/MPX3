@@ -1,0 +1,37 @@
+{
+  "version": "1.0.0",
+  "databases": {
+    "main": "data/db/gold.db",
+    "cache": "live_data.db",
+    "allowed_locations": [
+      "data/db/gold.db",
+      "live_data.db"
+    ]
+  },
+  "documentation": {
+    "schema": "docs/SCHEMA.md",
+    "trading_rules": "CANONICAL_LOGIC.txt",
+    "zero_lookahead": "docs/ZERO_LOOKAHEAD.md"
+  },
+  "entry_points": {
+    "mobile": "trading_app/mobile_ui.py",
+    "desktop": "trading_app/app_canonical.py"
+  },
+  "database_tables": {
+    "persistent": [
+      "bars_1m",
+      "bars_5m",
+      "daily_features",
+      "validated_setups"
+    ],
+    "cache": [
+      "live_data",
+      "session_state"
+    ]
+  },
+  "required_files": [
+    "CANONICAL_LOGIC.txt",
+    "CLAUDE.md",
+    "GUARDIAN.md"
+  ]
+}
