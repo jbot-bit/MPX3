@@ -290,10 +290,10 @@ def test_db_path():
 
 @pytest.fixture
 def conn():
-    """Database connection fixture for what-if tests."""
+    """Database connection fixture for what-if tests (read-only to prevent test pollution)."""
     import duckdb
     db_path = config.DB_PATH
-    connection = duckdb.connect(str(db_path), read_only=False)
+    connection = duckdb.connect(str(db_path), read_only=True)
     yield connection
     connection.close()
 

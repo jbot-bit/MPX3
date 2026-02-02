@@ -39,8 +39,8 @@ class TestCostModelIntegration:
 
     @pytest.fixture
     def db_connection(self):
-        """Create database connection"""
-        conn = duckdb.connect(DB_PATH)
+        """Create database connection (read-only to prevent test pollution)"""
+        conn = duckdb.connect(DB_PATH, read_only=True)
         yield conn
         conn.close()
 
