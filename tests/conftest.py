@@ -27,16 +27,35 @@ import gc
 # Store original duckdb.connect
 _original_duckdb_connect = duckdb.connect
 
+# Production DB path for comparison
+_PROD_DB_PATH = str(Path(__file__).parent.parent / "data" / "db" / "gold.db")
 
-def _patched_duckdb_connect(database=':memory:', read_only=False, **kwargs):
+
+def _patched_duckdb_connect(database=':memory:', read_only=None, **kwargs):
     """
-    Patched duckdb.connect that forces read_only=True for gold.db.
-    This prevents connection conflicts during test runs.
+    Patched duckdb.connect that forces read_only=True for production gold.db ONLY.
+    Temp test databases are NOT affected (they need write access to be created).
     """
-    # Force read_only=True for gold.db to prevent connection conflicts
-    if isinstance(database, str) and 'gold.db' in database:
+    # Determine if this is the production DB
+    try:
+        db_str = str(database) if database else ''
+        is_prod_db = (
+            db_str == _PROD_DB_PATH or
+            db_str.endswith('data/db/gold.db') or
+            db_str.endswith('data\\db\\gold.db')
+        )
+    except Exception:
+        is_prod_db = False
+
+    # Only force read_only for production DB when caller didn't specify
+    if is_prod_db and read_only is None:
         read_only = True
-    return _original_duckdb_connect(database, read_only=read_only, **kwargs)
+
+    # Pass through to original (don't pass read_only if None to use DuckDB default)
+    if read_only is not None:
+        return _original_duckdb_connect(database, read_only=read_only, **kwargs)
+    else:
+        return _original_duckdb_connect(database, **kwargs)
 
 
 # Apply the monkey patch at module load time
