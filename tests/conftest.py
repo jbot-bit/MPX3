@@ -27,16 +27,41 @@ import gc
 # Store original duckdb.connect
 _original_duckdb_connect = duckdb.connect
 
+# Production DB path for comparison
+_PROD_DB_PATH = str(Path(__file__).parent.parent / "data" / "db" / "gold.db")
 
-def _patched_duckdb_connect(database=':memory:', read_only=False, **kwargs):
+
+def _patched_duckdb_connect(database=':memory:', read_only=None, **kwargs):
     """
-    Patched duckdb.connect that forces read_only=True for gold.db.
-    This prevents connection conflicts during test runs.
+    Patched duckdb.connect that forces read_only=True for production gold.db ONLY.
+    Temp test databases are NOT affected (they need write access to be created).
+
+    IMPORTANT: For production DB, we ALWAYS force read_only=True even if caller
+    explicitly passes read_only=False. This prevents test ordering pollution where
+    one test opens with read_only=False and another with read_only=True (DuckDB
+    doesn't allow different configurations on same file).
     """
-    # Force read_only=True for gold.db to prevent connection conflicts
-    if isinstance(database, str) and 'gold.db' in database:
+    # Determine if this is the production DB
+    try:
+        db_str = str(database) if database else ''
+        is_prod_db = (
+            db_str == _PROD_DB_PATH or
+            db_str.endswith('data/db/gold.db') or
+            db_str.endswith('data\\db\\gold.db')
+        )
+    except Exception:
+        is_prod_db = False
+
+    # ALWAYS force read_only=True for production DB (even if caller says False)
+    # This ensures consistent configuration across all tests
+    if is_prod_db:
         read_only = True
-    return _original_duckdb_connect(database, read_only=read_only, **kwargs)
+
+    # Pass through to original (don't pass read_only if None to use DuckDB default)
+    if read_only is not None:
+        return _original_duckdb_connect(database, read_only=read_only, **kwargs)
+    else:
+        return _original_duckdb_connect(database, **kwargs)
 
 
 # Apply the monkey patch at module load time
@@ -414,6 +439,9 @@ def test_db(tmp_path):
             london_low DOUBLE,
             ny_high DOUBLE,
             ny_low DOUBLE,
+            asia_type_code VARCHAR,
+            london_type_code VARCHAR,
+            pre_ny_type_code VARCHAR,
             orb_0900_high DOUBLE,
             orb_0900_low DOUBLE,
             orb_0900_size DOUBLE,
@@ -450,13 +478,15 @@ def test_db(tmp_path):
             orb_0030_break_dir VARCHAR,
             orb_0030_outcome VARCHAR,
             orb_0030_r_multiple DOUBLE,
+            rsi_at_0030 DOUBLE,
             PRIMARY KEY (date_local, instrument)
         )
     """)
 
-    # Create validated_setups table
+    # Create validated_setups table (matches production schema)
     conn.execute("""
         CREATE TABLE validated_setups (
+            id INTEGER PRIMARY KEY,
             instrument VARCHAR,
             orb_time VARCHAR,
             rr DOUBLE,
@@ -464,8 +494,12 @@ def test_db(tmp_path):
             orb_size_filter DOUBLE,
             win_rate DOUBLE,
             expected_r DOUBLE,
+            real_expected_r DOUBLE,
             sample_size INTEGER,
-            PRIMARY KEY (instrument, orb_time)
+            notes VARCHAR,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(instrument, orb_time, rr, sl_mode)
         )
     """)
 
@@ -526,7 +560,7 @@ def sample_market_data():
 
 @pytest.fixture
 def sample_validated_setups():
-    """Sample validated setup data"""
+    """Sample validated setup data - all 6 ORB times"""
     return [
         {
             'instrument': 'MGC',
@@ -557,6 +591,36 @@ def sample_validated_setups():
             'win_rate': 14.5,
             'expected_r': 0.15,
             'sample_size': 150
+        },
+        {
+            'instrument': 'MGC',
+            'orb_time': '1800',
+            'rr': 1.5,
+            'sl_mode': 'HALF',
+            'orb_size_filter': 0.10,
+            'win_rate': 52.0,
+            'expected_r': 0.25,
+            'sample_size': 120
+        },
+        {
+            'instrument': 'MGC',
+            'orb_time': '2300',
+            'rr': 1.5,
+            'sl_mode': 'HALF',
+            'orb_size_filter': 0.155,
+            'win_rate': 56.1,
+            'expected_r': 0.403,
+            'sample_size': 262
+        },
+        {
+            'instrument': 'MGC',
+            'orb_time': '0030',
+            'rr': 3.0,
+            'sl_mode': 'HALF',
+            'orb_size_filter': 0.112,
+            'win_rate': 31.3,
+            'expected_r': 0.254,
+            'sample_size': 200
         }
     ]
 
@@ -574,12 +638,14 @@ def populated_test_db(test_db, sample_market_data, sample_validated_setups):
             2650.0, 2648.0,  -- asia_high, asia_low
             2651.0, 2649.0,  -- london_high, london_low
             2652.0, 2650.0,  -- ny_high, ny_low
+            'NORMAL', 'NORMAL', 'NORMAL',  -- asia_type_code, london_type_code, pre_ny_type_code
             2650.0, 2649.92, ?, 'NONE', NULL, NULL,  -- 0900 ORB
             2650.5, 2650.45, ?, 'NONE', NULL, NULL,  -- 1000 ORB
             2651.0, 2650.97, ?, 'NONE', NULL, NULL,  -- 1100 ORB
             2651.5, 2651.44, ?, 'NONE', NULL, NULL,  -- 1800 ORB
             2652.0, 2651.93, ?, 'NONE', NULL, NULL,  -- 2300 ORB
-            2652.5, 2652.46, ?, 'NONE', NULL, NULL   -- 0030 ORB
+            2652.5, 2652.46, ?, 'NONE', NULL, NULL,  -- 0030 ORB
+            45.0  -- rsi_at_0030
         )
     """, [
         sample_market_data['date_local'],
@@ -592,11 +658,15 @@ def populated_test_db(test_db, sample_market_data, sample_validated_setups):
         sample_market_data['orb_0030_size']
     ])
 
-    # Insert validated setups
-    for setup in sample_validated_setups:
+    # Insert validated setups (explicit columns to match schema)
+    for idx, setup in enumerate(sample_validated_setups, start=1):
         conn.execute("""
-            INSERT INTO validated_setups VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO validated_setups (
+                id, instrument, orb_time, rr, sl_mode, orb_size_filter,
+                win_rate, expected_r, real_expected_r, sample_size, notes
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, [
+            idx,
             setup['instrument'],
             setup['orb_time'],
             setup['rr'],
@@ -604,7 +674,9 @@ def populated_test_db(test_db, sample_market_data, sample_validated_setups):
             setup['orb_size_filter'],
             setup['win_rate'],
             setup['expected_r'],
-            setup['sample_size']
+            setup['expected_r'],  # real_expected_r = expected_r for test data
+            setup['sample_size'],
+            'Test setup'  # notes
         ])
 
     conn.close()

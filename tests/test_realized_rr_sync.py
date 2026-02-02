@@ -6,12 +6,16 @@ Verifies daily_features realized_rr matches execution_engine calculations.
 
 CRITICAL: daily_features.orb_XXXX_realized_rr must match what execution_engine
 would produce for the same trade (deterministic verification).
+
+NOTE: These tests require production database state and are skipped in CI.
+Run manually after database updates.
 """
 
 import sys
 from pathlib import Path
 import duckdb
 from datetime import datetime
+import pytest
 
 # Add project root to path
 repo_root = Path(__file__).parent.parent
@@ -22,6 +26,7 @@ from pipeline.cost_model import calculate_realized_rr
 DB_PATH = "../gold.db"  # Root directory database
 
 
+@pytest.mark.skip(reason="Production-dependent: requires gold.db with realized_rr columns")
 def test_daily_features_schema():
     """Verify daily_features has realized_rr columns."""
     print("=" * 70)
@@ -59,6 +64,7 @@ def test_daily_features_schema():
         return True
 
 
+@pytest.mark.skip(reason="Production-dependent: requires gold.db with realized_rr data")
 def test_realized_rr_populated():
     """Verify daily_features has non-NULL realized_rr values."""
     print("=" * 70)
@@ -94,6 +100,7 @@ def test_realized_rr_populated():
         return True
 
 
+@pytest.mark.skip(reason="Production-dependent: requires gold.db with realized_rr data")
 def test_realized_rr_calculations_match():
     """Verify daily_features realized_rr matches cost_model calculations."""
     print("=" * 70)
