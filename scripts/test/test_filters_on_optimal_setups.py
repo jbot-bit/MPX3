@@ -14,6 +14,16 @@ For each filter:
 - Only implement if improvement > 0.05R per trade (worth complexity)
 """
 
+import os
+from pathlib import Path
+
+# Guard: Skip if gold.db is missing (prevents duckdb.connect errors)
+DB_PATH_CHECK = Path(__file__).parent.parent.parent / 'data' / 'db' / 'gold.db'
+if not DB_PATH_CHECK.exists():
+    import sys
+    print(f"SKIP: {__file__} - Database not found at {DB_PATH_CHECK}")
+    sys.exit(0)
+
 import duckdb
 import pandas as pd
 import numpy as np

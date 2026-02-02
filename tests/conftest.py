@@ -21,6 +21,40 @@ from strategy_engine import StrategyEngine, StrategyEvaluation, ActionType, Stra
 from setup_detector import SetupDetector
 from data_loader import LiveDataLoader
 import config
+import duckdb
+import gc
+
+# Store original duckdb.connect
+_original_duckdb_connect = duckdb.connect
+
+
+def _patched_duckdb_connect(database=':memory:', read_only=False, **kwargs):
+    """
+    Patched duckdb.connect that forces read_only=True for gold.db.
+    This prevents connection conflicts during test runs.
+    """
+    # Force read_only=True for gold.db to prevent connection conflicts
+    if isinstance(database, str) and 'gold.db' in database:
+        read_only = True
+    return _original_duckdb_connect(database, read_only=read_only, **kwargs)
+
+
+# Apply the monkey patch at module load time
+duckdb.connect = _patched_duckdb_connect
+
+
+@pytest.fixture(autouse=True, scope="function")
+def clear_duckdb_connections():
+    """
+    Force-clear any lingering DuckDB connections before each test.
+    This prevents "different configuration" errors when tests use read_only=True
+    but a previous test/import opened with read_only=False.
+    """
+    # Force garbage collection to close any unreferenced connections
+    gc.collect()
+    yield
+    # Clean up after test too
+    gc.collect()
 
 
 @pytest.fixture
