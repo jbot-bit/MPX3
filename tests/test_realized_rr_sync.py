@@ -19,7 +19,7 @@ sys.path.insert(0, str(repo_root))
 
 from pipeline.cost_model import calculate_realized_rr
 
-DB_PATH = "../gold.db"  # Root directory database
+DB_PATH = str(repo_root / "data" / "db" / "gold.db")  # Absolute path to database
 
 
 def test_daily_features_schema():

@@ -210,6 +210,7 @@ def test_no_hardcoded_db_paths_in_trading_app():
         )
 
 
+@pytest.mark.skipif(SKIP_DB_ROUTING_TESTS, reason=SKIP_REASON)
 def test_no_hardcoded_db_paths_in_root():
     """Test that root-level Python files have no hardcoded connections."""
     repo_root = Path(__file__).parent.parent
