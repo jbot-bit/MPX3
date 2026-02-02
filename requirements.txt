@@ -24,6 +24,9 @@ tzdata>=2023.3
 # ML (optional but recommended)
 lightgbm>=4.0.0
 
+# Optimization
+optuna>=3.0.0
+
 # Optional: For historical data backfill (requires API key in secrets)
 # databento>=0.12.0
 anthropic
