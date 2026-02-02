@@ -495,7 +495,7 @@ class TestSessionWindowCalculations:
 
         # Assert
         assert len(bars) == 1, "Should find 1 bar in the window"
-        assert bars[0][1] == 2650.5, "Bar data should match"
+        assert bars[0][2] == 2650.5, "Bar high should match (index 2 = high)"
 
 
 class TestRSICalculation:

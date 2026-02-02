@@ -15,28 +15,40 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from trading_app.sync_guard import assert_sync_or_die, check_sync_status, ConfigSyncError
 
+# Canonical database path
+DB_PATH = "data/db/gold.db"
+
+
+@pytest.fixture
+def db_connection():
+    """Provide a read-only DuckDB connection for sync guard tests."""
+    conn = duckdb.connect(DB_PATH, read_only=True)
+    yield conn
+    conn.close()
+
 
 class TestSyncGuardBasic:
     """Basic sync guard functionality tests"""
 
-    def test_sync_guard_passes_when_synced(self):
+    def test_sync_guard_passes_when_synced(self, db_connection):
         """Verify sync guard passes when DB and config match"""
         # This should pass with current system (assuming test_app_sync.py passes)
         try:
-            assert_sync_or_die()
+            assert_sync_or_die(db_connection, DB_PATH)
             # If we get here, sync is good
             assert True
         except ConfigSyncError as e:
             pytest.fail(f"Sync guard failed but should pass: {e}")
 
-    def test_sync_guard_detects_missing_database(self):
+    def test_sync_guard_detects_missing_database(self, db_connection):
         """Verify sync guard fails if database doesn't exist"""
+        # db_path existence is checked before connection is used
         with pytest.raises(FileNotFoundError):
-            assert_sync_or_die(db_path="nonexistent.db")
+            assert_sync_or_die(db_connection, db_path="nonexistent.db")
 
-    def test_check_sync_status_returns_dict(self):
+    def test_check_sync_status_returns_dict(self, db_connection):
         """Verify check_sync_status returns proper dict structure"""
-        status = check_sync_status()
+        status = check_sync_status(db_connection, DB_PATH)
 
         assert isinstance(status, dict)
         assert 'synced' in status
@@ -45,10 +57,11 @@ class TestSyncGuardBasic:
         assert isinstance(status['synced'], bool)
         assert isinstance(status['errors'], list)
 
-    def test_check_sync_status_non_blocking(self):
+    def test_check_sync_status_non_blocking(self, db_connection):
         """Verify check_sync_status doesn't raise (returns error dict instead)"""
         # Even if sync fails, check_sync_status should return dict (not raise)
-        status = check_sync_status(db_path="nonexistent.db")
+        # db_path existence is checked first, so this triggers file not found error path
+        status = check_sync_status(db_connection, db_path="nonexistent.db")
 
         assert status['synced'] is False
         assert len(status['errors']) > 0
@@ -57,11 +70,11 @@ class TestSyncGuardBasic:
 class TestSyncGuardMismatchDetection:
     """Tests for mismatch detection logic"""
 
-    def test_sync_guard_format_error_message(self):
+    def test_sync_guard_format_error_message(self, db_connection):
         """Verify error messages are clear and actionable"""
         try:
             # If this raises, check the error message format
-            assert_sync_or_die()
+            assert_sync_or_die(db_connection, DB_PATH)
         except ConfigSyncError as e:
             error_msg = str(e)
 
@@ -74,50 +87,42 @@ class TestSyncGuardMismatchDetection:
 class TestSyncGuardIntegration:
     """Integration tests with real database"""
 
-    def test_sync_guard_reads_validated_setups(self):
+    def test_sync_guard_reads_validated_setups(self, db_connection):
         """Verify sync guard actually queries validated_setups"""
         # This test verifies the sync guard connects to DB and reads data
-        conn = duckdb.connect("data/db/gold.db", read_only=True)
-
         # Check validated_setups has data
-        count = conn.execute("""
+        count = db_connection.execute("""
             SELECT COUNT(*) FROM validated_setups WHERE instrument = 'MGC'
         """).fetchone()[0]
-
-        conn.close()
 
         # If DB has MGC setups, sync guard should process them
         if count > 0:
             # Should either pass or raise ConfigSyncError (not other errors)
             try:
-                assert_sync_or_die()
+                assert_sync_or_die(db_connection, DB_PATH)
             except ConfigSyncError:
                 # Expected if mismatch exists
                 pass
         else:
             # If no MGC setups, sync guard should raise ConfigSyncError
             with pytest.raises(ConfigSyncError, match="No MGC setups"):
-                assert_sync_or_die()
+                assert_sync_or_die(db_connection, DB_PATH)
 
-    def test_sync_guard_checks_orb_size_filters(self):
+    def test_sync_guard_checks_orb_size_filters(self, db_connection):
         """Verify sync guard validates ORB size filters specifically"""
-        conn = duckdb.connect("data/db/gold.db", read_only=True)
-
         # Get filters from DB
-        db_filters = conn.execute("""
+        db_filters = db_connection.execute("""
             SELECT orb_time, orb_size_filter
             FROM validated_setups
             WHERE instrument = 'MGC' AND orb_size_filter IS NOT NULL
             LIMIT 1
         """).fetchone()
 
-        conn.close()
-
         if db_filters:
             # DB has filter data, sync guard should validate it
             # (Actual pass/fail depends on whether config matches)
             try:
-                assert_sync_or_die()
+                assert_sync_or_die(db_connection, DB_PATH)
                 # If passes, config must match DB
                 from trading_app.config import MGC_ORB_SIZE_FILTERS
                 orb_time, db_filter = db_filters
@@ -135,13 +140,13 @@ class TestSyncGuardIntegration:
 class TestSyncGuardPerformance:
     """Performance and edge case tests"""
 
-    def test_sync_guard_fast_execution(self):
+    def test_sync_guard_fast_execution(self, db_connection):
         """Verify sync guard runs quickly (< 1 second)"""
         import time
 
         start = time.time()
         try:
-            assert_sync_or_die()
+            assert_sync_or_die(db_connection, DB_PATH)
         except ConfigSyncError:
             pass  # Mismatch is fine for performance test
         elapsed = time.time() - start
@@ -149,21 +154,21 @@ class TestSyncGuardPerformance:
         # Should be very fast (< 1 second for startup check)
         assert elapsed < 1.0, f"Sync guard too slow: {elapsed:.2f}s"
 
-    def test_sync_guard_read_only_connection(self):
+    def test_sync_guard_read_only_connection(self, db_connection):
         """Verify sync guard uses read-only DB connection (won't lock)"""
         # This test verifies the guard doesn't block other DB operations
         # by using read_only=True connection
 
         # Start sync guard (should use read-only connection)
         try:
-            assert_sync_or_die()
+            assert_sync_or_die(db_connection, DB_PATH)
         except ConfigSyncError:
             pass
 
         # Verify we can still connect to DB (not locked)
-        conn = duckdb.connect("data/db/gold.db", read_only=True)
-        result = conn.execute("SELECT 1").fetchone()
-        conn.close()
+        conn2 = duckdb.connect(DB_PATH, read_only=True)
+        result = conn2.execute("SELECT 1").fetchone()
+        conn2.close()
 
         assert result[0] == 1
 

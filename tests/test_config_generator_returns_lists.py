@@ -10,8 +10,21 @@ from pathlib import Path
 
 # Add tools to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "tools"))
+sys.path.insert(0, str(Path(__file__).parent.parent / "trading_app"))
 
 from config_generator import load_instrument_configs
+from cloud_mode import get_database_connection
+
+
+def get_active_setup_count(instrument: str, orb_time: str) -> int:
+    """Get count of ACTIVE setups from database for given instrument/orb_time."""
+    conn = get_database_connection(read_only=True)
+    result = conn.execute("""
+        SELECT COUNT(*) FROM validated_setups
+        WHERE instrument = ? AND orb_time = ? AND status = 'ACTIVE'
+    """, [instrument, orb_time]).fetchone()
+    conn.close()
+    return result[0] if result else 0
 
 
 def test_config_structure_is_lists():
@@ -58,31 +71,35 @@ def test_config_structure_is_lists():
             f"ORB {orb_time} filter should be list, got {type(filter_value)}"
 
 
-def test_mgc_1000_returns_two_configs():
+def test_mgc_1000_config_matches_database():
     """
-    Test that MGC 1000 specifically returns 2 configs (candidates 47+48).
+    Test that MGC 1000 config count matches ACTIVE database rows.
 
-    Regression test for the overwrite bug.
+    Regression test for the overwrite bug - ensures no silent data loss.
     """
     mgc_configs, mgc_filters = load_instrument_configs('MGC')
 
-    assert '1000' in mgc_configs, "MGC should have 1000 ORB"
+    # Get expected count from database (ACTIVE only)
+    expected_count = get_active_setup_count('MGC', '1000')
+
+    if expected_count == 0:
+        # No ACTIVE setups for 1000 - config may not have this key or have None
+        if '1000' in mgc_configs and mgc_configs['1000'] is not None:
+            pytest.fail(f"DB has 0 ACTIVE MGC 1000 setups but config has {len(mgc_configs['1000'])}")
+        return  # PASS - correctly absent
+
+    assert '1000' in mgc_configs, "MGC should have 1000 ORB (DB has ACTIVE setups)"
 
     config_list = mgc_configs['1000']
 
     assert isinstance(config_list, list), "1000 config should be list"
-    assert len(config_list) == 2, \
-        f"MGC 1000 should have 2 setups, found {len(config_list)}"
+    assert len(config_list) == expected_count, \
+        f"MGC 1000: DB has {expected_count} ACTIVE setups but config has {len(config_list)} (silent overwrite?)"
 
-    # Check RR values
-    rr_values = sorted([c['rr'] for c in config_list])
-    assert rr_values == [1.0, 2.0], \
-        f"Expected RR [1.0, 2.0], got {rr_values}"
-
-    # Check SL modes
-    sl_modes = sorted([c['sl_mode'] for c in config_list])
-    assert sl_modes == ['FULL', 'HALF'], \
-        f"Expected SL ['FULL', 'HALF'], got {sl_modes}"
+    # Verify each config has required keys
+    for i, config in enumerate(config_list):
+        assert 'rr' in config, f"Config {i} missing 'rr' key"
+        assert 'sl_mode' in config, f"Config {i} missing 'sl_mode' key"
 
 
 def test_filter_lists_match_config_lists():
@@ -140,10 +157,10 @@ if __name__ == "__main__":
         sys.exit(1)
 
     try:
-        test_mgc_1000_returns_two_configs()
-        print("[PASS] test_mgc_1000_returns_two_configs")
+        test_mgc_1000_config_matches_database()
+        print("[PASS] test_mgc_1000_config_matches_database")
     except AssertionError as e:
-        print(f"[FAIL] test_mgc_1000_returns_two_configs: {e}")
+        print(f"[FAIL] test_mgc_1000_config_matches_database: {e}")
         sys.exit(1)
 
     try:

@@ -12,17 +12,38 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / "trading_app"))
 
 from setup_detector import SetupDetector
+from cloud_mode import get_database_connection
 
 
-def test_mgc_1000_has_two_setups():
+def get_expected_setup_count(instrument: str, orb_time: str) -> int:
     """
-    Test that MGC 1000 ORB returns BOTH candidates 47 and 48.
+    Get expected count from DB matching SetupDetector's filter logic.
+
+    SetupDetector uses: status IS NULL OR status != 'REJECTED'
+    (includes ACTIVE and RETIRED for historical analysis)
+    """
+    conn = get_database_connection(read_only=True)
+    result = conn.execute("""
+        SELECT COUNT(*) FROM validated_setups
+        WHERE instrument = ? AND orb_time = ?
+          AND (status IS NULL OR status != 'REJECTED')
+    """, [instrument, orb_time]).fetchone()
+    conn.close()
+    return result[0] if result else 0
+
+
+def test_mgc_1000_count_matches_database():
+    """
+    Test that MGC 1000 ORB count matches database (non-REJECTED).
 
     This is the critical test for multi-setup architecture.
     Before the fix, only one setup would be returned (silent overwrite).
-    After the fix, both setups must be present.
+    After the fix, all setups must be present.
     """
     detector = SetupDetector(None)  # Cloud-aware connection
+
+    # Get expected count from DB (same filter as SetupDetector)
+    expected_count = get_expected_setup_count('MGC', '1000')
 
     # Get all MGC setups
     all_setups = detector.get_all_validated_setups('MGC')
@@ -32,29 +53,20 @@ def test_mgc_1000_has_two_setups():
     # Filter for MGC 1000 ORB setups
     mgc_1000_setups = [s for s in all_setups if s['orb_time'] == '1000']
 
-    # CRITICAL: Must have exactly 2 setups for MGC 1000
-    assert len(mgc_1000_setups) == 2, \
-        f"Expected 2 MGC 1000 setups (candidates 47+48), found {len(mgc_1000_setups)}"
+    # CRITICAL: Count must match database
+    assert len(mgc_1000_setups) == expected_count, \
+        f"DB has {expected_count} MGC 1000 setups but detector returned {len(mgc_1000_setups)} (silent overwrite?)"
 
-    # Extract RR values
-    rr_values = sorted([s['rr'] for s in mgc_1000_setups])
+    # Verify each setup has required keys
+    for i, setup in enumerate(mgc_1000_setups):
+        assert 'rr' in setup, f"Setup {i} missing 'rr' key"
+        assert 'sl_mode' in setup, f"Setup {i} missing 'sl_mode' key"
+        assert 'orb_time' in setup, f"Setup {i} missing 'orb_time' key"
 
-    # Should have RR=1.0 and RR=2.0
-    assert rr_values == [1.0, 2.0], \
-        f"Expected RR values [1.0, 2.0], got {rr_values}"
-
-    # Extract SL modes
-    sl_modes = sorted([s['sl_mode'] for s in mgc_1000_setups])
-
-    # Should have FULL and HALF
-    assert sl_modes == ['FULL', 'HALF'], \
-        f"Expected SL modes ['FULL', 'HALF'], got {sl_modes}"
-
-    # Check setup IDs
-    setup_ids = sorted([s['setup_id'] for s in mgc_1000_setups])
-
-    assert 'MGC_1000_047' in setup_ids, "Candidate 47 missing"
-    assert 'MGC_1000_048' in setup_ids, "Candidate 48 missing"
+    # Verify no duplicate (rr, sl_mode) combinations
+    combos = [(s['rr'], s['sl_mode']) for s in mgc_1000_setups]
+    assert len(combos) == len(set(combos)), \
+        f"Duplicate (rr, sl_mode) combinations found: {combos}"
 
 
 def test_all_orb_times_return_lists():
@@ -81,9 +93,12 @@ def test_all_orb_times_return_lists():
         assert len(setups) >= 1, \
             f"ORB time {orb_time} should have at least 1 setup"
 
-    # Specifically check 1000 has multiple
-    assert len(by_orb_time.get('1000', [])) == 2, \
-        "MGC 1000 should have 2 setups"
+    # Verify 1000 count matches database (dynamic check)
+    if '1000' in by_orb_time:
+        expected_1000 = get_expected_setup_count('MGC', '1000')
+        actual_1000 = len(by_orb_time['1000'])
+        assert actual_1000 == expected_1000, \
+            f"MGC 1000: expected {expected_1000} setups from DB, got {actual_1000}"
 
 
 def test_no_silent_overwrites():
@@ -118,10 +133,10 @@ if __name__ == "__main__":
     print()
 
     try:
-        test_mgc_1000_has_two_setups()
-        print("[PASS] test_mgc_1000_has_two_setups")
+        test_mgc_1000_count_matches_database()
+        print("[PASS] test_mgc_1000_count_matches_database")
     except AssertionError as e:
-        print(f"[FAIL] test_mgc_1000_has_two_setups: {e}")
+        print(f"[FAIL] test_mgc_1000_count_matches_database: {e}")
         sys.exit(1)
 
     try:

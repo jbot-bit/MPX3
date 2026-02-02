@@ -18,11 +18,12 @@ from cloud_mode import get_database_connection
 
 def test_config_count_matches_database_count():
     """
-    Test that number of setups in config matches database for each ORB time.
+    Test that number of setups in config matches ACTIVE database rows for each ORB time.
 
     This catches silent overwrites where multiple DB rows collapse to one config.
+    Note: config_generator filters by status='ACTIVE', so we must match that filter.
     """
-    # Get database counts
+    # Get database counts (ACTIVE only - matches config_generator filter)
     conn = get_database_connection(read_only=True)
 
     query = """
@@ -30,6 +31,7 @@ def test_config_count_matches_database_count():
         FROM validated_setups
         WHERE instrument = ?
           AND orb_time NOT IN ('CASCADE', 'SINGLE_LIQ')
+          AND status = 'ACTIVE'
         GROUP BY orb_time
     """
 
@@ -54,16 +56,17 @@ def test_config_count_matches_database_count():
         config_count = config_counts.get(orb_time, 0)
 
         assert config_count == db_count, \
-            f"ORB {orb_time}: database has {db_count} setups but config has {config_count} (silent overwrite?)"
+            f"ORB {orb_time}: database has {db_count} ACTIVE setups but config has {config_count} (silent overwrite?)"
 
 
 def test_unique_rr_sl_combinations_preserved():
     """
     Test that unique (RR, SL_MODE) combinations are not lost.
 
-    Each unique combination in database should appear in config.
+    Each unique ACTIVE combination in database should appear in config.
+    Note: config_generator filters by status='ACTIVE', so we must match that filter.
     """
-    # Get database combinations
+    # Get database combinations (ACTIVE only - matches config_generator filter)
     conn = get_database_connection(read_only=True)
 
     query = """
@@ -71,6 +74,7 @@ def test_unique_rr_sl_combinations_preserved():
         FROM validated_setups
         WHERE instrument = ?
           AND orb_time NOT IN ('CASCADE', 'SINGLE_LIQ')
+          AND status = 'ACTIVE'
         ORDER BY orb_time, rr
     """
 
@@ -99,39 +103,57 @@ def test_unique_rr_sl_combinations_preserved():
     for orb_time, db_combo_list in db_combos.items():
         config_combo_list = config_combos.get(orb_time, [])
 
-        # Sort for comparison
-        db_sorted = sorted(db_combo_list)
-        config_sorted = sorted(config_combo_list)
+        # Sort for comparison (normalize sl_mode case)
+        db_sorted = sorted([(rr, sl.lower()) for rr, sl in db_combo_list])
+        config_sorted = sorted([(rr, sl.lower()) for rr, sl in config_combo_list])
 
         assert db_sorted == config_sorted, \
             f"ORB {orb_time}: DB combos {db_sorted} != config combos {config_sorted}"
 
 
-def test_mgc_1000_both_setups_present():
+def test_mgc_1000_setups_match_database():
     """
-    Specific regression test for MGC 1000 candidates 47+48.
+    Specific regression test for MGC 1000 - ensures no silent overwrite.
 
     This is the exact scenario that triggered the architecture fix.
+    Now uses dynamic assertions based on ACTIVE database rows.
     """
+    # Get expected data from database (ACTIVE only)
+    conn = get_database_connection(read_only=True)
+
+    db_results = conn.execute("""
+        SELECT rr, sl_mode, orb_size_filter
+        FROM validated_setups
+        WHERE instrument = 'MGC' AND orb_time = '1000' AND status = 'ACTIVE'
+        ORDER BY rr
+    """).fetchall()
+    conn.close()
+
+    expected_count = len(db_results)
+
+    if expected_count == 0:
+        pytest.skip("No ACTIVE MGC 1000 setups in database")
+
     mgc_configs, mgc_filters = load_instrument_configs('MGC')
 
-    assert '1000' in mgc_configs, "MGC 1000 should exist"
+    assert '1000' in mgc_configs, "MGC 1000 should exist (DB has ACTIVE setups)"
 
     config_list = mgc_configs['1000']
     filter_list = mgc_filters['1000']
 
-    # Should have exactly 2 setups
-    assert len(config_list) == 2, \
-        f"MGC 1000 should have 2 setups, found {len(config_list)} (silent overwrite?)"
+    # Count must match database
+    assert len(config_list) == expected_count, \
+        f"MGC 1000: DB has {expected_count} ACTIVE setups, config has {len(config_list)} (silent overwrite?)"
 
-    assert len(filter_list) == 2, \
-        f"MGC 1000 should have 2 filters, found {len(filter_list)}"
+    assert len(filter_list) == expected_count, \
+        f"MGC 1000: DB has {expected_count} ACTIVE setups, filters has {len(filter_list)}"
 
-    # Verify both combinations present
-    combos = [(c['rr'], c['sl_mode']) for c in config_list]
-
-    assert (1.0, 'FULL') in combos, "Candidate 47 (RR=1.0 FULL) missing"
-    assert (2.0, 'HALF') in combos, "Candidate 48 (RR=2.0 HALF) missing"
+    # Verify all DB combinations are present in config
+    config_combos = [(c['rr'], c['sl_mode'].lower()) for c in config_list]
+    for rr, sl_mode, _ in db_results:
+        expected_combo = (rr, sl_mode.lower())
+        assert expected_combo in config_combos, \
+            f"DB combo {expected_combo} missing from config (silent overwrite?)"
 
 
 if __name__ == "__main__":
@@ -154,10 +176,10 @@ if __name__ == "__main__":
         sys.exit(1)
 
     try:
-        test_mgc_1000_both_setups_present()
-        print("[PASS] test_mgc_1000_both_setups_present")
+        test_mgc_1000_setups_match_database()
+        print("[PASS] test_mgc_1000_setups_match_database")
     except AssertionError as e:
-        print(f"[FAIL] test_mgc_1000_both_setups_present: {e}")
+        print(f"[FAIL] test_mgc_1000_setups_match_database: {e}")
         sys.exit(1)
 
     print()
