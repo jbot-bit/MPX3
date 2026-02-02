@@ -352,7 +352,7 @@ def run_verification():
     print("="*60)
 
     # Connect to database
-    conn = duckdb.connect('data/db/gold.db')
+    conn = duckdb.connect('data/db/gold.db', read_only=True)
 
     # Create report
     report = VerificationReport()

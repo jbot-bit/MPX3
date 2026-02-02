@@ -36,7 +36,7 @@ class TestOutcomeClassification:
     @pytest.fixture
     def db_connection(self):
         """Create database connection"""
-        conn = duckdb.connect(DB_PATH)
+        conn = duckdb.connect(DB_PATH, read_only=True)
         yield conn
         conn.close()
 

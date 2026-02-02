@@ -28,7 +28,7 @@ from pipeline.populate_tradeable_metrics import get_strategy_config
 
 def test_get_strategy_config_loads_from_db():
     """Test that get_strategy_config() queries validated_setups."""
-    conn = duckdb.connect("data/db/gold.db")
+    conn = duckdb.connect("data/db/gold.db", read_only=True)
 
     # Capture stdout to verify RR EVIDENCE TABLE is printed
     output = StringIO()
@@ -52,7 +52,7 @@ def test_get_strategy_config_loads_from_db():
 
 def test_rr_values_match_database():
     """Test that RR values in config match validated_setups."""
-    conn = duckdb.connect("data/db/gold.db")
+    conn = duckdb.connect("data/db/gold.db", read_only=True)
 
     # Load from database
     rows = conn.execute("""
@@ -168,7 +168,7 @@ def test_main_passes_strategy_rr():
 
 def test_rr_evidence_table_format():
     """Test that RR EVIDENCE TABLE is printed in correct format."""
-    conn = duckdb.connect("data/db/gold.db")
+    conn = duckdb.connect("data/db/gold.db", read_only=True)
 
     output = StringIO()
     with redirect_stdout(output):

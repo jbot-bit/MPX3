@@ -29,7 +29,7 @@ def test_daily_features_schema():
     print("=" * 70)
     print()
 
-    con = duckdb.connect(DB_PATH)
+    con = duckdb.connect(DB_PATH, read_only=True)
 
     schema = con.execute("PRAGMA table_info(daily_features)").fetchall()
     columns = [col[1] for col in schema]
@@ -66,7 +66,7 @@ def test_realized_rr_populated():
     print("=" * 70)
     print()
 
-    con = duckdb.connect(DB_PATH)
+    con = duckdb.connect(DB_PATH, read_only=True)
 
     # Check 1000 ORB (most active)
     result = con.execute("""
@@ -101,7 +101,7 @@ def test_realized_rr_calculations_match():
     print("=" * 70)
     print()
 
-    con = duckdb.connect(DB_PATH)
+    con = duckdb.connect(DB_PATH, read_only=True)
 
     # Get recent 1000 ORB trades
     trades = con.execute("""

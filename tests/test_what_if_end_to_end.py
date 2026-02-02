@@ -290,7 +290,7 @@ def run_all_tests():
     print("=" * 60)
 
     # Connect to database
-    conn = duckdb.connect('data/db/gold.db')
+    conn = duckdb.connect('data/db/gold.db', read_only=True)
 
     results = []
 

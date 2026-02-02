@@ -34,7 +34,7 @@ class TestEntryPrice:
     @pytest.fixture
     def db_connection(self):
         """Create database connection"""
-        conn = duckdb.connect(DB_PATH)
+        conn = duckdb.connect(DB_PATH, read_only=True)
         yield conn
         conn.close()
 
@@ -316,7 +316,8 @@ class TestEntryPrice:
             pytest.skip("No tradeable data found")
 
         for date_local, entry_price in rows:
-            assert 2000 < entry_price < 3500, \
+            # Gold price range: $1800 (2020 low) to $5000 (future-proof)
+            assert 1800 < entry_price < 5000, \
                 f"Entry price {entry_price} outside realistic range for MGC on {date_local}"
 
 
