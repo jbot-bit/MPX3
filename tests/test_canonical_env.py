@@ -101,7 +101,7 @@ def test_get_canon_app_entry():
 
     # Desktop app
     desktop_app = get_canon_app_entry("desktop")
-    assert desktop_app == "trading_app/app_trading_hub.py"
+    assert desktop_app == "trading_app/app_canonical.py"
     desktop_path = Path(__file__).parent.parent / desktop_app
     assert desktop_path.exists(), f"Desktop app not found: {desktop_app}"
 

@@ -6,7 +6,24 @@
     "allowed_locations": [
       "data/db/gold.db",
       "live_data.db"
+    ],
+    "forbidden_locations": [
+      "**/*.tmp",
+      "**/*~",
+      "**/*.bak",
+      "**/*.backup",
+      "**/*.old",
+      "**/*.db.tmp",
+      "**/*-wal",
+      "**/*-shm",
+      "**/*_shadow*.db",
+      "**/*shadow*.db",
+      "**/gold*.db.tmp",
+      "**/*.duckdb.tmp"
     ]
+  },
+  "connection_module": {
+    "canonical": "trading_app/cloud_mode.py"
   },
   "documentation": {
     "schema": "docs/SCHEMA.md",
@@ -14,7 +31,7 @@
     "zero_lookahead": "docs/ZERO_LOOKAHEAD.md"
   },
   "entry_points": {
-    "mobile": "trading_app/mobile_ui.py",
+    "mobile": "trading_app/app_mobile.py",
     "desktop": "trading_app/app_canonical.py"
   },
   "database_tables": {
