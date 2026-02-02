@@ -746,8 +746,8 @@ class StrategyDiscovery:
             return None, "pruned_stage_2", 2
 
         # ===== STAGE 3: Full History + Stress Test =====
-        # Run full backtest using original method
-        result = self.backtest_configuration(config)
+        # Run full backtest on existing df (NO re-query)
+        result = self._run_full_backtest_on_df(config, df, con, cost_model)
         elapsed = time.monotonic() - start_time
 
         _log_discovery_trial(
@@ -796,6 +796,142 @@ class StrategyDiscovery:
             tier="N/A",
             total_r=0.0
         )
+
+    def _run_full_backtest_on_df(
+        self,
+        config: DiscoveryConfig,
+        df: pd.DataFrame,
+        con,
+        cost_model: Dict
+    ) -> BacktestResult:
+        """
+        Run full backtest on already-filtered DataFrame (no DB query).
+
+        Stage 3 optimization: reuses df from progressive stages.
+        """
+        from strategies.execution_engine import simulate_orb_trade, ExecutionMode
+
+        if df.empty:
+            return self._empty_result(config)
+
+        trades = []
+        for row in df.itertuples():
+            result = simulate_orb_trade(
+                con=con,
+                date_local=row.date_local,
+                orb=config.orb_time,
+                mode='1m',
+                confirm_bars=1,
+                rr=config.rr,
+                sl_mode=config.sl_mode.lower(),
+                exec_mode=ExecutionMode.MARKET_ON_CLOSE,
+                slippage_ticks=cost_model['slippage_ticks'],
+                commission_per_contract=cost_model['commission_rt'] / 2
+            )
+            if result.outcome in ['WIN', 'LOSS']:
+                trades.append(result)
+
+        if len(trades) == 0:
+            return self._empty_result(config)
+
+        # Calculate metrics from canonical execution results
+        wins = sum(1 for t in trades if t.outcome == 'WIN')
+        losses = sum(1 for t in trades if t.outcome == 'LOSS')
+        total_trades = len(trades)
+
+        # Use REALIZED R (post-cost)
+        r_values = [t.r_multiple - t.cost_r for t in trades]
+        total_r = sum(r_values)
+        avg_r = total_r / total_trades
+        win_rate = (wins / total_trades * 100) if total_trades > 0 else 0
+
+        # Calculate annual trades
+        date_range_days = (df['date_local'].max() - df['date_local'].min()).days
+        years = date_range_days / 365.25 if date_range_days > 0 else 1
+        annual_trades = int(total_trades / years)
+
+        tier = self._assign_tier(win_rate, avg_r)
+
+        # Data window
+        date_start = str(df['date_local'].min().date()) if not df.empty else None
+        date_end = str(df['date_local'].max().date()) if not df.empty else None
+
+        # Max drawdown
+        max_dd_R = self._compute_max_drawdown(r_values)
+
+        # Stress test (reuses df)
+        survives_stress, stress_avg_r = self._run_stress_test_on_df(config, df, con)
+
+        # Candidate hash
+        candidate_hash = compute_candidate_hash(config, date_start, date_end) if date_start and date_end else None
+
+        return BacktestResult(
+            config=config,
+            total_trades=total_trades,
+            wins=wins,
+            losses=losses,
+            win_rate=win_rate,
+            avg_r=avg_r,
+            annual_trades=annual_trades,
+            tier=tier,
+            total_r=total_r,
+            date_start=date_start,
+            date_end=date_end,
+            max_dd_R=max_dd_R,
+            survives_stress=survives_stress,
+            stress_avg_r=stress_avg_r,
+            candidate_hash=candidate_hash
+        )
+
+    def _run_stress_test_on_df(
+        self,
+        config: DiscoveryConfig,
+        df: pd.DataFrame,
+        con
+    ) -> tuple:
+        """
+        Run stress test on already-filtered DataFrame (no DB query).
+
+        Stage 3 optimization: reuses df from progressive stages.
+        Returns: (survives_stress: bool, stress_avg_r: float)
+        """
+        from strategies.execution_engine import simulate_orb_trade, ExecutionMode
+        from pipeline.cost_model import get_cost_model
+
+        if df.empty:
+            return False, 0.0
+
+        # Get STRESS cost model (2x slippage)
+        stress_cost_model = get_cost_model(config.instrument, stress_level='moderate')
+
+        trades = []
+        for row in df.itertuples():
+            result = simulate_orb_trade(
+                con=con,
+                date_local=row.date_local,
+                orb=config.orb_time,
+                mode='1m',
+                confirm_bars=1,
+                rr=config.rr,
+                sl_mode=config.sl_mode.lower(),
+                exec_mode=ExecutionMode.MARKET_ON_CLOSE,
+                slippage_ticks=stress_cost_model['slippage_ticks'],
+                commission_per_contract=stress_cost_model['commission_rt'] / 2
+            )
+            if result.outcome in ['WIN', 'LOSS']:
+                trades.append(result)
+
+        if len(trades) == 0:
+            return False, 0.0
+
+        # Calculate stress metrics
+        r_values = [t.r_multiple - t.cost_r for t in trades]
+        stress_avg_r = sum(r_values) / len(r_values) if r_values else 0.0
+
+        # Survives if avg_r > 0 under stress
+        survives = stress_avg_r > 0
+
+        return survives, stress_avg_r
 
     def run_stress_test(self, config: DiscoveryConfig, con) -> tuple:
         """

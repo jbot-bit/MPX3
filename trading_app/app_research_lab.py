@@ -758,7 +758,9 @@ def render_discovery_view():
                 if start_idx >= total_configs:
                     st.info("✅ Scan already complete! Use 'View Results' or 'Reset' to start fresh.")
                 else:
-                    st.info(f"Testing configs {start_idx + 1} to {total_configs}...")
+                    # Calculate chunk end index (timebox will limit actual processing)
+                    chunk_end_est = min(start_idx + 100, total_configs)  # Estimate ~100 configs per chunk
+                    st.info(f"Testing configs {start_idx + 1}–{chunk_end_est} of {total_configs}...")
 
                     # Build progressive eval settings from UI
                     prog_settings = ProgressiveEvalSettings(
@@ -773,6 +775,7 @@ def render_discovery_view():
 
                     # Run timeboxed loop
                     progress_bar = st.progress(start_idx / total_configs)
+                    heartbeat = st.empty()  # Per-config status placeholder
                     hits_this_chunk = 0
                     processed_this_chunk = 0
                     pruned_this_chunk = 0
@@ -780,16 +783,23 @@ def render_discovery_view():
 
                     for i in range(start_idx, total_configs):
                         config = configs[i]
+                        config_start = time.monotonic()
+
+                        # Update heartbeat before processing
+                        filter_str = f"{config.orb_size_filter*100:.0f}%" if config.orb_size_filter else "None"
+                        heartbeat.caption(f"Config {i+1}/{total_configs} | {config.orb_time} rr={config.rr} sl={config.sl_mode} filter={filter_str} | processing...")
 
                         # Use progressive evaluation if enabled
                         if enable_progressive:
                             result, outcome, stage = discovery.backtest_configuration_progressive(
                                 config, prog_settings
                             )
+                            config_elapsed = time.monotonic() - config_start
                             if result is None:
                                 # Config was pruned - still count as processed
                                 pruned_this_chunk += 1
                                 processed_this_chunk += 1
+                                heartbeat.caption(f"Config {i+1}/{total_configs} | {config.orb_time} rr={config.rr} | stage={stage} PRUNED | {config_elapsed:.1f}s")
                                 progress_bar.progress((i + 1) / total_configs)
 
                                 # Check timebox
@@ -797,8 +807,12 @@ def render_discovery_view():
                                 if elapsed_chunk >= chunk_seconds:
                                     break
                                 continue
+                            # Update heartbeat for completed config
+                            heartbeat.caption(f"Config {i+1}/{total_configs} | {config.orb_time} rr={config.rr} | stage={stage} OK | {config_elapsed:.1f}s")
                         else:
                             result = discovery.backtest_configuration(config)
+                            config_elapsed = time.monotonic() - config_start
+                            heartbeat.caption(f"Config {i+1}/{total_configs} | {config.orb_time} rr={config.rr} | full | {config_elapsed:.1f}s")
 
                         # Save to checkpoint (every result, not just hits)
                         _save_checkpoint_line(i, config, result)
@@ -820,6 +834,7 @@ def render_discovery_view():
                             break
 
                     progress_bar.empty()
+                    heartbeat.empty()
 
                     # Show pruning stats if progressive eval was used
                     if enable_progressive and pruned_this_chunk > 0:
