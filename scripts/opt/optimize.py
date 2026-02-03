@@ -144,8 +144,8 @@ def create_objective(discovery: StrategyDiscovery, instrument: str, orb_time: st
         # Check if this trial was seeded from validated_setups
         seeded = trial.user_attrs.get("seeded", False)
 
-        # Sample parameters
-        rr = trial.suggest_float("rr", 1.0, 8.0, step=0.5)
+        # Sample parameters (optimized range: 2.0-4.0 based on validated_setups data)
+        rr = trial.suggest_float("rr", 2.0, 4.0, step=0.5)
         sl_mode = trial.suggest_categorical("sl_mode", ["FULL", "HALF"])
         use_filter = trial.suggest_categorical("use_filter", [True, False])
         orb_size_filter = trial.suggest_float("orb_size_filter", 0.05, 0.20, step=0.01) if use_filter else None
@@ -291,7 +291,7 @@ def dry_run(args):
     print(f"Seed: {args.seed}")
     print()
     print("Search space:")
-    print("  rr: [1.0, 8.0] step=0.5")
+    print("  rr: [2.0, 4.0] step=0.5 (optimized range, skips waste)")
     print("  sl_mode: [FULL, HALF]")
     print("  orb_size_filter: None or [0.05, 0.20] step=0.01")
     print()
