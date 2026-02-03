@@ -55,12 +55,12 @@ def extract_candidate_manifest(candidate_row: tuple) -> Dict[str, Any]:
     # candidate_id, name, instrument, hypothesis_text,
     # filter_spec_json, test_config_json, metrics_json, slippage_assumptions_json,
     # code_version, data_version, status, created_at_utc, approved_at, approved_by,
-    # promoted_validated_setup_id, notes
+    # promoted_validated_setup_id, notes, robustness_json
 
     (candidate_id, name, instrument, hypothesis_text,
      filter_spec_json, test_config_json, metrics_json, slippage_assumptions_json,
      code_version, data_version, status, created_at_utc, approved_at, approved_by,
-     promoted_validated_setup_id, notes) = candidate_row
+     promoted_validated_setup_id, notes, robustness_json) = candidate_row
 
     # Required fields check
     missing_fields = []
