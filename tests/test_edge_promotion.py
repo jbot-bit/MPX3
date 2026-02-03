@@ -55,6 +55,29 @@ from edge_pipeline import (
 from edge_candidate_utils import approve_edge_candidate
 
 
+def _set_robustness_json(conn, candidate_id: int, robustness: dict) -> None:
+    """
+    Helper to set robustness_json on a candidate.
+
+    Simulates what research_runner would do after running stress tests.
+    Required by promotion gates (fail-closed) per audit3.txt, CLAUDE.md.
+
+    Args:
+        conn: Database connection
+        candidate_id: ID of candidate to update
+        robustness: Dict with stress test results, must include:
+            - stress_50_pass: bool (required for promotion)
+            - stress_50_exp_r: float (for logging)
+    """
+    import json
+    conn.execute("""
+        UPDATE edge_candidates
+        SET robustness_json = ?::JSON
+        WHERE candidate_id = ?
+    """, [json.dumps(robustness), candidate_id])
+    conn.commit()
+
+
 @pytest.fixture
 def test_db(tmp_path):
     """
@@ -90,32 +113,33 @@ def test_db(tmp_path):
             test_config_json JSON,
             approved_at TIMESTAMP,
             approved_by TEXT,
-            promoted_validated_setup_id INTEGER
+            promoted_validated_setup_id VARCHAR,
+            promoted_by TEXT,
+            promoted_at TIMESTAMP
         )
     """)
 
-    # Create validated_setups table
+    # Create validated_setups table (must match edge_pipeline.py INSERT schema)
     conn.execute("""
         CREATE TABLE validated_setups (
-            setup_id INTEGER PRIMARY KEY,
+            setup_id VARCHAR PRIMARY KEY,
             instrument TEXT NOT NULL,
-            name TEXT NOT NULL,
             orb_time TEXT NOT NULL,
             rr DOUBLE NOT NULL,
             sl_mode TEXT NOT NULL,
+            close_confirmations INTEGER DEFAULT 1,
+            buffer_ticks DOUBLE DEFAULT 0.0,
             orb_size_filter DOUBLE,
+            atr_filter DOUBLE,
+            min_gap_filter DOUBLE,
+            trades INTEGER NOT NULL,
             win_rate DOUBLE NOT NULL,
             avg_r DOUBLE NOT NULL,
-            tier TEXT NOT NULL,
             annual_trades INTEGER NOT NULL,
-            hypothesis_text TEXT,
-            code_version TEXT,
-            data_version TEXT,
-            test_window_start TEXT,
-            test_window_end TEXT,
-            promoted_from_candidate_id INTEGER,
-            promoted_by TEXT,
-            promoted_at TIMESTAMP
+            tier TEXT NOT NULL,
+            notes TEXT,
+            validated_date DATE,
+            data_source TEXT
         )
     """)
 
@@ -127,22 +151,28 @@ def test_db(tmp_path):
 
 @pytest.fixture
 def mock_db_connection(test_db, monkeypatch):
-    """Mock get_database_connection to use test database."""
+    """Provide a writable DuckDB connection and patch get_database_connection."""
     import duckdb
 
-    def mock_get_connection(read_only=True):
-        return duckdb.connect(str(test_db), read_only=read_only)
+    # Create a persistent connection for the test
+    conn = duckdb.connect(str(test_db), read_only=False)
 
-    # Patch cloud_mode.get_database_connection
-    # Need to patch in both cloud_mode and trading_app.cloud_mode
+    # Patch get_database_connection to return the SAME connection
+    # (avoids DuckDB connection conflicts with different read_only settings)
+    def mock_get_connection(read_only=True):
+        return conn
+
+    # Patch at module level AND source module (cloud_mode)
+    # edge_pipeline imports at module load, edge_candidate_utils imports at runtime
+    import edge_pipeline
     import cloud_mode
+    monkeypatch.setattr(edge_pipeline, "get_database_connection", mock_get_connection)
     monkeypatch.setattr(cloud_mode, "get_database_connection", mock_get_connection)
 
-    # Also patch in trading_app.cloud_mode (since edge_pipeline imports from there)
-    import trading_app.cloud_mode as trading_cloud_mode
-    monkeypatch.setattr(trading_cloud_mode, "get_database_connection", mock_get_connection)
-
-    yield test_db
+    try:
+        yield conn
+    finally:
+        conn.close()
 
 
 def test_create_candidate(mock_db_connection):
@@ -174,7 +204,8 @@ def test_create_candidate(mock_db_connection):
         },
         code_version="abc123",
         data_version="v1",
-        actor="TestUser"
+        actor="TestUser",
+        db_connection=mock_db_connection
     )
 
     assert candidate_id == 1
@@ -205,7 +236,8 @@ def test_approve_candidate(mock_db_connection):
         slippage_assumptions={"slippage_ticks": 2, "commission_per_contract": 2.50},
         code_version="abc123",
         data_version="v1",
-        actor="TestUser"
+        actor="TestUser",
+        db_connection=mock_db_connection
     )
 
     # Approve it
@@ -238,8 +270,17 @@ def test_promote_approved_candidate(mock_db_connection):
         slippage_assumptions={"slippage_ticks": 2, "commission_per_contract": 2.50},
         code_version="def456",
         data_version="v1",
-        actor="TestUser"
+        actor="TestUser",
+        db_connection=mock_db_connection
     )
+
+    # Set robustness_json (required by promotion gates, simulates research_runner)
+    _set_robustness_json(mock_db_connection, candidate_id, {
+        "stress_50_pass": True,
+        "stress_50_exp_r": 0.18,
+        "stress_25_pass": True,
+        "stress_25_exp_r": 0.22
+    })
 
     # Approve it
     approve_edge_candidate(candidate_id, "Josh")
@@ -247,37 +288,33 @@ def test_promote_approved_candidate(mock_db_connection):
     # Promote it
     setup_id = promote_candidate_to_validated_setups(candidate_id, "Josh")
 
-    assert setup_id == 1  # First validated setup
+    # setup_id is now VARCHAR format: INSTRUMENT_ORBTIME_ID (e.g., "MGC_1100_001")
+    assert setup_id == f"MGC_1100_{candidate_id:03d}"
 
     # Verify validated_setups row created
-    import duckdb
-    conn = duckdb.connect(str(mock_db_connection), read_only=True)
-
-    result = conn.execute("""
-        SELECT setup_id, instrument, name, orb_time, rr, win_rate, avg_r, tier,
-               orb_size_filter, sl_mode, promoted_from_candidate_id
+    result = mock_db_connection.execute("""
+        SELECT setup_id, instrument, orb_time, rr, win_rate, avg_r, tier,
+               orb_size_filter, sl_mode, annual_trades, data_source
         FROM validated_setups
         WHERE setup_id = ?
     """, [setup_id]).fetchone()
 
     assert result is not None
-    assert result[0] == setup_id
-    assert result[1] == "MGC"
-    assert result[2] == "Test 1100 ORB Safe"
-    assert result[3] == "1100"
-    assert result[4] == 2.0
-    assert result[5] == 64.9
-    assert result[6] == 0.299
-    assert result[7] == "S+"
-    assert result[8] == 0.08
-    assert result[9] == "FULL"
-    assert result[10] == candidate_id
+    assert result[0] == setup_id  # setup_id VARCHAR
+    assert result[1] == "MGC"  # instrument
+    assert result[2] == "1100"  # orb_time
+    assert result[3] == 2.0  # rr
+    assert result[4] == 64.9  # win_rate
+    assert result[5] == 0.299  # avg_r
+    assert result[6] == "S+"  # tier
+    assert result[7] == 0.08  # orb_size_filter
+    assert result[8] == "FULL"  # sl_mode
+    assert result[9] == 280  # annual_trades
+    assert result[10] == "edge_candidates"  # data_source
 
     # Verify edge_candidates.promoted_validated_setup_id was set
     status = get_candidate_status(candidate_id)
     assert status["promoted_validated_setup_id"] == setup_id
-
-    conn.close()
 
 
 def test_promote_fails_if_not_approved(mock_db_connection):
@@ -300,7 +337,8 @@ def test_promote_fails_if_not_approved(mock_db_connection):
         slippage_assumptions={"slippage_ticks": 2, "commission_per_contract": 2.50},
         code_version="abc123",
         data_version="v1",
-        actor="TestUser"
+        actor="TestUser",
+        db_connection=mock_db_connection
     )
 
     # Try to promote without approving
@@ -320,52 +358,56 @@ def test_promote_fails_if_already_promoted(mock_db_connection):
         metrics={
             "orb_time": "0900",
             "rr": 2.0,
-            "win_rate": 50.0,
-            "avg_r": 0.0,
+            "win_rate": 55.0,
+            "avg_r": 0.20,  # Must be >= 0.15R per CLAUDE.md approval rule
             "annual_trades": 100,
-            "tier": "C"
+            "tier": "B"
         },
         slippage_assumptions={"slippage_ticks": 2, "commission_per_contract": 2.50},
         code_version="abc123",
         data_version="v1",
-        actor="TestUser"
+        actor="TestUser",
+        db_connection=mock_db_connection
     )
+
+    # Set robustness_json (required by promotion gates, simulates research_runner)
+    _set_robustness_json(mock_db_connection, candidate_id, {
+        "stress_50_pass": True,
+        "stress_50_exp_r": 0.16,
+        "stress_25_pass": True,
+        "stress_25_exp_r": 0.18
+    })
 
     approve_edge_candidate(candidate_id, "Josh")
 
     # First promotion succeeds
     setup_id = promote_candidate_to_validated_setups(candidate_id, "Josh")
-    assert setup_id == 1
+    assert setup_id == f"MGC_0900_{candidate_id:03d}"  # VARCHAR format: INSTRUMENT_ORBTIME_ID
 
-    # Second promotion fails
-    with pytest.raises(ValueError, match="already promoted"):
+    # Second promotion fails (status is now 'PROMOTED' after first promotion)
+    with pytest.raises(ValueError, match="status is 'PROMOTED'"):
         promote_candidate_to_validated_setups(candidate_id, "Josh")
 
 
 def test_promote_fails_if_missing_required_fields(mock_db_connection):
     """Test that promotion fails if required manifest fields are missing (FAIL-CLOSED)."""
-    import duckdb
-
-    conn = duckdb.connect(str(mock_db_connection), read_only=False)
-
     # Manually insert a candidate with incomplete metrics_json (missing 'rr')
-    conn.execute("""
+    # NOTE: avg_r >= 0.15 and robustness_json required to pass earlier promotion gates
+    mock_db_connection.execute("""
         INSERT INTO edge_candidates (
             candidate_id, name, instrument, hypothesis_text,
-            filter_spec_json, test_config_json, metrics_json, slippage_assumptions_json,
+            filter_spec_json, test_config_json, metrics_json, robustness_json, slippage_assumptions_json,
             code_version, data_version, status, approved_by
         ) VALUES (
             999, 'Incomplete', 'MGC', 'Test incomplete',
             '{"orb_size_filter": null, "sl_mode": "FULL"}'::JSON,
             '{"test_window_start": "2024-01-01", "test_window_end": "2025-12-31"}'::JSON,
-            '{"orb_time": "0900", "win_rate": 50.0, "avg_r": 0.0, "annual_trades": 100, "tier": "C"}'::JSON,
+            '{"orb_time": "0900", "win_rate": 55.0, "avg_r": 0.20, "annual_trades": 100, "tier": "B"}'::JSON,
+            '{"stress_50_pass": true, "stress_50_exp_r": 0.16}'::JSON,
             '{"slippage_ticks": 2}'::JSON,
             'abc123', 'v1', 'APPROVED', 'Josh'
         )
     """)
-
-    conn.commit()
-    conn.close()
 
     # Try to promote - should fail due to missing 'rr' in metrics_json
     with pytest.raises(ValueError, match="missing required fields.*metrics_json.rr"):
@@ -396,20 +438,27 @@ def test_no_hardcoded_placeholders_in_promotion(mock_db_connection):
         slippage_assumptions={"slippage_ticks": 5, "commission_per_contract": 3.75},
         code_version="unique_hash_789",
         data_version="v99",
-        actor="TestUser"
+        actor="TestUser",
+        db_connection=mock_db_connection
     )
+
+    # Set robustness_json (required by promotion gates, simulates research_runner)
+    _set_robustness_json(mock_db_connection, candidate_id, {
+        "stress_50_pass": True,
+        "stress_50_exp_r": 0.35,
+        "stress_25_pass": True,
+        "stress_25_exp_r": 0.45
+    })
 
     approve_edge_candidate(candidate_id, "Josh")
     setup_id = promote_candidate_to_validated_setups(candidate_id, "Josh")
 
     # Verify ALL unique values were extracted correctly
-    import duckdb
-    conn = duckdb.connect(str(mock_db_connection), read_only=True)
+    import json
 
-    result = conn.execute("""
+    result = mock_db_connection.execute("""
         SELECT instrument, orb_time, rr, win_rate, avg_r, annual_trades, tier,
-               orb_size_filter, sl_mode, code_version, data_version,
-               test_window_start, test_window_end
+               orb_size_filter, sl_mode, notes
         FROM validated_setups
         WHERE setup_id = ?
     """, [setup_id]).fetchone()
@@ -424,22 +473,19 @@ def test_no_hardcoded_placeholders_in_promotion(mock_db_connection):
     assert result[6] == "A", "tier should be extracted from metrics_json"
     assert result[7] == 0.123, "orb_size_filter should be extracted from filter_spec_json"
     assert result[8] == "CUSTOM", "sl_mode should be extracted from filter_spec_json"
-    assert result[9] == "unique_hash_789", "code_version should be extracted"
-    assert result[10] == "v99", "data_version should be extracted"
-    assert result[11] == "2023-06-15", "test_window_start should be extracted"
-    assert result[12] == "2024-08-20", "test_window_end should be extracted"
 
-    conn.close()
+    # code_version, data_version, test_window_start, test_window_end are stored in notes JSON
+    notes = json.loads(result[9]) if result[9] else {}
+    assert notes["code_version"] == "unique_hash_789", "code_version should be in notes"
+    assert notes["data_version"] == "v99", "data_version should be in notes"
+    assert notes["test_window_start"] == "2023-06-15", "test_window_start should be in notes"
+    assert notes["test_window_end"] == "2024-08-20", "test_window_end should be in notes"
 
 
 def test_extract_manifest_validates_all_fields(mock_db_connection):
     """Test that extract_candidate_manifest validates all required fields."""
-    import duckdb
-
-    conn = duckdb.connect(str(mock_db_connection), read_only=False)
-
     # Create a valid candidate
-    conn.execute("""
+    mock_db_connection.execute("""
         INSERT INTO edge_candidates (
             candidate_id, name, instrument, hypothesis_text,
             filter_spec_json, test_config_json, metrics_json, slippage_assumptions_json,
@@ -454,20 +500,16 @@ def test_extract_manifest_validates_all_fields(mock_db_connection):
         )
     """)
 
-    conn.commit()
-
     # Fetch the row (must match the SELECT order in promote_candidate_to_validated_setups)
-    row = conn.execute("""
+    row = mock_db_connection.execute("""
         SELECT
             candidate_id, name, instrument, hypothesis_text,
             filter_spec_json, test_config_json, metrics_json, slippage_assumptions_json,
             code_version, data_version, status, created_at_utc, approved_at, approved_by,
-            promoted_validated_setup_id, notes
+            promoted_validated_setup_id, notes, robustness_json
         FROM edge_candidates
         WHERE candidate_id = 100
     """).fetchone()
-
-    conn.close()
 
     # Extract manifest - should succeed
     manifest = extract_candidate_manifest(row)
