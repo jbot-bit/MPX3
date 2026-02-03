@@ -481,6 +481,66 @@ def render_discovery_view():
         st.checkbox("Test Extended Windows", value=False, disabled=True, help="⚠️ Not implemented")
         test_rr_targets = st.checkbox("Test R:R Ratios", value=True, help="Optimize reward:risk targets")
 
+    # RR Range Controls (only shown when Test R:R Ratios enabled)
+    if test_rr_targets:
+        render_section_divider("R:R RANGE CONFIGURATION")
+
+        col1, col2, col3 = st.columns(3)
+
+        with col1:
+            include_rr_1 = st.checkbox(
+                "Include RR 1.0 (experimental)",
+                value=False,
+                key="include_rr_1",
+                help="⚠️ RR=1.0 is experimental. Off by default."
+            )
+            # RR_MIN: floor is 1.5 unless RR=1.0 checkbox enabled
+            rr_min_floor = 1.0 if include_rr_1 else 1.5
+            rr_min = st.slider(
+                "RR MIN",
+                min_value=rr_min_floor,
+                max_value=8.0,
+                value=1.5,
+                step=0.5,
+                key="rr_min",
+                help=f"Minimum RR to test (floor: {rr_min_floor})"
+            )
+
+        with col2:
+            # RR_MAX: must be >= RR_MIN
+            rr_max = st.slider(
+                "RR MAX",
+                min_value=rr_min,
+                max_value=8.0,
+                value=8.0,
+                step=0.5,
+                key="rr_max",
+                help="Maximum RR to test"
+            )
+
+        with col3:
+            rr_step = st.selectbox(
+                "RR STEP",
+                options=[0.5, 1.0],
+                index=0,
+                key="rr_step",
+                help="Step size for RR grid"
+            )
+
+        # Fail-closed: validate RR_MIN <= RR_MAX
+        if rr_min > rr_max:
+            st.error("❌ RR MIN cannot exceed RR MAX. Adjust sliders.")
+            rr_validation_error = True
+        else:
+            rr_validation_error = False
+    else:
+        # Defaults when RR testing disabled
+        include_rr_1 = False
+        rr_min = 4.0
+        rr_max = 4.0
+        rr_step = 0.5
+        rr_validation_error = False
+
     render_section_divider("TIMEBOXED SCAN")
 
     # Chunk duration slider
@@ -529,7 +589,22 @@ def render_discovery_view():
         )
 
     # Generate configs for hash calculation (needed for checkpoint validation)
-    rr_targets = [1.0, 1.5, 2.0, 3.0, 4.0, 5.0, 6.0, 8.0] if test_rr_targets else [4.0]
+    # RR generation: arange(rr_min, rr_max, rr_step) with optional RR=1.0 prepend
+    if test_rr_targets:
+        # Generate RR candidates from slider values
+        rr_targets = []
+        current_rr = rr_min
+        while current_rr <= rr_max + 0.001:  # Small epsilon for float comparison
+            rr_targets.append(round(current_rr, 2))
+            current_rr += rr_step
+        # Prepend RR=1.0 if checkbox enabled and not already in list
+        if include_rr_1 and 1.0 not in rr_targets:
+            rr_targets = [1.0] + rr_targets
+        # Fail-closed: if empty, use [rr_min]
+        if not rr_targets:
+            rr_targets = [round(rr_min, 2)]
+    else:
+        rr_targets = [4.0]
     sl_modes = ["FULL", "HALF"]
     orb_filters = [None, 0.10, 0.15, 0.20] if test_orb_size else [None]
     params_hash = _get_params_hash(instrument, orb_times, rr_targets, sl_modes, orb_filters)
@@ -732,6 +807,11 @@ def render_discovery_view():
 
     # Handle Run/Continue
     if run_clicked:
+        # Fail-closed: block if RR validation error
+        if rr_validation_error:
+            st.error("❌ Cannot run scan: RR MIN exceeds RR MAX. Fix slider values first.")
+            st.stop()
+
         with st.spinner(f"Running {chunk_seconds}s scan chunk..."):
             try:
                 discovery = StrategyDiscovery()
