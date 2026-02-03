@@ -22,6 +22,10 @@ venv/
 *.log
 logs/
 
+# Research artifacts / checkpoints
+artifacts/
+*.jsonl
+
 # Windows reserved filenames
 nul
 
@@ -61,6 +65,13 @@ gold.db.backup*
 .auto-claude-status
 .claude_settings.json
 .worktrees/
+
+
+
+
+# Research artifacts / checkpoints
+artifacts/
+*.jsonl
 .security-key
 logs/security/
 _local_junk/
