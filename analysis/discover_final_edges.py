@@ -37,7 +37,7 @@ def search_consecutive_failure_patterns():
                     date_local,
                     orb_0900_outcome as prev_0900,
                     orb_1000_outcome as prev_1000
-                FROM daily_features_v2
+                FROM daily_features
                 WHERE instrument = 'MGC'
             ),
             strategy_trades AS (
@@ -46,7 +46,7 @@ def search_consecutive_failure_patterns():
                     vt.realized_rr
                 FROM validated_setups vs
                 JOIN validated_trades vt ON vs.id = vt.setup_id
-                JOIN daily_features_v2 df ON vt.date_local = df.date_local AND df.instrument = 'MGC'
+                JOIN daily_features df ON vt.date_local = df.date_local AND df.instrument = 'MGC'
                 JOIN prev_day pd ON pd.date_local = vt.date_local - INTERVAL '1 day'
                 WHERE vs.orb_time = '1000'
                   AND vs.rr = {rr}
@@ -81,7 +81,7 @@ def search_consecutive_failure_patterns():
                 SELECT
                     date_local,
                     orb_0900_outcome as prev_0900
-                FROM daily_features_v2
+                FROM daily_features
                 WHERE instrument = 'MGC'
             ),
             strategy_trades AS (
@@ -90,7 +90,7 @@ def search_consecutive_failure_patterns():
                     vt.realized_rr
                 FROM validated_setups vs
                 JOIN validated_trades vt ON vs.id = vt.setup_id
-                JOIN daily_features_v2 df ON vt.date_local = df.date_local AND df.instrument = 'MGC'
+                JOIN daily_features df ON vt.date_local = df.date_local AND df.instrument = 'MGC'
                 JOIN prev_day pd ON pd.date_local = vt.date_local - INTERVAL '1 day'
                 WHERE vs.orb_time = '1000'
                   AND vs.rr = {rr}
@@ -135,9 +135,9 @@ def search_volatility_regime_filters():
 
     # Volatility regimes (ATR percentiles)
     volatility_filters = [
-        ("LOW_VOL", "atr_20 < (SELECT PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY atr_20) FROM daily_features_v2 WHERE instrument = 'MGC' AND atr_20 IS NOT NULL)"),
-        ("HIGH_VOL", "atr_20 > (SELECT PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY atr_20) FROM daily_features_v2 WHERE instrument = 'MGC' AND atr_20 IS NOT NULL)"),
-        ("EXTREME_VOL", "atr_20 > (SELECT PERCENTILE_CONT(0.90) WITHIN GROUP (ORDER BY atr_20) FROM daily_features_v2 WHERE instrument = 'MGC' AND atr_20 IS NOT NULL)"),
+        ("LOW_VOL", "atr_20 < (SELECT PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY atr_20) FROM daily_features WHERE instrument = 'MGC' AND atr_20 IS NOT NULL)"),
+        ("HIGH_VOL", "atr_20 > (SELECT PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY atr_20) FROM daily_features WHERE instrument = 'MGC' AND atr_20 IS NOT NULL)"),
+        ("EXTREME_VOL", "atr_20 > (SELECT PERCENTILE_CONT(0.90) WITHIN GROUP (ORDER BY atr_20) FROM daily_features WHERE instrument = 'MGC' AND atr_20 IS NOT NULL)"),
     ]
 
     results = []
@@ -155,7 +155,7 @@ def search_volatility_regime_filters():
                     vt.realized_rr
                 FROM validated_setups vs
                 JOIN validated_trades vt ON vs.id = vt.setup_id
-                JOIN daily_features_v2 df ON vt.date_local = df.date_local AND df.instrument = 'MGC'
+                JOIN daily_features df ON vt.date_local = df.date_local AND df.instrument = 'MGC'
                 WHERE vs.orb_time = '{orb_time}'
                   AND vs.rr = {rr}
                   AND vs.sl_mode = 'full'
@@ -215,7 +215,7 @@ def search_momentum_exhaustion_filters():
         # Use PREVIOUS day Asia for 0900/1000, SAME day for 1100
         if orb_time in ['0900', '1000']:
             join_condition = """
-                JOIN daily_features_v2 df_prev
+                JOIN daily_features df_prev
                     ON df_prev.date_local = vt.date_local - INTERVAL '1 day'
                     AND df_prev.instrument = 'MGC'
             """
@@ -223,7 +223,7 @@ def search_momentum_exhaustion_filters():
                                        .replace('atr_20', 'df_prev.atr_20')
         else:
             join_condition = """
-                JOIN daily_features_v2 df
+                JOIN daily_features df
                     ON df.date_local = vt.date_local
                     AND df.instrument = 'MGC'
             """
@@ -305,8 +305,8 @@ def search_expansion_compression_filters():
                     SELECT vt.outcome, vt.realized_rr
                     FROM validated_setups vs
                     JOIN validated_trades vt ON vs.id = vt.setup_id
-                    JOIN daily_features_v2 df ON vt.date_local = df.date_local AND df.instrument = 'MGC'
-                    JOIN daily_features_v2 df_prev ON df_prev.date_local = vt.date_local - INTERVAL '1 day' AND df_prev.instrument = 'MGC'
+                    JOIN daily_features df ON vt.date_local = df.date_local AND df.instrument = 'MGC'
+                    JOIN daily_features df_prev ON df_prev.date_local = vt.date_local - INTERVAL '1 day' AND df_prev.instrument = 'MGC'
                     WHERE vs.orb_time = '{orb_time}' AND vs.rr = {rr} AND vs.sl_mode = 'full'
                       AND vt.outcome IN ('WIN', 'LOSS') AND {filter_sql_adj}
                 )
@@ -328,8 +328,8 @@ def search_expansion_compression_filters():
                     SELECT vt.outcome, vt.realized_rr
                     FROM validated_setups vs
                     JOIN validated_trades vt ON vs.id = vt.setup_id
-                    JOIN daily_features_v2 df ON vt.date_local = df.date_local AND df.instrument = 'MGC'
-                    JOIN daily_features_v2 df_prev ON df_prev.date_local = vt.date_local - INTERVAL '1 day' AND df_prev.instrument = 'MGC'
+                    JOIN daily_features df ON vt.date_local = df.date_local AND df.instrument = 'MGC'
+                    JOIN daily_features df_prev ON df_prev.date_local = vt.date_local - INTERVAL '1 day' AND df_prev.instrument = 'MGC'
                     WHERE vs.orb_time = '{orb_time}' AND vs.rr = {rr} AND vs.sl_mode = 'full'
                       AND vt.outcome IN ('WIN', 'LOSS') AND {filter_sql_adj}
                 )

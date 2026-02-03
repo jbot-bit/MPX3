@@ -50,7 +50,7 @@ def search_session_context_filters():
             # For 1100: Asia not complete, London not started
             # For 0900/1000: Previous day patterns might predict
             join_condition = """
-                JOIN daily_features_v2 df_prev
+                JOIN daily_features df_prev
                     ON df_prev.date_local = vt.date_local - INTERVAL '1 day'
                     AND df_prev.instrument = 'MGC'
             """
@@ -61,7 +61,7 @@ def search_session_context_filters():
         else:
             # 1800: Use SAME day (Asia complete, London starting)
             join_condition = """
-                JOIN daily_features_v2 df
+                JOIN daily_features df
                     ON df.date_local = vt.date_local
                     AND df.instrument = 'MGC'
             """
@@ -151,8 +151,8 @@ def search_combined_filters():
                     SELECT vt.outcome, vt.realized_rr
                     FROM validated_setups vs
                     JOIN validated_trades vt ON vs.id = vt.setup_id
-                    JOIN daily_features_v2 df ON vt.date_local = df.date_local AND df.instrument = 'MGC'
-                    JOIN daily_features_v2 df_prev ON df_prev.date_local = vt.date_local - INTERVAL '1 day' AND df_prev.instrument = 'MGC'
+                    JOIN daily_features df ON vt.date_local = df.date_local AND df.instrument = 'MGC'
+                    JOIN daily_features df_prev ON df_prev.date_local = vt.date_local - INTERVAL '1 day' AND df_prev.instrument = 'MGC'
                     WHERE vs.orb_time = '{orb_time}' AND vs.rr = {rr} AND vs.sl_mode = 'full'
                       AND vt.outcome IN ('WIN', 'LOSS') AND {filter_sql_adj}
                 )
@@ -176,8 +176,8 @@ def search_combined_filters():
                     SELECT vt.outcome, vt.realized_rr
                     FROM validated_setups vs
                     JOIN validated_trades vt ON vs.id = vt.setup_id
-                    JOIN daily_features_v2 df ON vt.date_local = df.date_local AND df.instrument = 'MGC'
-                    JOIN daily_features_v2 df_prev ON df_prev.date_local = vt.date_local - INTERVAL '1 day' AND df_prev.instrument = 'MGC'
+                    JOIN daily_features df ON vt.date_local = df.date_local AND df.instrument = 'MGC'
+                    JOIN daily_features df_prev ON df_prev.date_local = vt.date_local - INTERVAL '1 day' AND df_prev.instrument = 'MGC'
                     WHERE vs.orb_time = '{orb_time}' AND vs.rr = {rr} AND vs.sl_mode = 'full'
                       AND vt.outcome IN ('WIN', 'LOSS') AND {filter_sql_adj}
                 )
@@ -201,7 +201,7 @@ def search_combined_filters():
                     SELECT vt.outcome, vt.realized_rr
                     FROM validated_setups vs
                     JOIN validated_trades vt ON vs.id = vt.setup_id
-                    JOIN daily_features_v2 df ON vt.date_local = df.date_local AND df.instrument = 'MGC'
+                    JOIN daily_features df ON vt.date_local = df.date_local AND df.instrument = 'MGC'
                     WHERE vs.orb_time = '{orb_time}' AND vs.rr = {rr} AND vs.sl_mode = 'full'
                       AND vt.outcome IN ('WIN', 'LOSS') AND {filter_sql_adj}
                 )
@@ -248,7 +248,7 @@ def search_day_of_week_filters():
                 SELECT vt.outcome, vt.realized_rr
                 FROM validated_setups vs
                 JOIN validated_trades vt ON vs.id = vt.setup_id
-                JOIN daily_features_v2 df ON vt.date_local = df.date_local AND df.instrument = 'MGC'
+                JOIN daily_features df ON vt.date_local = df.date_local AND df.instrument = 'MGC'
                 WHERE vs.orb_time = '{orb_time}' AND vs.rr = {rr} AND vs.sl_mode = 'full'
                   AND vt.outcome IN ('WIN', 'LOSS')
                   AND dayname(df.date_local) = '{day}'

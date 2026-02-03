@@ -73,7 +73,11 @@
       "Bash(Select-Object Name, Status, StartType)",
       "Bash(Format-List)",
       "Bash(powershell.exe:*)",
-      "Skill(code-guardian)"
+      "Skill(code-guardian)",
+      "Bash(FORCE_LOCAL_DB=1 python:*)",
+      "Bash(CLOUD_MODE=\"\" python:*)",
+      "Bash(set FORCE_LOCAL_DB=1)",
+      "Bash(git merge:*)"
     ]
   }
 }

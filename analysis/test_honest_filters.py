@@ -39,7 +39,7 @@ def test_1100_with_honest_filters():
             ROUND(MAX(vt.realized_rr), 3) as max_exp
         FROM validated_setups vs
         JOIN validated_trades vt ON vs.id = vt.setup_id
-        JOIN daily_features_v2 df ON vt.date_local = df.date_local AND df.instrument = 'MGC'
+        JOIN daily_features df ON vt.date_local = df.date_local AND df.instrument = 'MGC'
         WHERE vs.orb_time = '1100'
           AND vt.outcome IN ('WIN', 'LOSS')
           AND (df.orb_1100_size / df.atr_20) < 0.15
@@ -66,7 +66,7 @@ def test_1100_with_honest_filters():
             ROUND(AVG(vt.realized_rr), 3) as avg_exp
         FROM validated_setups vs
         JOIN validated_trades vt ON vs.id = vt.setup_id
-        JOIN daily_features_v2 df_prev
+        JOIN daily_features df_prev
             ON df_prev.date_local = vt.date_local - INTERVAL '1 day'
             AND df_prev.instrument = 'MGC'
         WHERE vs.orb_time = '1100'
@@ -95,7 +95,7 @@ def test_1100_with_honest_filters():
             ROUND(AVG(vt.realized_rr), 3) as avg_exp
         FROM validated_setups vs
         JOIN validated_trades vt ON vs.id = vt.setup_id
-        JOIN daily_features_v2 df_prev
+        JOIN daily_features df_prev
             ON df_prev.date_local = vt.date_local - INTERVAL '1 day'
             AND df_prev.instrument = 'MGC'
         WHERE vs.orb_time = '1100'
@@ -131,7 +131,7 @@ def test_1800_with_honest_filters():
             ROUND(AVG(vt.realized_rr), 3) as avg_exp
         FROM validated_setups vs
         JOIN validated_trades vt ON vs.id = vt.setup_id
-        JOIN daily_features_v2 df ON vt.date_local = df.date_local AND df.instrument = 'MGC'
+        JOIN daily_features df ON vt.date_local = df.date_local AND df.instrument = 'MGC'
         WHERE vs.orb_time = '1800'
           AND vt.outcome IN ('WIN', 'LOSS')
           AND df.asia_type_code = 'A2_EXPANDED'
@@ -158,7 +158,7 @@ def test_1800_with_honest_filters():
             ROUND(AVG(vt.realized_rr), 3) as avg_exp
         FROM validated_setups vs
         JOIN validated_trades vt ON vs.id = vt.setup_id
-        JOIN daily_features_v2 df ON vt.date_local = df.date_local AND df.instrument = 'MGC'
+        JOIN daily_features df ON vt.date_local = df.date_local AND df.instrument = 'MGC'
         WHERE vs.orb_time = '1800'
           AND vt.outcome IN ('WIN', 'LOSS')
           AND (df.orb_1800_size / df.atr_20) < 0.15

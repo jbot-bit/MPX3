@@ -28,9 +28,12 @@ except ImportError:
 # Add project paths
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
-sys.path.insert(0, str(PROJECT_ROOT / "trading_app"))
 
-from strategy_discovery import StrategyDiscovery, DiscoveryConfig, BacktestResult
+from trading_app.strategy_discovery import StrategyDiscovery, DiscoveryConfig, BacktestResult
+
+# For seeding from validated_setups
+import duckdb
+DB_PATH = PROJECT_ROOT / "data" / "db" / "gold.db"
 
 # Paths
 OPTUNA_DIR = PROJECT_ROOT / "artifacts" / "optuna"
@@ -53,13 +56,56 @@ def get_study_paths(study_name: str):
     }
 
 
+def seed_from_validated_setups(study: optuna.Study, instrument: str, orb_time: str) -> int:
+    """
+    Enqueue trials from validated_setups matching instrument and orb_time.
+    Returns count of seeded trials.
+    """
+    if not DB_PATH.exists():
+        print(f"[WARN] Database not found: {DB_PATH}")
+        return 0
+
+    conn = duckdb.connect(str(DB_PATH), read_only=True)
+    try:
+        rows = conn.execute("""
+            SELECT rr, sl_mode, orb_size_filter
+            FROM validated_setups
+            WHERE instrument = ? AND orb_time = ?
+        """, [instrument, orb_time]).fetchall()
+    finally:
+        conn.close()
+
+    seeded_count = 0
+    for rr, sl_mode, orb_size_filter in rows:
+        # Build params matching objective() keys exactly
+        # Note: DB stores lowercase 'full'/'half', Optuna expects uppercase
+        params = {
+            "rr": float(rr),
+            "sl_mode": sl_mode.upper() if sl_mode else "FULL",
+        }
+
+        if orb_size_filter is not None:
+            params["use_filter"] = True
+            # Round to step=0.01 alignment
+            params["orb_size_filter"] = round(float(orb_size_filter), 2)
+        else:
+            params["use_filter"] = False
+            # Do NOT include orb_size_filter when use_filter=False
+
+        study.enqueue_trial(params, user_attrs={"seeded": True, "seed_source": "validated_setups"})
+        seeded_count += 1
+
+    return seeded_count
+
+
 def log_trial(paths: dict, trial_num: int, config: DiscoveryConfig, result: BacktestResult,
-              pruned: bool = False, prune_reason: str = None):
+              pruned: bool = False, prune_reason: str = None, seeded: bool = False):
     """Append trial to JSONL log (fail-silent)."""
     try:
         entry = {
             "trial": trial_num,
             "logged_at": datetime.utcnow().isoformat() + "Z",
+            "seeded": seeded,
             "config": {
                 "instrument": config.instrument,
                 "orb_time": config.orb_time,
@@ -95,6 +141,9 @@ def create_objective(discovery: StrategyDiscovery, instrument: str, orb_time: st
     NO derived metrics. NO peeking into trades.
     """
     def objective(trial: optuna.Trial) -> float:
+        # Check if this trial was seeded from validated_setups
+        seeded = trial.user_attrs.get("seeded", False)
+
         # Sample parameters
         rr = trial.suggest_float("rr", 1.0, 8.0, step=0.5)
         sl_mode = trial.suggest_categorical("sl_mode", ["FULL", "HALF"])
@@ -112,21 +161,16 @@ def create_objective(discovery: StrategyDiscovery, instrument: str, orb_time: st
         try:
             result = discovery.backtest_configuration(config)
         except Exception as e:
-            log_trial(paths, trial.number, config, None, pruned=True, prune_reason=f"error:{str(e)[:50]}")
+            log_trial(paths, trial.number, config, None, pruned=True, prune_reason=f"error:{str(e)[:50]}", seeded=seeded)
             return -999.0  # Penalize errors
 
-        # PRUNE: insufficient trades
-        if result.total_trades < 30:
-            log_trial(paths, trial.number, config, result, pruned=True, prune_reason="insufficient_trades")
-            raise optuna.TrialPruned()
-
-        # PRUNE: strong negative avg_r early
-        if result.avg_r < -0.1:
-            log_trial(paths, trial.number, config, result, pruned=True, prune_reason="negative_avg_r")
+        # PRUNE: insufficient trades (validity-only pruning)
+        if result.total_trades < 50:
+            log_trial(paths, trial.number, config, result, pruned=True, prune_reason="insufficient_trades", seeded=seeded)
             raise optuna.TrialPruned()
 
         # Log successful trial
-        log_trial(paths, trial.number, config, result)
+        log_trial(paths, trial.number, config, result, seeded=seeded)
 
         # OBJECTIVE: avg_r (ONLY from BacktestResult, no derivation)
         return result.avg_r
@@ -176,6 +220,11 @@ def run_optimization(args):
         load_if_exists=True
     )
 
+    # Seed from validated_setups if requested
+    if args.seed_validated:
+        seeded_count = seed_from_validated_setups(study, args.instrument, args.orb)
+        print(f"Seeded {seeded_count} trial(s) from validated_setups")
+
     # Initialize discovery engine
     discovery = StrategyDiscovery()
     objective = create_objective(discovery, args.instrument, args.orb, paths)
@@ -192,17 +241,35 @@ def run_optimization(args):
     print(f"\n{'='*60}")
     print(f"OPTIMIZATION COMPLETE")
     print(f"{'='*60}")
-    print(f"Best avg_r: {study.best_value:.4f}")
-    print(f"Best params: {study.best_params}")
+
+    # Count completed vs pruned trials
+    completed = [t for t in study.trials if t.state == optuna.trial.TrialState.COMPLETE]
+    pruned = [t for t in study.trials if t.state == optuna.trial.TrialState.PRUNED]
+
     print(f"Total trials: {len(study.trials)}")
+    print(f"  Completed: {len(completed)}")
+    print(f"  Pruned: {len(pruned)}")
+
+    if completed:
+        print(f"\nBest avg_r: {study.best_value:.4f}")
+        print(f"Best params: {study.best_params}")
+        best_value = study.best_value
+        best_params = study.best_params
+    else:
+        print(f"\n[WARN] No completed trials - all were pruned!")
+        print("Check prune reasons in trials log or run summarize command.")
+        best_value = None
+        best_params = None
 
     # Save summary
     summary = {
         "study_name": args.study,
         "completed_at": datetime.utcnow().isoformat() + "Z",
         "total_trials": len(study.trials),
-        "best_value": study.best_value,
-        "best_params": study.best_params
+        "completed_trials": len(completed),
+        "pruned_trials": len(pruned),
+        "best_value": best_value,
+        "best_params": best_params
     }
     with open(paths["summary"], "w") as f:
         json.dump(summary, f, indent=2)
@@ -229,8 +296,7 @@ def dry_run(args):
     print("  orb_size_filter: None or [0.05, 0.20] step=0.01")
     print()
     print("Pruning rules:")
-    print("  - Prune if total_trades < 30")
-    print("  - Prune if avg_r < -0.1")
+    print("  - Prune if total_trades < 50 (validity-only)")
     print()
     print("Objective: maximize avg_r (BacktestResult field only)")
     print()
@@ -240,8 +306,12 @@ def dry_run(args):
     print(f"  Meta: {paths['meta']}")
     print(f"  Summary: {paths['summary']}")
     print()
+    print(f"Seeding: {'--seed-validated' if args.seed_validated else 'disabled'}")
+    print()
     print("To execute, run:")
     print(f"  python -m scripts.opt.optimize --run N --seed {args.seed} --study {args.study} --instrument {args.instrument} --orb {args.orb}")
+    if not args.seed_validated:
+        print(f"  Add --seed-validated to seed from validated_setups")
 
 
 def main():
@@ -252,6 +322,8 @@ def main():
     parser.add_argument("--study", type=str, required=True, help="Study name")
     parser.add_argument("--instrument", type=str, default="MGC", help="Instrument (MGC, NQ, MPL)")
     parser.add_argument("--orb", type=str, default="1000", help="ORB time (0900, 1000, etc.)")
+    parser.add_argument("--seed-validated", action="store_true", default=False,
+                        help="Seed trials from validated_setups (same instrument/orb)")
 
     args = parser.parse_args()
 

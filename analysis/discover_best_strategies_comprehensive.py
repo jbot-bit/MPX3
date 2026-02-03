@@ -75,7 +75,7 @@ def search_all_strategies():
                                 df.atr_20
                             FROM validated_setups vs
                             JOIN validated_trades vt ON vs.id = vt.setup_id
-                            JOIN daily_features_v2 df ON vt.date_local = df.date_local AND df.instrument = 'MGC'
+                            JOIN daily_features df ON vt.date_local = df.date_local AND df.instrument = 'MGC'
                             WHERE vs.orb_time = '{orb_time}'
                               AND vs.rr = {rr}
                               AND vs.sl_mode = '{sl_mode}'
