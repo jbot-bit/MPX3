@@ -1,0 +1,64 @@
+TASK:
+  name: "Generate comprehensive unit tests for isolated modules"
+  description: >
+    Write complete unit tests for all Python modules in the specified
+    folders. Focus on correctness, edge cases, error conditions,
+    boundary inputs, and expected behavior matching docstrings.
+
+INPUT:
+  target_folders:
+    - "analysis/"
+    - "utils/"
+    - "data_validation/"
+
+IGNORED_PATHS:
+  - "pipeline/"
+  - "trading_app/"
+  - "execution_engine.py"
+  - "core_logic/"
+  - "live_execution/"
+
+RESTRICTIONS:
+  - Do NOT modify any code outside the target folders.
+  - Do NOT touch protected financial logic or production execution scripts.
+
+TEST_REQUIREMENTS:
+  - Use `pytest` syntax and conventions.
+  - Create one test file per module (e.g., `test_<module>.py`).
+  - Cover:
+      • Normal expected behavior
+      • Edge cases
+      • Invalid input handling
+      • Exceptions where appropriate
+      • Boundary values
+
+ACCEPTANCE_CRITERIA:
+  - All created tests must run with `pytest` without syntax errors.
+  - Minimum coverage:
+      • ≥ 80% coverage for all files under the target_folders.
+      • Report coverage results in a `.coverage` data file.
+  - Each test must include clear assertions with expected values.
+
+VERIFICATION_STEPS:
+  1. Run `pytest --maxfail=1 --disable-warnings`.
+  2. Generate coverage report: `pytest --cov=./analysis --cov=./utils --cov=./data_validation`.
+  3. Ensure coverage ≥ 80%.
+  4. No tests fail.
+  5. No syntax errors.
+
+OUTPUT:
+  - New tests placed under `tests/` folder, organized by module.
+  - Coverage report (XML or HTML) under `tests/reports/`.
+  - Summary markdown file: `tests/SUMMARY.md`.
+
+STOP_SIGNAL:
+  - Return `<task_status>DONE</task_status>` when all acceptance criteria are met.
+  - Otherwise loop until fixed errors or criteria OK.
+
+POST_CONDITIONS:
+  - No changes outside allowed folders
+  - All tests pass under Python 3.10 environment
+
+QUALITY_GATES:
+  - Static analysis: run linter (e.g., flake8) on created tests
+  - Ensure no TODOs remain in test files before finish
