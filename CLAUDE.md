@@ -187,7 +187,7 @@ grep -r "from [filename_no_py]\|import [filename_no_py]" \
 **Usage:** Automatically helps with navigation questions. Keeps responses < 5 lines.
 
 ### 🗂️ Project Organizer (`skills/project-organizer/`) **[AUTO-ACTIVATES]**
-**Cleans up the 221 files in root directory**
+**Cleans up root directory**
 
 **Auto-activates when:**
 - User says "organize", "clean up", "too many files"
@@ -263,55 +263,6 @@ grep -r "from [filename_no_py]\|import [filename_no_py]" \
 - `COST_MODEL_MGC_TRADOVATE.txt` ($8.40 specification - honest double-spread accounting)
 - `scripts/audit/VALIDATION_METHODOLOGY.md` (complete framework)
 
-### Frontend Design (`skills/frontend-design/`)
-**When to use:** Designing, creating, or updating any UI components, pages, or visual elements.
-- Read `skills/frontend-design/SKILL.md` for design principles
-- Read `skills/frontend-design/TRADING_APP_DESIGN.md` for trading-specific patterns
-- Apply bold, distinctive design that avoids generic AI aesthetics
-- Focus on professional trading terminal aesthetics (dark theme, monospace fonts, data density)
-- Use the design thinking process before implementing UI changes
-
-**Key principles:**
-- Industrial/utilitarian aesthetic with refined data visualization
-- Monospace fonts for trading terminal feel (JetBrains Mono, IBM Plex Mono)
-- Dark theme (non-negotiable for 24/7 trading)
-- Green/red for P&L, blue for neutral, yellow for warnings
-- Information density without clutter
-- Real-time data must be instantly scannable
-
-### MCP Server Development (`skills/mcp-builder/`)
-**When to use:** Creating or refactoring API integrations, building MCP servers.
-- Read `skills/mcp-builder/SKILL.md` for MCP development workflow
-- Read `docs/MCP_INTEGRATION_PLAN.md` for project-specific integration plan
-- Follow 4-phase process: Research → Implementation → Review → Evaluation
-- Use TypeScript + Streamable HTTP for remote MCP servers
-- Create comprehensive tool definitions with Zod schemas
-- Write 10 evaluation questions for each MCP server
-
-**Current MCP status:**
-- ProjectX API: **Needs MCP server** (high priority)
-- AI Assistant: **Consider MCP formalization** (medium priority)
-- Databento API: **Keep as-is** (low priority)
-
-**IMPORTANT:** Always consult `docs/MCP_INTEGRATION_PLAN.md` before modifying API integrations.
-
-### Mobile Android Design (`skills/mobile-android-design/`)
-**When to use:** Building Android mobile apps, designing Jetpack Compose interfaces, implementing Material Design 3.
-- Read `skills/mobile-android-design/SKILL.md` for Material Design 3 and Jetpack Compose patterns
-- Follow Google's Material Design 3 guidelines
-- Use Jetpack Compose for modern Android UI
-- Implement adaptive layouts for phones, tablets, and foldables
-- Use dynamic colors and Material 3 theming
-- Ensure accessibility compliance
-
-**Key principles:**
-- Material Design 3 (Material You) with dynamic colors
-- Jetpack Compose declarative UI
-- Navigation Compose for screen navigation
-- Adaptive layouts for different screen sizes
-- Material 3 components (Cards, FABs, Chips, etc.)
-- Accessibility-first design
-
 ### Database Design (`skills/database-design/`)
 **When to use:** Designing database schemas, planning migrations, optimizing queries, selecting databases/ORMs.
 - Read `skills/database-design/SKILL.md` for database design thinking
@@ -361,106 +312,6 @@ grep -r "from [filename_no_py]\|import [filename_no_py]" \
 - MEDIUM: Code quality concern, minor bug potential → Fix recommended
 - LOW: Style issue, minor optimization → Optional
 
-### Trading Memory (`skills/trading-memory/`)
-**When to use:** Storing trade outcomes, querying historical patterns, learning from execution, or understanding why setups work/fail.
-- Read `skills/trading-memory/SKILL.md` for living memory architecture
-- Maintains 4 types of memory: Episodic (specific trades), Semantic (patterns/correlations), Working (current session), Procedural (execution skills)
-- Uses existing DuckDB infrastructure with new tables: trade_journal, learned_patterns, session_state, execution_metrics
-- Queries historical patterns: "Find sessions similar to today"
-- Learns correlations: "When Asia travel > 2.0 AND London choppy, 0900 ORB fails 71%"
-- Tracks edge degradation: "0900 Thursday used to work, stopped working 2025-Q4"
-- Remembers execution quality: "Your slippage averages 0.3 in fast markets"
-
-**Core functions:**
-- Store trade with context (captures session state, execution metrics)
-- Query similar sessions (pattern matching with confidence scores)
-- Learn patterns (discover correlations from trade history)
-- Track edge degradation (monitor validated_setups performance)
-- Analyze current session (real-time intelligence for today's trading)
-
-**Key features:**
-- Living memory that learns and evolves
-- Context-aware recommendations (not just pattern matching)
-- Psychological awareness (tracks YOUR execution patterns)
-- Cross-instrument intelligence (MPL/MGC correlations)
-- Statistical confidence scoring (chi-square tests, confidence intervals)
-
-**Integration:**
-- Extends daily_features with trade journal
-- Feeds into edge-evolution-tracker for adaptive learning
-- Powers AI trading partner with perfect memory
-
-### Market Anomaly Detection (`skills/market-anomaly-detection/`)
-**When to use:** Before taking trades (market condition checks), after trades (execution quality validation), or for data integrity monitoring.
-- Read `skills/market-anomaly-detection/SKILL.md` for anomaly detection methodology
-- Detects 3 categories: Market anomalies (pre-trade risk), Execution anomalies (post-trade quality), Data quality anomalies (system health)
-- Uses data-driven thresholds from YOUR historical data (not generic)
-- Context-aware detection (different thresholds for fast markets, thin liquidity, different instruments)
-
-**Market anomalies detected:**
-- ORB size > 3 std devs (trap risk - abnormally large/small)
-- Liquidity < 50% normal (execution risk - wider spreads, poor fills)
-- Spread > 2x normal (edge degradation - cost eats into profit)
-- Volume spike > 5x (news event - check fundamentals before trading)
-
-**Execution anomalies detected:**
-- Slippage > 2 std devs (system issue - connection, platform, or market stress)
-- Fill time > 2 seconds (latency spike - diagnose immediately)
-- Entry price > 0.5 points wrong (logic bug - CRITICAL, stop trading)
-
-**Data quality anomalies detected:**
-- Missing bars (incomplete session data - ORB calculations may be wrong)
-- Duplicate timestamps (database corruption - data integrity compromised)
-- Price spikes > 10 points (data error vs real move - filter bad ticks)
-
-**Response protocols:**
-- CRITICAL: DO NOT TRADE (blocks trading immediately)
-- HIGH: REDUCE POSITION or SKIP (trade with caution)
-- MEDIUM: PROCEED WITH AWARENESS (note anomaly, adjust expectations)
-
-**Integration:**
-- Pre-trade checks (market condition validation)
-- Post-trade checks (execution quality monitoring)
-- Data quality monitoring (continuous system health)
-
-### Edge Evolution Tracker (`skills/edge-evolution-tracker/`)
-**When to use:** Weekly edge health monitoring, after significant market changes, or when edge performance deviates from baseline.
-- Read `skills/edge-evolution-tracker/SKILL.md` for adaptive learning methodology
-- Extends edge_discovery_live.py with time-series analysis, regime change detection, and adaptive pattern learning
-- Monitors validated_setups performance over rolling windows (30/60/90 days)
-- Detects degradation early (30+ days before critical failure)
-- Discovers new patterns from recent data (3-12 months, min 30 trades)
-
-**Core functions:**
-- Edge health monitoring (track validated_setups performance, detect degradation)
-- Regime change detection (trending vs range-bound vs volatile vs quiet)
-- Adaptive pattern discovery (find edges that work NOW, not just historically)
-- Multi-timeframe analysis (understand edge stability across 30d/90d/180d/365d/all-time)
-- Edge correlation analysis (portfolio optimization, diversification)
-
-**Regime types:**
-- TRENDING: Sustained directional moves, breakouts work well
-- RANGE-BOUND: Mean reversion dominates, breakouts fail
-- VOLATILE: Large swings, increased risk
-- QUIET: Compressed ranges, low probability setups
-
-**Key insights:**
-- Markets evolve (institutional flows change, algorithms adapt)
-- Edges degrade over time (profitable patterns get arbitraged away)
-- New edges emerge (regime changes create opportunities)
-- Static strategies die (must evolve or become unprofitable)
-
-**Automation:**
-- Weekly: Edge health check (every Monday 09:00)
-- Monthly: Regime detection (first day of month)
-- Quarterly: Pattern discovery (first day of quarter)
-
-**Integration:**
-- Extends edge_discovery_live.py (complements, not replaces)
-- Writes to learned_patterns table (from trading-memory)
-- Feeds edge degradation events to trade_journal
-- Continuous evolution cycle (monitor → discover → validate → deploy)
-
 ### Brainstorming (`skills/brainstorming/`)
 **When to use:** Planning new features, redesigning components, exploring architectural changes, preventing feature bloat.
 - Read `skills/brainstorming/SKILL.md` for structured design process
@@ -502,29 +353,6 @@ grep -r "from [filename_no_py]\|import [filename_no_py]" \
 **Usage:** Currently manual (`/reflect` command). Auto-hook was planned but not yet implemented.
 
 **Future:** Will auto-run at session end via hook (when Claude Code supports skill invocation from bash hooks).
-
----
-
-## ⚠️ CRITICAL REMINDER - ALWAYS DO THIS AFTER CHANGES
-
-**After ANY changes to strategies, database, or config files, ALWAYS run:**
-
-```bash
-python test_app_sync.py
-```
-
-This validates that `trading_app/config.py` matches `gold.db` → `validated_setups` table.
-
-**DO NOT PROCEED if this test fails.** Fix the mismatch immediately.
-
-**When to run this test:**
-- After updating validated_setups database
-- After modifying trading_app/config.py
-- After running populate_validated_setups.py
-- After adding new MGC/NQ/MPL setups
-- After changing ORB filters or RR values
-
-See full details in section: "CRITICAL: Database and Config Synchronization"
 
 ---
 
@@ -634,7 +462,7 @@ python pipeline/validate_data.py
 
 ## Architecture
 
-### Canonical Realized RR (Completed 2026-01-26)
+### Canonical Realized RR
 
 **CRITICAL:** This system uses **realized RR with costs embedded**, not theoretical RR.
 
@@ -667,32 +495,16 @@ bars_1m
 3. **cost_model.py is the ONLY source** for friction values (no hard-coded constants)
 4. **Expectancy is strategy-level** (requires win rate across trades, not per-trade)
 
-**MGC Validation Results (All SURVIVE > 0.15R):**
-- 0900 RR=1.5: +0.245R (53 trades)
-- 1000 RR=1.5: +0.369R (55 trades)
-- 1000 RR=2.0: +0.643R (55 trades)
-- 1000 RR=2.5: +0.916R (55 trades)
-- 1000 RR=3.0: +1.190R ⭐ Best (55 trades)
-- 1800 RR=1.5: +0.256R (32 trades)
-
 **Files to check:**
 - `pipeline/cost_model.py` - Authoritative specs and formulas
 - `strategies/execution_engine.py` - Calls cost_model
 - `pipeline/build_daily_features.py` - Stores realized_rr columns
 - `validated_setups` table - Has realized_expectancy column
-- `trading_app/setup_detector.py` - Reads realized_expectancy
-- `trading_app/strategy_engine.py` - Passes realized metrics to UI
 
 **Testing:**
 - Run `tests/test_cost_model_sync.py` after any cost_model changes
 - Run `tests/test_realized_rr_sync.py` after build_daily_features runs
-- Run `tests/test_calculation_consistency.py` for determinism checks
 - Run `python test_app_sync.py` after validated_setups updates
-
-**See also:**
-- `docs/MIGRATION_STATUS.md` - Migration completion status (86%)
-- `PHASE_1_6_COMPLETE.md` - Backend ready for apps
-- `cost.txt` - MGC cost model (Tradovate production data)
 
 ---
 
@@ -744,14 +556,13 @@ Source → Normalize → Store → Aggregate → Feature Build
 - Primary key: `id`
 - Columns: instrument, orb_time, rr, sl_mode, orb_size_filter, win_rate, expected_r, sample_size, notes
 - **ONLY table to query for trading decisions**
-- Current record count: 19 (6 MGC, 5 NQ, 6 MPL, 2 MGC multi-setup)
+- Current record count: 30 (query `SELECT COUNT(*) FROM validated_setups` for current)
 
 **validated_setups_archive** (historical only):
 - **⚠️ ARCHIVE ONLY - DO NOT USE IN PRODUCTION**
 - Preserves old strategy versions for audit/rollback
 - Same columns as validated_setups + archive metadata (archive_id, archived_at, archived_reason, replaced_by_id, version_tag)
 - **NEVER query in production systems unless explicitly debugging**
-- See `STRATEGY_ARCHIVE_README.md` for details
 
 **Archive Warning**: Production systems (trading apps, config_generator, execution_engine) must ONLY query `validated_setups`. The archive exists for historical research and rollback safety only. Archived strategies used optimistic assumptions and have been superseded by stress-tested conservative approaches.
 
@@ -840,7 +651,7 @@ Required environment variables:
 
 9. **Trading day change**: All backfill scripts now use 09:00→09:00 trading days (previously 00:00→00:00). This aligns with ORB strategy and session analysis. Old data will be incorrect.
 
-10. **Project structure**: The codebase was comprehensively cleaned on Jan 15, 2026. See `PROJECT_STRUCTURE.md` for current file organization. All test/experiment files are in `_archive/` - the root directory contains only production-ready code (29 Python files, 11 markdown docs).
+10. **Project structure**: See `PROJECT_STRUCTURE.md` for current file organization. Test/experiment files are in `_archive/`.
 
 ## ⚠️ CRITICAL: Database and Config Synchronization (NEVER VIOLATE THIS)
 
@@ -905,7 +716,7 @@ ALL TESTS PASSED!
 
 Your apps are now synchronized:
 - config.py has optimized MGC filters
-- validated_setups database has 17 setups (6 MGC, 5 NQ, 6 MPL)
+- validated_setups database is synchronized
 - setup_detector.py works with all instruments
 - data_loader.py filter checking works
 - All components load without errors
@@ -919,15 +730,10 @@ Your apps are SAFE TO USE!
 
 ### Other Synchronized Components
 
-These files also depend on config.py and must be tested:
+These files depend on config.py and must be tested:
 - `trading_app/setup_detector.py` - Reads validated_setups
 - `trading_app/data_loader.py` - Uses config.py filters
-- `trading_app/strategy_engine.py` - Uses config.py
-- `trading_app/app_trading_hub.py` - Main app
-- `unified_trading_app.py` - Unified app
-- `MGC_NOW.py` - Quick helper
-
-All must work with synchronized data.
+- `trading_app/config.py` - Must match database
 
 ### When Updating Any Instrument (MGC, NQ, MPL)
 
@@ -937,18 +743,6 @@ Same rules apply:
 - **Run `python test_app_sync.py`**
 - Verify all tests pass
 - **Do NOT skip this step**
-
-### Historical Context
-
-On 2026-01-16, a critical error was discovered:
-- `validated_setups` was updated with CORRECTED MGC values (after scan window bug fix)
-- `config.py` was NOT updated (still had OLD audit values)
-- This created a dangerous mismatch
-- Apps would have used wrong RR values and filters in live trading (e.g., 1000 ORB RR=1.0 instead of 8.0!)
-- Emergency fix required updating config.py and creating test_app_sync.py
-- **System now has test_app_sync.py to prevent this from ever happening again**
-
-**Lesson learned:** ALWAYS run `python test_app_sync.py` after ANY changes to strategies, filters, or configs.
 
 ### Experimental Strategies Validation (Added 2026-01-29)
 
