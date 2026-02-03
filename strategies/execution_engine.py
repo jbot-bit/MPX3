@@ -146,8 +146,9 @@ def simulate_orb_trade(
     apply_size_filter: bool = False,  # filter: skip if ORB too large vs ATR
     size_filter_threshold: float = None,  # threshold for size filter (orb_size_norm)
     exec_mode: ExecutionMode = ExecutionMode.MARKET_ON_CLOSE,  # NEW: Execution mode
-    slippage_ticks: float = 1.5,  # NEW: Slippage (only for MARKET_ON_CLOSE)
-    commission_per_contract: float = 1.0,  # NEW: Commission per contract
+    slippage_ticks: Optional[float] = None,  # NEW: Slippage (only for MARKET_ON_CLOSE) - None = use cost_model
+    commission_per_contract: Optional[float] = None,  # NEW: Commission - None = use cost_model
+    instrument: str = "MGC",  # NEW: Instrument for cost model lookup
 ) -> TradeResult:
     """
     Simulate a single ORB trade using realistic execution.
@@ -159,6 +160,16 @@ def simulate_orb_trade(
 
     Returns TradeResult with outcome, prices, and execution metadata.
     """
+    # PASS 2 FIX: Source costs from cost_model if not provided (single source of truth)
+    from pipeline.cost_model import get_cost_model as get_costs
+
+    if slippage_ticks is None or commission_per_contract is None:
+        cost_data = get_costs(instrument, stress_level='normal')
+        if slippage_ticks is None:
+            slippage_ticks = cost_data['slippage_ticks']  # 4 ticks for MGC
+        if commission_per_contract is None:
+            commission_per_contract = cost_data['commission_rt']  # $2.40 for MGC
+
     # Log execution parameters
     execution_params = {
         'date_local': str(date_local),
@@ -551,9 +562,15 @@ def simulate_orb_trade(
     mae_r = (max_adv_ticks / stop_ticks) if stop_ticks and stop_ticks > 0 else None
     mfe_r = (max_fav_ticks / stop_ticks) if stop_ticks and stop_ticks > 0 else None
 
-    # Calculate cost in R (slippage + commission / risk)
+    # PASS 2 FIX: Calculate cost in R with ALL components (match cost_model.total_friction)
+    # Get spread from cost_model (single source of truth)
+    cost_data = get_costs(instrument, stress_level='normal')
+    spread_double = cost_data['spread_double']  # $2.00 for MGC (entry + exit crossings)
+
     slippage_cost_dollars = fill.slippage_ticks * TICK_SIZE * POINT_VALUE
-    total_cost_dollars = slippage_cost_dollars + commission_per_contract
+    commission_cost_dollars = commission_per_contract
+    spread_cost_dollars = spread_double
+    total_cost_dollars = slippage_cost_dollars + commission_cost_dollars + spread_cost_dollars
     risk_dollars = stop_ticks * TICK_SIZE * POINT_VALUE
     cost_r = total_cost_dollars / risk_dollars if risk_dollars > 0 else 0.0
 
