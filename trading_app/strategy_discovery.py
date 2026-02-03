@@ -347,7 +347,7 @@ class StrategyDiscovery:
                 sl_mode=config.sl_mode.lower(),
                 exec_mode=ExecutionMode.MARKET_ON_CLOSE,
                 slippage_ticks=cost_model['slippage_ticks'],
-                commission_per_contract=cost_model['commission_rt'] / 2
+                commission_per_contract=cost_model['commission_rt']
             )
 
             # Skip if no trade
@@ -486,7 +486,7 @@ class StrategyDiscovery:
                 sl_mode=config.sl_mode.lower(),
                 exec_mode=ExecutionMode.MARKET_ON_CLOSE,
                 slippage_ticks=cost_model['slippage_ticks'],
-                commission_per_contract=cost_model['commission_rt'] / 2
+                commission_per_contract=cost_model['commission_rt']
             )
 
             if result.outcome in ['WIN', 'LOSS']:
@@ -826,7 +826,7 @@ class StrategyDiscovery:
                 sl_mode=config.sl_mode.lower(),
                 exec_mode=ExecutionMode.MARKET_ON_CLOSE,
                 slippage_ticks=cost_model['slippage_ticks'],
-                commission_per_contract=cost_model['commission_rt'] / 2
+                commission_per_contract=cost_model['commission_rt']
             )
             if result.outcome in ['WIN', 'LOSS']:
                 trades.append(result)
@@ -916,7 +916,7 @@ class StrategyDiscovery:
                 sl_mode=config.sl_mode.lower(),
                 exec_mode=ExecutionMode.MARKET_ON_CLOSE,
                 slippage_ticks=stress_cost_model['slippage_ticks'],
-                commission_per_contract=stress_cost_model['commission_rt'] / 2
+                commission_per_contract=stress_cost_model['commission_rt']
             )
             if result.outcome in ['WIN', 'LOSS']:
                 trades.append(result)
@@ -986,7 +986,7 @@ class StrategyDiscovery:
                 sl_mode=config.sl_mode.lower(),
                 exec_mode=ExecutionMode.MARKET_ON_CLOSE,
                 slippage_ticks=stress_cost_model['slippage_ticks'],
-                commission_per_contract=stress_cost_model['commission_rt'] / 2
+                commission_per_contract=stress_cost_model['commission_rt']
             )
             if result.outcome in ['WIN', 'LOSS']:
                 trades.append(result)
