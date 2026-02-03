@@ -1365,6 +1365,255 @@ def render_backtester_view():
 
 
 # ============================================================================
+# VIEW: OPTUNA STUDIES
+# ============================================================================
+
+def render_optuna_view():
+    """View Optuna optimization studies and promote best trials"""
+    render_terminal_header("OPTUNA STUDIES", "BAYESIAN OPTIMIZATION RESULTS")
+
+    st.markdown("""
+    <div class="info-panel">
+        <p>View results from Optuna hyperparameter optimization runs. Studies are stored in artifacts/optuna/
+        and can be created using: <code>python -m scripts.opt.optimize</code></p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # Try to import optuna (fail gracefully if not installed)
+    try:
+        import optuna
+    except ImportError:
+        st.error("❌ Optuna not installed. Run: `pip install optuna`")
+        st.info("To run optimization studies, use:\n```\npython -m scripts.opt.optimize --run 50 --study test1 --instrument MGC --orb 0900\n```")
+        return
+
+    # Discover study files
+    optuna_dir = Path(__file__).parent.parent / "artifacts" / "optuna"
+    if not optuna_dir.exists():
+        st.warning("⚠️ No Optuna directory found. Create it by running your first study:", icon="⚠️")
+        st.code("python -m scripts.opt.optimize --dry-run --study test1 --instrument MGC --orb 0900")
+        return
+
+    study_files = list(optuna_dir.glob("*.db"))
+    if not study_files:
+        st.info("📂 No Optuna studies found in artifacts/optuna/")
+        # Use first ORB from time_spec for example
+        example_orb = ORBS[0]
+        st.markdown(f"""
+        **To create a study, run:**
+        ```bash
+        python -m scripts.opt.optimize --run 50 --seed 42 --study my_study --instrument MGC --orb {example_orb}
+        ```
+        """)
+        return
+
+    render_section_divider("AVAILABLE STUDIES")
+
+    # Load all studies
+    studies_data = []
+    for db_file in sorted(study_files):
+        try:
+            # Fix Issue #3: Use POSIX paths for SQLite URI (Windows compatibility)
+            storage = f"sqlite:///{db_file.as_posix()}"
+            study_name = db_file.stem
+
+            # Load study (read-only)
+            study_summaries = optuna.study.get_all_study_summaries(storage)
+
+            for summary in study_summaries:
+                trials = [t for t in summary.trials if t.state == optuna.trial.TrialState.COMPLETE]
+                studies_data.append({
+                    "study_name": summary.study_name,
+                    "db_file": db_file.name,
+                    "n_trials": summary.n_trials,
+                    "n_complete": len(trials),
+                    "best_value": summary.best_trial.value if summary.best_trial else None,
+                    "storage": storage
+                })
+        except Exception as e:
+            logger.warning(f"Failed to load study from {db_file}: {e}")
+
+    if not studies_data:
+        st.warning("⚠️ Found study files but couldn't load them. They may be corrupted.", icon="⚠️")
+        return
+
+    # Display studies table
+    df_studies = pd.DataFrame(studies_data)
+    st.dataframe(df_studies[["study_name", "db_file", "n_trials", "n_complete", "best_value"]],
+                 use_container_width=True)
+
+    render_section_divider("STUDY DETAILS")
+
+    # Study selector
+    study_names = [s["study_name"] for s in studies_data]
+    selected_study_name = st.selectbox("Select study:", study_names, key="optuna_study_selector")
+
+    if selected_study_name:
+        # Fix Issue #1: Safe next() with default to prevent StopIteration
+        selected_study_data = next((s for s in studies_data if s["study_name"] == selected_study_name), None)
+        if not selected_study_data:
+            st.error("❌ Study not found. It may have been deleted.")
+            return
+        storage = selected_study_data["storage"]
+
+        try:
+            # Load full study
+            study = optuna.load_study(study_name=selected_study_name, storage=storage)
+
+            # Get completed trials
+            completed_trials = [t for t in study.trials if t.state == optuna.trial.TrialState.COMPLETE]
+
+            if not completed_trials:
+                st.warning(f"⚠️ Study '{selected_study_name}' has 0 completed trials. All trials were pruned or failed.", icon="⚠️")
+                st.info("Run more trials or adjust pruning thresholds in optimize.py")
+                return
+
+            # Fix Issue #4: Handle None values in sorting (defensive)
+            completed_trials.sort(key=lambda t: t.value if t.value is not None else -999.0, reverse=True)
+
+            # Display top 10 trials
+            st.markdown(f"**Top 10 Trials (by avg_r):**")
+
+            trials_display = []
+            for i, trial in enumerate(completed_trials[:10], 1):
+                trials_display.append({
+                    "Rank": i,
+                    "Trial #": trial.number,
+                    "avg_r": f"{trial.value:.4f}",
+                    "rr": trial.params.get("rr"),
+                    "sl_mode": trial.params.get("sl_mode"),
+                    "use_filter": trial.params.get("use_filter"),
+                    "orb_size_filter": trial.params.get("orb_size_filter") if trial.params.get("use_filter") else "None"
+                })
+
+            df_trials = pd.DataFrame(trials_display)
+            st.dataframe(df_trials, use_container_width=True)
+
+            # Feature 3: Promote Best Trial to Pipeline Candidate
+            render_section_divider("PROMOTE TO PIPELINE")
+
+            st.markdown("**➕ Create Pipeline Candidate from Best Trial**")
+            st.caption("Reuses existing candidate creation flow. Best trial will be converted to pipeline candidate.")
+
+            best_trial = completed_trials[0]
+
+            col1, col2 = st.columns([2, 1])
+
+            with col1:
+                st.markdown("**Best Trial Configuration:**")
+                st.json({
+                    "trial_number": best_trial.number,
+                    "avg_r": best_trial.value,
+                    "rr": best_trial.params.get("rr"),
+                    "sl_mode": best_trial.params.get("sl_mode"),
+                    "orb_size_filter": best_trial.params.get("orb_size_filter") if best_trial.params.get("use_filter") else None
+                })
+
+            with col2:
+                # Extract metadata from study (instrument, orb_time)
+                # Try to load from meta.json if it exists
+                meta_path = optuna_dir / f"{selected_study_name}_meta.json"
+                instrument = "MGC"  # Default
+                orb_time = ORBS[0]  # Default to first ORB from time_spec
+
+                if meta_path.exists():
+                    try:
+                        with open(meta_path) as f:
+                            meta = json.load(f)
+                            instrument = meta.get("instrument", "MGC")
+                            orb_time = meta.get("orb_time", ORBS[0])
+                    except Exception as e:
+                        # Fix Issue #2: Fail-closed exception handling
+                        logger.warning(f"Failed to load meta.json: {e}")
+                else:
+                    st.warning(f"⚠️ No meta.json found. Using defaults (MGC, {ORBS[0]}). Specify instrument/orb below if different.")
+
+                # Allow override
+                instrument = st.selectbox("Instrument:", ["MGC", "NQ", "MPL"],
+                                         index=["MGC", "NQ", "MPL"].index(instrument) if instrument in ["MGC", "NQ", "MPL"] else 0,
+                                         key="optuna_promote_instrument")
+                orb_time = st.selectbox("ORB Time:", ORBS,
+                                       index=ORBS.index(orb_time) if orb_time in ORBS else 0,
+                                       key="optuna_promote_orb_time")
+
+            if st.button("🚀 Create Pipeline Candidate", type="primary", key="optuna_promote_button"):
+                with st.spinner("Creating candidate from Optuna trial..."):
+                    try:
+                        # Fix Issue #6: Validate required params exist
+                        required_params = ["rr", "sl_mode", "use_filter"]
+                        missing_params = [p for p in required_params if p not in best_trial.params]
+                        if missing_params:
+                            st.error(f"❌ Trial missing required params: {missing_params}")
+                            st.info("This trial may be from an older Optuna version with different param schema.")
+                            return
+
+                        # Convert Optuna trial params to candidate format
+                        # Reuse exact pattern from lines 749-804 (discovery candidate creation)
+
+                        # Build filter_spec
+                        filter_spec = {
+                            "sl_mode": best_trial.params.get("sl_mode", "FULL"),
+                            "orb_size_filter": best_trial.params.get("orb_size_filter") if best_trial.params.get("use_filter") else None
+                        }
+
+                        # Build test_config (unknown dates from Optuna trial, use None)
+                        test_config = {
+                            "test_window_start": None,
+                            "test_window_end": None
+                        }
+
+                        # Build metrics (limited data from Optuna trial)
+                        metrics = {
+                            "orb_time": orb_time,
+                            "rr": best_trial.params.get("rr"),
+                            "win_rate": None,  # Not stored in Optuna trial
+                            "avg_r": best_trial.value,  # This is the objective value
+                            "annual_trades": None,  # Not stored
+                            "tier": "UNTESTED"  # Will be tested in pipeline
+                        }
+
+                        # Get cost model (reuse from discovery)
+                        cost = get_cost_model(instrument)
+                        slippage_assumptions = {
+                            "commission": cost['commission_rt'],
+                            "spread": cost['spread_double'],
+                            "slippage": cost['slippage_rt'],
+                            "total_rt_cost": cost['total_friction']
+                        }
+
+                        # Get db connection
+                        db_conn = get_database_connection(read_only=False)
+
+                        # Create candidate (reuse existing function)
+                        candidate_id = create_edge_candidate(
+                            name=None,  # Auto-generate
+                            instrument=instrument,
+                            hypothesis_text=f"Optuna study '{selected_study_name}' best trial (#{best_trial.number}): {instrument} {orb_time} RR={best_trial.params.get('rr')}",
+                            filter_spec=filter_spec,
+                            test_config=test_config,
+                            metrics=metrics,
+                            slippage_assumptions=slippage_assumptions,
+                            code_version="optuna_v1",
+                            data_version="v1",
+                            actor="optuna_study",
+                            db_connection=db_conn
+                        )
+
+                        db_conn.close()
+
+                        st.success(f"✅ Created candidate #{candidate_id} from Optuna trial #{best_trial.number}")
+                        st.info("Go to PIPELINE tab to backtest and validate this candidate.")
+                        st.balloons()
+
+                    except Exception as e:
+                        logger.error(f"Failed to create candidate from Optuna trial: {e}")
+                        st.error(f"❌ Failed to create candidate: {str(e)}")
+
+        except Exception as e:
+            st.error(f"❌ Failed to load study: {str(e)}")
+
+
+# ============================================================================
 # VIEW: PRODUCTION
 # ============================================================================
 
@@ -1459,8 +1708,8 @@ with st.sidebar:
 
     view = st.radio(
         "RESEARCH MODE",
-        ["DISCOVERY", "PIPELINE", "BACKTESTER", "PRODUCTION"],
-        index=["DISCOVERY", "PIPELINE", "BACKTESTER", "PRODUCTION"].index(st.session_state.research_view)
+        ["DISCOVERY", "PIPELINE", "BACKTESTER", "OPTUNA", "PRODUCTION"],
+        index=["DISCOVERY", "PIPELINE", "BACKTESTER", "OPTUNA", "PRODUCTION"].index(st.session_state.research_view)
     )
 
     if view != st.session_state.research_view:
@@ -1474,6 +1723,7 @@ with st.sidebar:
         <div><strong>DISCOVERY</strong> - Find new edges</div>
         <div><strong>PIPELINE</strong> - Manage candidates</div>
         <div><strong>BACKTESTER</strong> - Test strategies</div>
+        <div><strong>OPTUNA</strong> - View optimization studies</div>
         <div><strong>PRODUCTION</strong> - Live setups</div>
     </div>
     """, unsafe_allow_html=True)
@@ -1496,6 +1746,8 @@ elif st.session_state.research_view == "PIPELINE":
     render_pipeline_view()
 elif st.session_state.research_view == "BACKTESTER":
     render_backtester_view()
+elif st.session_state.research_view == "OPTUNA":
+    render_optuna_view()
 elif st.session_state.research_view == "PRODUCTION":
     render_production_view()
 
