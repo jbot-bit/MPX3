@@ -495,6 +495,38 @@ bars_1m
 3. **cost_model.py is the ONLY source** for friction values (no hard-coded constants)
 4. **Expectancy is strategy-level** (requires win rate across trades, not per-trade)
 
+### ⚠️ CRITICAL: daily_features Stores RR=1.0 Outcomes ONLY
+
+**NEVER use daily_features outcomes directly for RR > 1.0 backtesting!**
+
+The `orb_XXXX_outcome` columns (WIN/LOSS) and `orb_XXXX_r_multiple` columns are calculated at **RR=1.0 only**.
+- WIN = price hit 1R target (NOT 4R target!)
+- r_multiple = +1.0 for WIN, -1.0 for LOSS
+
+**BUG THAT WAS FOUND (2026-02-04):**
+Validation scripts read these RR=1.0 outcomes and incorrectly applied RR=4.0 multipliers.
+A trade that barely hit 1R got credit for hitting 4R, inflating ExpR from +0.08R to +0.55R.
+
+**THE ONLY CORRECT WAY to backtest at RR > 1.0:**
+```python
+from trading_app.strategy_discovery import StrategyDiscovery, DiscoveryConfig
+
+discovery = StrategyDiscovery()
+config = DiscoveryConfig(
+    instrument='MGC',
+    orb_time='0900',
+    rr=4.0,  # Correctly re-simulates at this RR
+    sl_mode='HALF',
+    orb_size_filter=None
+)
+result = discovery.backtest_configuration(config)
+# result.avg_r is CORRECT
+```
+
+**DO NOT write SQL queries that read daily_features outcomes for backtesting!**
+- Test: `tests/test_rr_calculation_integrity.py` catches this bug
+- See: `scripts/validation/validate_strategies_canonical.py` for correct approach
+
 **Files to check:**
 - `pipeline/cost_model.py` - Authoritative specs and formulas
 - `strategies/execution_engine.py` - Calls cost_model
