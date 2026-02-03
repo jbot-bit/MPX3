@@ -202,6 +202,56 @@ def _clear_checkpoint():
         meta_path.unlink()
 
 # ----------------------------------------------------------------------------
+# DUPLICATE CANDIDATE CHECK (C1 fix)
+# ----------------------------------------------------------------------------
+
+def _check_duplicate_candidate(
+    instrument: str,
+    orb_time: str,
+    rr: float,
+    sl_mode: str,
+    orb_size_filter: Optional[float],
+    source: str  # "discovery", "backtester", "optuna"
+) -> Optional[int]:
+    """
+    Check if similar candidate already exists in edge_candidates.
+
+    Returns candidate_id if duplicate found, None otherwise.
+    """
+    conn = None
+    try:
+        conn = get_database_connection(read_only=True)
+
+        # Build search pattern for hypothesis text
+        search_patterns = [
+            f"%{orb_time}%RR={rr}%",
+            f"%{orb_time}%{rr}R%",
+            f"%trial%{orb_time}%rr={rr}%"
+        ]
+
+        # Check for existing candidate with similar config
+        for pattern in search_patterns:
+            existing = conn.execute("""
+                SELECT candidate_id FROM edge_candidates
+                WHERE instrument = ?
+                  AND status != 'REJECTED'
+                  AND hypothesis_text LIKE ?
+                LIMIT 1
+            """, [instrument, pattern]).fetchone()
+
+            if existing:
+                return existing[0]
+
+        return None
+
+    except Exception as e:
+        logger.warning(f"Duplicate check failed: {e}")
+        return None  # Fail-open: allow creation if check fails
+    finally:
+        if conn:
+            conn.close()
+
+# ----------------------------------------------------------------------------
 
 def load_pipeline_summary() -> Dict[str, int]:
     """Load candidate pipeline status summary (P2-5: single query optimization)"""
@@ -752,6 +802,19 @@ def render_discovery_view():
                         cfg = row.get("config", {})
                         res = row.get("result", {})
 
+                        # C1 Fix: Check for duplicates before creating
+                        duplicate_id = _check_duplicate_candidate(
+                            instrument=cfg.get("instrument", "MGC"),
+                            orb_time=cfg.get("orb_time"),
+                            rr=cfg.get("rr"),
+                            sl_mode=cfg.get("sl_mode", "FULL"),
+                            orb_size_filter=cfg.get("orb_size_filter"),
+                            source="discovery"
+                        )
+                        if duplicate_id:
+                            st.warning(f"⚠️ Similar candidate already exists (ID: {duplicate_id}). View in PIPELINE tab.")
+                            st.stop()
+
                         # Build required dicts
                         filter_spec = {
                             "sl_mode": cfg.get("sl_mode", "FULL"),
@@ -778,27 +841,30 @@ def render_discovery_view():
                             "total_rt_cost": cost['total_friction']
                         }
 
-                        # Get db connection from app state
-                        from trading_app.cloud_mode import get_database_connection
-                        db_conn = get_database_connection(read_only=False)
+                        # C4 Fix: DB connection with proper cleanup
+                        db_conn = None
+                        try:
+                            db_conn = get_database_connection(read_only=False)
 
-                        candidate_id = create_edge_candidate(
-                            name=None,  # Auto-generate
-                            instrument=cfg.get("instrument", "MGC"),
-                            hypothesis_text=f"Discovery scan: {cfg.get('instrument', 'MGC')} {cfg.get('orb_time', '?')} RR={cfg.get('rr', '?')}",
-                            filter_spec=filter_spec,
-                            test_config=test_config,
-                            metrics=metrics,
-                            slippage_assumptions=slippage_assumptions,
-                            code_version="discovery_v1",
-                            data_version="v1",
-                            actor="discovery_scan",
-                            db_connection=db_conn
-                        )
+                            candidate_id = create_edge_candidate(
+                                name=None,  # Auto-generate
+                                instrument=cfg.get("instrument", "MGC"),
+                                hypothesis_text=f"Discovery scan: {cfg.get('instrument', 'MGC')} {cfg.get('orb_time', '?')} RR={cfg.get('rr', '?')}",
+                                filter_spec=filter_spec,
+                                test_config=test_config,
+                                metrics=metrics,
+                                slippage_assumptions=slippage_assumptions,
+                                code_version="discovery_v1",
+                                data_version="v1",
+                                actor="discovery_scan",
+                                db_connection=db_conn
+                            )
 
-                        db_conn.close()
-                        st.success(f"✅ Created candidate #{candidate_id}. Go to Pipeline tab to continue.")
-                        st.balloons()
+                            st.success(f"✅ Created candidate #{candidate_id}. Go to Pipeline tab to continue.")
+                            st.balloons()
+                        finally:
+                            if db_conn:
+                                db_conn.close()
 
                     except Exception as e:
                         st.error(f"❌ Failed to create candidate: {e}")
@@ -872,7 +938,16 @@ def render_discovery_view():
                     pruned_this_chunk = 0
                     chunk_start = time.monotonic()
 
+                    # C5 Fix: Safety limits to prevent infinite loops
+                    MAX_CHUNK_SIZE = 999  # Hard ceiling
+                    MAX_CONFIG_TIMEOUT = 120  # Max 2 min per config
+
                     for i in range(start_idx, total_configs):
+                        # Safety: Hard limit on iterations per chunk
+                        if i - start_idx >= MAX_CHUNK_SIZE:
+                            logger.warning(f"Reached safety limit ({MAX_CHUNK_SIZE} configs per chunk)")
+                            break
+
                         config = configs[i]
                         config_start = time.monotonic()
 
@@ -886,6 +961,12 @@ def render_discovery_view():
                                 config, prog_settings
                             )
                             config_elapsed = time.monotonic() - config_start
+
+                            # C5 Fix: Per-config timeout check
+                            if config_elapsed > MAX_CONFIG_TIMEOUT:
+                                logger.error(f"Config {i} exceeded timeout ({MAX_CONFIG_TIMEOUT}s)")
+                                st.error(f"⚠️ Config timed out after {config_elapsed:.0f}s. Stopping chunk.")
+                                break
                             if result is None:
                                 # Config was pruned - still count as processed
                                 pruned_this_chunk += 1
@@ -903,6 +984,13 @@ def render_discovery_view():
                         else:
                             result = discovery.backtest_configuration(config)
                             config_elapsed = time.monotonic() - config_start
+
+                            # C5 Fix: Per-config timeout check
+                            if config_elapsed > MAX_CONFIG_TIMEOUT:
+                                logger.error(f"Config {i} exceeded timeout ({MAX_CONFIG_TIMEOUT}s)")
+                                st.error(f"⚠️ Config timed out after {config_elapsed:.0f}s. Stopping chunk.")
+                                break
+
                             heartbeat.caption(f"Config {i+1}/{total_configs} | {config.orb_time} rr={config.rr} | full | {config_elapsed:.1f}s")
 
                         # Save to checkpoint (every result, not just hits)
@@ -1192,14 +1280,33 @@ def render_pipeline_view():
                                     st.rerun()
 
                         elif detail['status'] == "APPROVED":
-                            if st.button("🚀 PROMOTE TO PRODUCTION", key=f"promote_{detail['candidate_id']}", type="primary"):
-                                with st.spinner("Promoting to production..."):
-                                    try:
-                                        setup_id = promote_candidate_to_validated_setups(detail['candidate_id'], "user")
-                                        st.success(f"✅ Promoted! Setup ID: {setup_id}")
+                            # H2 Fix: Add confirmation before production promotion
+                            confirm_key = f"confirm_promote_{detail['candidate_id']}"
+                            if confirm_key not in st.session_state:
+                                st.session_state[confirm_key] = False
+
+                            if not st.session_state[confirm_key]:
+                                if st.button("🚀 PROMOTE TO PRODUCTION", key=f"promote_{detail['candidate_id']}", type="primary"):
+                                    st.session_state[confirm_key] = True
+                                    st.rerun()
+                            else:
+                                st.warning("⚠️ **This will add strategy to validated_setups (affects live trading apps!)**")
+                                btn_col1, btn_col2 = st.columns(2)
+                                with btn_col1:
+                                    if st.button("✅ Yes, Promote", type="primary", key=f"confirm_yes_{detail['candidate_id']}"):
+                                        with st.spinner("Promoting to production..."):
+                                            try:
+                                                setup_id = promote_candidate_to_validated_setups(detail['candidate_id'], "user")
+                                                st.success(f"✅ Promoted! Setup ID: {setup_id}")
+                                                st.session_state[confirm_key] = False
+                                                st.rerun()
+                                            except Exception as e:
+                                                st.error(f"❌ Promotion failed: {str(e)}")
+                                                st.session_state[confirm_key] = False
+                                with btn_col2:
+                                    if st.button("❌ Cancel", key=f"confirm_no_{detail['candidate_id']}"):
+                                        st.session_state[confirm_key] = False
                                         st.rerun()
-                                    except Exception as e:
-                                        st.error(f"❌ Promotion failed: {str(e)}")
                 else:
                     st.error("Failed to load candidate details")
     else:
@@ -1257,6 +1364,20 @@ def render_backtester_view():
     if st.button("🧪 RUN BACKTEST", type="primary", use_container_width=True):
         with st.spinner("Running backtest..."):
             try:
+                # C1 Fix: Check for duplicates before creating
+                sl_mode_val = "HALF" if half_sl else "FULL"
+                duplicate_id = _check_duplicate_candidate(
+                    instrument=instrument,
+                    orb_time=orb_time,
+                    rr=rr_target,
+                    sl_mode=sl_mode_val,
+                    orb_size_filter=None,
+                    source="backtester"
+                )
+                if duplicate_id:
+                    st.warning(f"⚠️ Similar candidate already exists (ID: {duplicate_id}). View in PIPELINE tab.")
+                    st.stop()
+
                 # Create candidate for this backtest (H3 fix: correct signature)
                 filter_spec = {
                     "sl_mode": "HALF" if half_sl else "FULL",
@@ -1287,28 +1408,33 @@ def render_backtester_view():
                     "total_rt_cost": cost['total_friction']
                 }
 
-                # Get db connection
-                db_conn = get_database_connection(read_only=False)
+                # C4 Fix: DB connection with proper cleanup
+                db_conn = None
+                candidate_id = None
+                try:
+                    db_conn = get_database_connection(read_only=False)
 
-                candidate_id = create_edge_candidate(
-                    name=None,  # Auto-generate
-                    instrument=instrument,
-                    hypothesis_text=f"Ad-hoc backtest: {instrument} {orb_time} ORB with {rr_target}R target",
-                    filter_spec=filter_spec,
-                    test_config=test_config,
-                    metrics=metrics,
-                    slippage_assumptions=slippage_assumptions,
-                    code_version="backtester_v1",
-                    data_version="v1",
-                    actor="backtester",
-                    db_connection=db_conn
-                )
+                    candidate_id = create_edge_candidate(
+                        name=None,  # Auto-generate
+                        instrument=instrument,
+                        hypothesis_text=f"Ad-hoc backtest: {instrument} {orb_time} ORB with {rr_target}R target",
+                        filter_spec=filter_spec,
+                        test_config=test_config,
+                        metrics=metrics,
+                        slippage_assumptions=slippage_assumptions,
+                        code_version="backtester_v1",
+                        data_version="v1",
+                        actor="backtester",
+                        db_connection=db_conn
+                    )
+                finally:
+                    if db_conn:
+                        db_conn.close()
 
-                db_conn.close()
-
-                # Run backtest
-                runner = ResearchRunner()
-                runner.run_candidate(candidate_id=candidate_id)
+                # Run backtest (only if candidate created successfully)
+                if candidate_id:
+                    runner = ResearchRunner()
+                    runner.run_candidate(candidate_id=candidate_id)
 
                 # Load results
                 conn = get_database_connection(read_only=True)
@@ -1351,9 +1477,26 @@ def render_backtester_view():
                     with detail_col4:
                         st.metric("MFE (Avg)", f"{metrics.get('mfe_avg', 0):.2f}R")
 
-                    # Verdict
-                    is_profitable = metrics.get('total_r', 0) > 0
-                    verdict = "✅ PROFITABLE EDGE DETECTED" if is_profitable else "❌ NO EDGE DETECTED"
+                    # Verdict (C2 Fix: Use canonical thresholds, not just total_r > 0)
+                    n_trades = metrics.get('n_trades', 0)
+                    avg_r = metrics.get('avg_r', 0)
+                    total_r = metrics.get('total_r', 0)
+
+                    is_profitable = (
+                        total_r > 0
+                        and n_trades >= 30  # Min sample size for validity
+                        and avg_r >= 0.15  # Min expectancy (canonical threshold)
+                    )
+
+                    if is_profitable:
+                        verdict = "✅ PROFITABLE EDGE DETECTED (meets validation criteria)"
+                    elif n_trades < 30:
+                        verdict = "⚠️ INSUFFICIENT DATA (need 30+ trades)"
+                    elif avg_r < 0.15:
+                        verdict = "❌ NO EDGE (expectancy too low)"
+                    else:
+                        verdict = "❌ NO EDGE DETECTED"
+
                     render_alert_message(verdict, alert_type="success" if is_profitable else "error", slide_in=False)
 
                 else:
@@ -1510,31 +1653,37 @@ def render_optuna_view():
                 })
 
             with col2:
-                # Extract metadata from study (instrument, orb_time)
-                # Try to load from meta.json if it exists
+                # C3 Fix: Extract and LOCK metadata from study (prevent mismatch)
                 meta_path = optuna_dir / f"{selected_study_name}_meta.json"
-                instrument = "MGC"  # Default
-                orb_time = ORBS[0]  # Default to first ORB from time_spec
+                instrument = None
+                orb_time = None
+                meta_found = False
 
                 if meta_path.exists():
                     try:
                         with open(meta_path) as f:
                             meta = json.load(f)
-                            instrument = meta.get("instrument", "MGC")
-                            orb_time = meta.get("orb_time", ORBS[0])
+                            instrument = meta.get("instrument")
+                            orb_time = meta.get("orb_time")
+                            meta_found = True
                     except Exception as e:
-                        # Fix Issue #2: Fail-closed exception handling
                         logger.warning(f"Failed to load meta.json: {e}")
-                else:
-                    st.warning(f"⚠️ No meta.json found. Using defaults (MGC, {ORBS[0]}). Specify instrument/orb below if different.")
 
-                # Allow override
-                instrument = st.selectbox("Instrument:", ["MGC", "NQ", "MPL"],
-                                         index=["MGC", "NQ", "MPL"].index(instrument) if instrument in ["MGC", "NQ", "MPL"] else 0,
-                                         key="optuna_promote_instrument")
-                orb_time = st.selectbox("ORB Time:", ORBS,
-                                       index=ORBS.index(orb_time) if orb_time in ORBS else 0,
-                                       key="optuna_promote_orb_time")
+                if meta_found and instrument and orb_time:
+                    # LOCKED: Display only, cannot override (prevents cost model mismatch)
+                    st.markdown("**Study Metadata (LOCKED):**")
+                    st.text_input("Instrument:", value=instrument, disabled=True, key="optuna_instrument_locked",
+                                 help="Locked to study metadata. Trial was optimized for this instrument.")
+                    st.text_input("ORB Time:", value=orb_time, disabled=True, key="optuna_orb_locked",
+                                 help="Locked to study metadata. Trial was optimized for this ORB.")
+                    st.caption("⚠️ Cannot override - avg_r was computed with these parameters.")
+                else:
+                    # Fallback: Allow selection if meta missing (with warning)
+                    st.warning(f"⚠️ No meta.json found. Defaulting to MGC {ORBS[0]}. **avg_r may be inaccurate!**")
+                    instrument = st.selectbox("Instrument:", ["MGC", "NQ", "MPL"],
+                                             index=0, key="optuna_promote_instrument_fallback")
+                    orb_time = st.selectbox("ORB Time:", ORBS,
+                                           index=0, key="optuna_promote_orb_fallback")
 
             if st.button("🚀 Create Pipeline Candidate", type="primary", key="optuna_promote_button"):
                 with st.spinner("Creating candidate from Optuna trial..."):
@@ -1546,6 +1695,19 @@ def render_optuna_view():
                             st.error(f"❌ Trial missing required params: {missing_params}")
                             st.info("This trial may be from an older Optuna version with different param schema.")
                             return
+
+                        # C1 Fix: Check for duplicates before creating
+                        duplicate_id = _check_duplicate_candidate(
+                            instrument=instrument,
+                            orb_time=orb_time,
+                            rr=best_trial.params.get("rr"),
+                            sl_mode=best_trial.params.get("sl_mode", "FULL"),
+                            orb_size_filter=best_trial.params.get("orb_size_filter") if best_trial.params.get("use_filter") else None,
+                            source="optuna"
+                        )
+                        if duplicate_id:
+                            st.warning(f"⚠️ Similar candidate already exists (ID: {duplicate_id}). View in PIPELINE tab.")
+                            st.stop()
 
                         # Convert Optuna trial params to candidate format
                         # Reuse exact pattern from lines 749-804 (discovery candidate creation)
@@ -1581,29 +1743,32 @@ def render_optuna_view():
                             "total_rt_cost": cost['total_friction']
                         }
 
-                        # Get db connection
-                        db_conn = get_database_connection(read_only=False)
+                        # C4 Fix: DB connection with proper cleanup
+                        db_conn = None
+                        try:
+                            db_conn = get_database_connection(read_only=False)
 
-                        # Create candidate (reuse existing function)
-                        candidate_id = create_edge_candidate(
-                            name=None,  # Auto-generate
-                            instrument=instrument,
-                            hypothesis_text=f"Optuna study '{selected_study_name}' best trial (#{best_trial.number}): {instrument} {orb_time} RR={best_trial.params.get('rr')}",
-                            filter_spec=filter_spec,
-                            test_config=test_config,
-                            metrics=metrics,
-                            slippage_assumptions=slippage_assumptions,
-                            code_version="optuna_v1",
-                            data_version="v1",
-                            actor="optuna_study",
-                            db_connection=db_conn
-                        )
+                            # Create candidate (reuse existing function)
+                            candidate_id = create_edge_candidate(
+                                name=None,  # Auto-generate
+                                instrument=instrument,
+                                hypothesis_text=f"Optuna study '{selected_study_name}' best trial (#{best_trial.number}): {instrument} {orb_time} RR={best_trial.params.get('rr')}",
+                                filter_spec=filter_spec,
+                                test_config=test_config,
+                                metrics=metrics,
+                                slippage_assumptions=slippage_assumptions,
+                                code_version="optuna_v1",
+                                data_version="v1",
+                                actor="optuna_study",
+                                db_connection=db_conn
+                            )
 
-                        db_conn.close()
-
-                        st.success(f"✅ Created candidate #{candidate_id} from Optuna trial #{best_trial.number}")
-                        st.info("Go to PIPELINE tab to backtest and validate this candidate.")
-                        st.balloons()
+                            st.success(f"✅ Created candidate #{candidate_id} from Optuna trial #{best_trial.number}")
+                            st.info("Go to PIPELINE tab to backtest and validate this candidate.")
+                            st.balloons()
+                        finally:
+                            if db_conn:
+                                db_conn.close()
 
                     except Exception as e:
                         logger.error(f"Failed to create candidate from Optuna trial: {e}")
