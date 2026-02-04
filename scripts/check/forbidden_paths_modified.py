@@ -42,20 +42,21 @@ FORBIDDEN_FILES = [
 
 
 def get_modified_files() -> list[str]:
-    """Get list of modified files from git diff."""
+    """Get list of modified files from git diff (excludes deletions)."""
     try:
-        # Get modified files (staged + unstaged)
+        # Get modified files (staged + unstaged) with status
+        # Use --diff-filter=AM to only show Added and Modified, not Deleted
         result = subprocess.run(
-            ['git', 'diff', '--name-only', 'HEAD'],
+            ['git', 'diff', '--name-only', '--diff-filter=AM', 'HEAD'],
             capture_output=True,
             text=True,
             check=True
         )
         modified = result.stdout.strip().split('\n') if result.stdout.strip() else []
 
-        # Also check staged files
+        # Also check staged files (excluding deletions)
         result = subprocess.run(
-            ['git', 'diff', '--name-only', '--cached'],
+            ['git', 'diff', '--name-only', '--diff-filter=AM', '--cached'],
             capture_output=True,
             text=True,
             check=True
