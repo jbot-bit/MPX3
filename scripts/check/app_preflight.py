@@ -23,6 +23,7 @@ CHECKS = [
     ("auto_search_tables", ["python", "scripts/check/check_auto_search_tables.py"]),
     ("validation_queue_integration", ["python", "scripts/check/check_validation_queue_integration.py"]),
     ("live_terminal_fields", ["python", "scripts/check/check_live_trading_terminal_fields.py"]),
+    ("validated_setups_writes", ["python", "scripts/check/check_validated_setups_writes.py"]),
     # These are your "repair/check" scripts; ideally they support check-only.
     # If they modify DB, keep them OUT of preflight.
     # ("fk_check", ["python", "fix_foreign_key_errors.py"]),
