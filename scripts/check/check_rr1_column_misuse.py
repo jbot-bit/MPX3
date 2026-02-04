@@ -1,20 +1,20 @@
 #!/usr/bin/env python3
 """
-CI GUARD: Prevent RR1 Column Misuse
+CI GUARD: Enforce RR1-Explicit Column Usage (STRICT)
 
-This check FAILS the build if *_rr1 columns are used for:
-- ExpR calculations
-- Validation statistics
-- Discovery metrics
-- Win rate calculations
+This check FAILS if LEGACY columns are used anywhere except 3 allowed files:
+- orb_XXXX_outcome (without _rr1 suffix)
+- orb_XXXX_r_multiple (without _rr1 suffix)
 
-ALLOWED usage (filter-only):
-- trading_app/drift_monitor.py
-- trading_app/experimental_scanner.py
-- scripts/analyze/liquidity_diagnostic.py
-- scripts/analyze/order_type_diagnostic.py
-- tests/* (fixtures only)
-- pipeline/* (schema definitions)
+ONLY 3 FILES ALLOWED TO USE LEGACY (backwards compat, FORBIDDEN to modify):
+1. trading_app/drift_monitor.py
+2. trading_app/experimental_scanner.py
+3. trading_app/test_validation_comprehensive.py
+
+EVERYONE ELSE MUST USE:
+- orb_XXXX_outcome_rr1 for RR=1.0 outcomes
+- orb_XXXX_r_multiple_rr1 for RR=1.0 r-multiples
+- StrategyDiscovery for RR > 1.0 analysis
 
 Run: python scripts/check/check_rr1_column_misuse.py
 Exit code 0 = PASS, Exit code 1 = FAIL
@@ -24,59 +24,42 @@ import re
 import sys
 from pathlib import Path
 
-# Files ALLOWED to use *_rr1 columns (filter-only or schema)
-ALLOWED_FILES = [
-    # Live tools (filter-only usage verified in PASS 1)
+# STRICT ALLOWLIST: Files allowed to use legacy columns
+# - trading_app: FORBIDDEN to modify, uses legacy (3 specific files)
+# - pipeline: Producers write both legacy + _rr1 columns
+# - tests: Fixtures need both for backwards compat testing
+ALLOWED_LEGACY_FILES = [
+    # trading_app (FORBIDDEN - uses legacy)
     'trading_app/drift_monitor.py',
     'trading_app/experimental_scanner.py',
-    'scripts/analyze/liquidity_diagnostic.py',
-    'scripts/analyze/order_type_diagnostic.py',
-    # Schema producers
-    'pipeline/build_daily_features.py',
-    'pipeline/backfill_databento_continuous_mpl.py',
-    'pipeline/validate_data.py',
-    # This check itself
-    'scripts/check/check_rr1_column_misuse.py',
-    # Debug tools (safe)
-    'scripts/validation/debug_calculations.py',
-    # Display only
-    'analysis/query_features.py',
-    'analysis/ai_query.py',
-    # Export (raw data only)
-    'analysis/export_csv.py',
+    'trading_app/test_validation_comprehensive.py',
+    # pipeline (producers - write both legacy and _rr1)
+    'pipeline/',
+    # tests (fixtures - may reference both for testing)
+    'tests/',
 ]
 
-# Patterns that indicate DANGEROUS usage (ExpR calculation)
-DANGEROUS_PATTERNS = [
-    r'AVG\s*\([^)]*_rr1',
-    r'SUM\s*\([^)]*_rr1',
-    r'win_rate.*_rr1',
-    r'_rr1.*\*\s*\d',  # Multiplying rr1 values
-    r'expected.*_rr1',
-    r'exp_r.*_rr1',
-    r'_rr1.*expected',
-    r'COUNT\s*\([^)]*WIN.*_rr1',
-    r'_rr1.*COUNT',
-]
+# Pattern for LEGACY column references (outcome/r_multiple WITHOUT _rr1 suffix)
+# Negative lookahead excludes _rr1 and _tradeable variants
+LEGACY_PATTERN = re.compile(
+    r'orb_\d{4}_(outcome|r_multiple)(?!_rr1|_tradeable)'
+)
 
-# Patterns for rr1 column references
-RR1_COLUMN_PATTERN = re.compile(r'orb_\d{4}_(outcome|r_multiple)_rr1')
+
+def is_allowed(filepath: Path) -> bool:
+    """Check if file is in the strict allowlist."""
+    rel_path = str(filepath).replace('\\', '/')
+    for allowed in ALLOWED_LEGACY_FILES:
+        if rel_path.endswith(allowed) or f'/{allowed}' in rel_path:
+            return True
+    return False
 
 
 def check_file(filepath: Path) -> list:
-    """Check a single file for rr1 column misuse."""
+    """Check a single file for legacy column usage."""
     violations = []
 
-    # Normalize path for comparison
-    rel_path = str(filepath).replace('\\', '/')
-
-    # Skip allowed files
-    for allowed in ALLOWED_FILES:
-        if allowed in rel_path:
-            return []
-
-    # Skip test files (fixtures are OK)
-    if '/tests/' in rel_path or rel_path.startswith('tests/'):
+    if is_allowed(filepath):
         return []
 
     try:
@@ -84,65 +67,81 @@ def check_file(filepath: Path) -> list:
         lines = content.split('\n')
 
         for i, line in enumerate(lines):
-            # Check if line references rr1 columns
-            if RR1_COLUMN_PATTERN.search(line):
-                # Check for dangerous patterns
-                for pattern in DANGEROUS_PATTERNS:
-                    if re.search(pattern, line, re.IGNORECASE):
-                        violations.append({
-                            'file': str(filepath),
-                            'line': i + 1,
-                            'code': line.strip()[:80],
-                            'pattern': pattern
-                        })
-                        break
-    except Exception as e:
-        pass  # Skip files that can't be read
+            # Skip pure comments
+            stripped = line.strip()
+            if stripped.startswith('#'):
+                continue
+
+            # Check for legacy column usage
+            match = LEGACY_PATTERN.search(line)
+            if match:
+                violations.append({
+                    'file': str(filepath),
+                    'line': i + 1,
+                    'code': line.strip()[:80],
+                    'match': match.group(0),
+                })
+    except Exception:
+        pass
 
     return violations
 
 
 def main():
     print("=" * 70)
-    print("CI GUARD: Checking for RR1 Column Misuse")
+    print("CI GUARD: Legacy ORB Column Enforcement (STRICT)")
     print("=" * 70)
+    print(f"\nAllowlist ({len(ALLOWED_LEGACY_FILES)} files):")
+    for f in ALLOWED_LEGACY_FILES:
+        print(f"  - {f}")
 
     project_root = Path(__file__).parent.parent.parent
     all_violations = []
 
-    # Scan all Python files
+    py_count = 0
     for pyfile in project_root.rglob('*.py'):
-        # Skip venv, __pycache__, etc.
-        if 'venv' in str(pyfile) or '__pycache__' in str(pyfile):
+        path_str = str(pyfile)
+        if 'venv' in path_str or '__pycache__' in path_str:
             continue
-        if '_archive' in str(pyfile) or '_local_junk' in str(pyfile):
+        if '_archive' in path_str or '_local_junk' in path_str:
             continue
 
+        py_count += 1
         violations = check_file(pyfile)
         all_violations.extend(violations)
 
+    print(f"\nScanned: {py_count} Python files")
+
     if all_violations:
-        print("\nFAILED: RR1 column misuse detected!\n")
+        print(f"\n{'='*70}")
+        print(f"FAILED: {len(all_violations)} legacy column violations!")
+        print(f"{'='*70}\n")
+
+        by_file = {}
         for v in all_violations:
-            print(f"  {v['file']}:{v['line']}")
-            print(f"    Code: {v['code']}")
-            print(f"    Pattern: {v['pattern']}")
+            f = v['file']
+            if f not in by_file:
+                by_file[f] = []
+            by_file[f].append(v)
+
+        for f, violations in sorted(by_file.items()):
+            print(f"FILE: {f}")
+            for v in violations[:3]:
+                print(f"  L{v['line']}: {v['match']} -> {v['code'][:60]}")
+            if len(violations) > 3:
+                print(f"  ... +{len(violations) - 3} more")
             print()
 
-        print(f"Total violations: {len(all_violations)}")
-        print("\nThese files use *_rr1 columns for ExpR/stats calculations.")
-        print("This is INCORRECT - use StrategyDiscovery instead.")
-        print("\nTo fix:")
-        print("  1. Replace calculation with StrategyDiscovery call")
-        print("  2. Or add file to ALLOWED_FILES if filter-only usage")
+        print(f"{'='*70}")
+        print("FIX: Replace legacy columns with _rr1 versions:")
+        print("  orb_XXXX_outcome     -> orb_XXXX_outcome_rr1")
+        print("  orb_XXXX_r_multiple  -> orb_XXXX_r_multiple_rr1")
+        print(f"{'='*70}")
         sys.exit(1)
     else:
-        print("\nPASSED: No RR1 column misuse detected.")
-        print(f"Scanned: {project_root}")
-        print("All *_rr1 column usage is either:")
-        print("  - In allowed files (filter-only)")
-        print("  - In test fixtures")
-        print("  - In schema definitions")
+        print(f"\n{'='*70}")
+        print("PASSED: No legacy column violations.")
+        print(f"{'='*70}")
         sys.exit(0)
 
 
