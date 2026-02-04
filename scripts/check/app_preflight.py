@@ -10,6 +10,8 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
 CHECKS = [
+    # MASTER GUARDIAN - runs FIRST, enforces all canonical constraints
+    ("master_guardian", ["python", "scripts/check/master_guardian.py"]),
     # Keep these fast + deterministic
     # NOTE: test_app_sync temporarily disabled - has import path issues when run from root
     # ("test_app_sync", ["python", "scripts/test/test_app_sync.py"]),
