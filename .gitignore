@@ -78,3 +78,19 @@ _local_junk/
 .claude/hooks/
 artifacts/*.json
 artifacts/*.jsonl
+
+# Conversation/prompt files (temporary)
+CONVERSATION.txt
+*.proposed
+canofix*.txt
+claudeid*.txt
+fix*.txt
+audit.txt
+master*.txt
+ssot*.txt
+--seed*
+--study
+--orb
+--run
+--instrument
+plan*.txt
