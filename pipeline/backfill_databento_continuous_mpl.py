@@ -234,6 +234,8 @@ def init_mpl_tables(con: duckdb.DuckDBPyConnection):
           orb_0900_break_dir   TEXT,
           orb_0900_outcome     TEXT,
           orb_0900_r_multiple  DOUBLE,
+          orb_0900_outcome_rr1 TEXT,
+          orb_0900_r_multiple_rr1 DOUBLE,
           orb_0900_mae         DOUBLE,
           orb_0900_mfe         DOUBLE,
 
@@ -244,6 +246,8 @@ def init_mpl_tables(con: duckdb.DuckDBPyConnection):
           orb_1000_break_dir   TEXT,
           orb_1000_outcome     TEXT,
           orb_1000_r_multiple  DOUBLE,
+          orb_1000_outcome_rr1 TEXT,
+          orb_1000_r_multiple_rr1 DOUBLE,
           orb_1000_mae         DOUBLE,
           orb_1000_mfe         DOUBLE,
 
@@ -254,6 +258,8 @@ def init_mpl_tables(con: duckdb.DuckDBPyConnection):
           orb_1100_break_dir   TEXT,
           orb_1100_outcome     TEXT,
           orb_1100_r_multiple  DOUBLE,
+          orb_1100_outcome_rr1 TEXT,
+          orb_1100_r_multiple_rr1 DOUBLE,
           orb_1100_mae         DOUBLE,
           orb_1100_mfe         DOUBLE,
 
@@ -264,6 +270,8 @@ def init_mpl_tables(con: duckdb.DuckDBPyConnection):
           orb_1800_break_dir   TEXT,
           orb_1800_outcome     TEXT,
           orb_1800_r_multiple  DOUBLE,
+          orb_1800_outcome_rr1 TEXT,
+          orb_1800_r_multiple_rr1 DOUBLE,
           orb_1800_mae         DOUBLE,
           orb_1800_mfe         DOUBLE,
 
@@ -274,6 +282,8 @@ def init_mpl_tables(con: duckdb.DuckDBPyConnection):
           orb_2300_break_dir   TEXT,
           orb_2300_outcome     TEXT,
           orb_2300_r_multiple  DOUBLE,
+          orb_2300_outcome_rr1 TEXT,
+          orb_2300_r_multiple_rr1 DOUBLE,
           orb_2300_mae         DOUBLE,
           orb_2300_mfe         DOUBLE,
 
@@ -284,6 +294,8 @@ def init_mpl_tables(con: duckdb.DuckDBPyConnection):
           orb_0030_break_dir   TEXT,
           orb_0030_outcome     TEXT,
           orb_0030_r_multiple  DOUBLE,
+          orb_0030_outcome_rr1 TEXT,
+          orb_0030_r_multiple_rr1 DOUBLE,
           orb_0030_mae         DOUBLE,
           orb_0030_mfe         DOUBLE,
 

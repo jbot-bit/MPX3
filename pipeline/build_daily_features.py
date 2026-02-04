@@ -97,17 +97,17 @@ class FeatureBuilder:
                 ny_high, ny_low, ny_range,
                 asia_type_code, london_type_code, pre_ny_type_code,
 
-                orb_0900_high, orb_0900_low, orb_0900_size, orb_0900_break_dir, orb_0900_outcome, orb_0900_r_multiple, orb_0900_mae, orb_0900_mfe, orb_0900_stop_price, orb_0900_risk_ticks,
+                orb_0900_high, orb_0900_low, orb_0900_size, orb_0900_break_dir, orb_0900_outcome, orb_0900_r_multiple, orb_0900_outcome_rr1, orb_0900_r_multiple_rr1, orb_0900_mae, orb_0900_mfe, orb_0900_stop_price, orb_0900_risk_ticks,
                 orb_0900_realized_rr, orb_0900_realized_risk_dollars, orb_0900_realized_reward_dollars,
-                orb_1000_high, orb_1000_low, orb_1000_size, orb_1000_break_dir, orb_1000_outcome, orb_1000_r_multiple, orb_1000_mae, orb_1000_mfe, orb_1000_stop_price, orb_1000_risk_ticks,
+                orb_1000_high, orb_1000_low, orb_1000_size, orb_1000_break_dir, orb_1000_outcome, orb_1000_r_multiple, orb_1000_outcome_rr1, orb_1000_r_multiple_rr1, orb_1000_mae, orb_1000_mfe, orb_1000_stop_price, orb_1000_risk_ticks,
                 orb_1000_realized_rr, orb_1000_realized_risk_dollars, orb_1000_realized_reward_dollars,
-                orb_1100_high, orb_1100_low, orb_1100_size, orb_1100_break_dir, orb_1100_outcome, orb_1100_r_multiple, orb_1100_mae, orb_1100_mfe, orb_1100_stop_price, orb_1100_risk_ticks,
+                orb_1100_high, orb_1100_low, orb_1100_size, orb_1100_break_dir, orb_1100_outcome, orb_1100_r_multiple, orb_1100_outcome_rr1, orb_1100_r_multiple_rr1, orb_1100_mae, orb_1100_mfe, orb_1100_stop_price, orb_1100_risk_ticks,
                 orb_1100_realized_rr, orb_1100_realized_risk_dollars, orb_1100_realized_reward_dollars,
-                orb_1800_high, orb_1800_low, orb_1800_size, orb_1800_break_dir, orb_1800_outcome, orb_1800_r_multiple, orb_1800_mae, orb_1800_mfe, orb_1800_stop_price, orb_1800_risk_ticks,
+                orb_1800_high, orb_1800_low, orb_1800_size, orb_1800_break_dir, orb_1800_outcome, orb_1800_r_multiple, orb_1800_outcome_rr1, orb_1800_r_multiple_rr1, orb_1800_mae, orb_1800_mfe, orb_1800_stop_price, orb_1800_risk_ticks,
                 orb_1800_realized_rr, orb_1800_realized_risk_dollars, orb_1800_realized_reward_dollars,
-                orb_2300_high, orb_2300_low, orb_2300_size, orb_2300_break_dir, orb_2300_outcome, orb_2300_r_multiple, orb_2300_mae, orb_2300_mfe, orb_2300_stop_price, orb_2300_risk_ticks,
+                orb_2300_high, orb_2300_low, orb_2300_size, orb_2300_break_dir, orb_2300_outcome, orb_2300_r_multiple, orb_2300_outcome_rr1, orb_2300_r_multiple_rr1, orb_2300_mae, orb_2300_mfe, orb_2300_stop_price, orb_2300_risk_ticks,
                 orb_2300_realized_rr, orb_2300_realized_risk_dollars, orb_2300_realized_reward_dollars,
-                orb_0030_high, orb_0030_low, orb_0030_size, orb_0030_break_dir, orb_0030_outcome, orb_0030_r_multiple, orb_0030_mae, orb_0030_mfe, orb_0030_stop_price, orb_0030_risk_ticks,
+                orb_0030_high, orb_0030_low, orb_0030_size, orb_0030_break_dir, orb_0030_outcome, orb_0030_r_multiple, orb_0030_outcome_rr1, orb_0030_r_multiple_rr1, orb_0030_mae, orb_0030_mfe, orb_0030_stop_price, orb_0030_risk_ticks,
                 orb_0030_realized_rr, orb_0030_realized_risk_dollars, orb_0030_realized_reward_dollars,
 
                 orb_0900_tradeable_entry_price, orb_0900_tradeable_stop_price, orb_0900_tradeable_risk_points, orb_0900_tradeable_target_price, orb_0900_tradeable_outcome, orb_0900_tradeable_realized_rr, orb_0900_tradeable_realized_risk_dollars, orb_0900_tradeable_realized_reward_dollars,
@@ -158,12 +158,20 @@ class FeatureBuilder:
             "orb_2300_break_dir": "VARCHAR",
             "orb_0030_break_dir": "VARCHAR",
 
-            "orb_0900_outcome": "VARCHAR",    # WIN, LOSS, NONE
+            "orb_0900_outcome": "VARCHAR",    # WIN, LOSS, NONE (LEGACY - use *_rr1)
             "orb_1000_outcome": "VARCHAR",
             "orb_1100_outcome": "VARCHAR",
             "orb_1800_outcome": "VARCHAR",
             "orb_2300_outcome": "VARCHAR",
             "orb_0030_outcome": "VARCHAR",
+
+            # RR1-explicit columns (CANONICAL - use these for RR=1.0 analysis)
+            "orb_0900_outcome_rr1": "VARCHAR",
+            "orb_1000_outcome_rr1": "VARCHAR",
+            "orb_1100_outcome_rr1": "VARCHAR",
+            "orb_1800_outcome_rr1": "VARCHAR",
+            "orb_2300_outcome_rr1": "VARCHAR",
+            "orb_0030_outcome_rr1": "VARCHAR",
 
             "orb_0900_tradeable_outcome": "VARCHAR",
             "orb_1000_tradeable_outcome": "VARCHAR",
@@ -879,17 +887,17 @@ class FeatureBuilder:
                 ny_high, ny_low, ny_range,
                 asia_type_code, london_type_code, pre_ny_type_code,
 
-                orb_0900_high, orb_0900_low, orb_0900_size, orb_0900_break_dir, orb_0900_outcome, orb_0900_r_multiple, orb_0900_mae, orb_0900_mfe, orb_0900_stop_price, orb_0900_risk_ticks,
+                orb_0900_high, orb_0900_low, orb_0900_size, orb_0900_break_dir, orb_0900_outcome, orb_0900_r_multiple, orb_0900_outcome_rr1, orb_0900_r_multiple_rr1, orb_0900_mae, orb_0900_mfe, orb_0900_stop_price, orb_0900_risk_ticks,
                 orb_0900_realized_rr, orb_0900_realized_risk_dollars, orb_0900_realized_reward_dollars,
-                orb_1000_high, orb_1000_low, orb_1000_size, orb_1000_break_dir, orb_1000_outcome, orb_1000_r_multiple, orb_1000_mae, orb_1000_mfe, orb_1000_stop_price, orb_1000_risk_ticks,
+                orb_1000_high, orb_1000_low, orb_1000_size, orb_1000_break_dir, orb_1000_outcome, orb_1000_r_multiple, orb_1000_outcome_rr1, orb_1000_r_multiple_rr1, orb_1000_mae, orb_1000_mfe, orb_1000_stop_price, orb_1000_risk_ticks,
                 orb_1000_realized_rr, orb_1000_realized_risk_dollars, orb_1000_realized_reward_dollars,
-                orb_1100_high, orb_1100_low, orb_1100_size, orb_1100_break_dir, orb_1100_outcome, orb_1100_r_multiple, orb_1100_mae, orb_1100_mfe, orb_1100_stop_price, orb_1100_risk_ticks,
+                orb_1100_high, orb_1100_low, orb_1100_size, orb_1100_break_dir, orb_1100_outcome, orb_1100_r_multiple, orb_1100_outcome_rr1, orb_1100_r_multiple_rr1, orb_1100_mae, orb_1100_mfe, orb_1100_stop_price, orb_1100_risk_ticks,
                 orb_1100_realized_rr, orb_1100_realized_risk_dollars, orb_1100_realized_reward_dollars,
-                orb_1800_high, orb_1800_low, orb_1800_size, orb_1800_break_dir, orb_1800_outcome, orb_1800_r_multiple, orb_1800_mae, orb_1800_mfe, orb_1800_stop_price, orb_1800_risk_ticks,
+                orb_1800_high, orb_1800_low, orb_1800_size, orb_1800_break_dir, orb_1800_outcome, orb_1800_r_multiple, orb_1800_outcome_rr1, orb_1800_r_multiple_rr1, orb_1800_mae, orb_1800_mfe, orb_1800_stop_price, orb_1800_risk_ticks,
                 orb_1800_realized_rr, orb_1800_realized_risk_dollars, orb_1800_realized_reward_dollars,
-                orb_2300_high, orb_2300_low, orb_2300_size, orb_2300_break_dir, orb_2300_outcome, orb_2300_r_multiple, orb_2300_mae, orb_2300_mfe, orb_2300_stop_price, orb_2300_risk_ticks,
+                orb_2300_high, orb_2300_low, orb_2300_size, orb_2300_break_dir, orb_2300_outcome, orb_2300_r_multiple, orb_2300_outcome_rr1, orb_2300_r_multiple_rr1, orb_2300_mae, orb_2300_mfe, orb_2300_stop_price, orb_2300_risk_ticks,
                 orb_2300_realized_rr, orb_2300_realized_risk_dollars, orb_2300_realized_reward_dollars,
-                orb_0030_high, orb_0030_low, orb_0030_size, orb_0030_break_dir, orb_0030_outcome, orb_0030_r_multiple, orb_0030_mae, orb_0030_mfe, orb_0030_stop_price, orb_0030_risk_ticks,
+                orb_0030_high, orb_0030_low, orb_0030_size, orb_0030_break_dir, orb_0030_outcome, orb_0030_r_multiple, orb_0030_outcome_rr1, orb_0030_r_multiple_rr1, orb_0030_mae, orb_0030_mfe, orb_0030_stop_price, orb_0030_risk_ticks,
                 orb_0030_realized_rr, orb_0030_realized_risk_dollars, orb_0030_realized_reward_dollars,
 
                 orb_0900_tradeable_entry_price, orb_0900_tradeable_stop_price, orb_0900_tradeable_risk_points, orb_0900_tradeable_target_price, orb_0900_tradeable_outcome, orb_0900_tradeable_realized_rr, orb_0900_tradeable_realized_risk_dollars, orb_0900_tradeable_realized_reward_dollars,
@@ -912,12 +920,12 @@ class FeatureBuilder:
                 ?, ?, ?,
                 ?, ?, ?,
 
-                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
 
                 ?, ?, ?, ?, ?, ?, ?, ?,
                 ?, ?, ?, ?, ?, ?, ?, ?,
@@ -964,6 +972,8 @@ class FeatureBuilder:
                 orb_0900["break_dir"] if orb_0900 else None,
                 orb_0900["outcome"] if orb_0900 else None,
                 orb_0900["r_multiple"] if orb_0900 else None,
+                orb_0900["outcome"] if orb_0900 else None,  # outcome_rr1 (copy)
+                orb_0900["r_multiple"] if orb_0900 else None,  # r_multiple_rr1 (copy)
                 orb_0900.get("mae") if orb_0900 else None,
                 orb_0900.get("mfe") if orb_0900 else None,
                 orb_0900.get("stop_price") if orb_0900 else None,
@@ -978,6 +988,8 @@ class FeatureBuilder:
                 orb_1000["break_dir"] if orb_1000 else None,
                 orb_1000["outcome"] if orb_1000 else None,
                 orb_1000["r_multiple"] if orb_1000 else None,
+                orb_1000["outcome"] if orb_1000 else None,  # outcome_rr1 (copy)
+                orb_1000["r_multiple"] if orb_1000 else None,  # r_multiple_rr1 (copy)
                 orb_1000.get("mae") if orb_1000 else None,
                 orb_1000.get("mfe") if orb_1000 else None,
                 orb_1000.get("stop_price") if orb_1000 else None,
@@ -992,6 +1004,8 @@ class FeatureBuilder:
                 orb_1100["break_dir"] if orb_1100 else None,
                 orb_1100["outcome"] if orb_1100 else None,
                 orb_1100["r_multiple"] if orb_1100 else None,
+                orb_1100["outcome"] if orb_1100 else None,  # outcome_rr1 (copy)
+                orb_1100["r_multiple"] if orb_1100 else None,  # r_multiple_rr1 (copy)
                 orb_1100.get("mae") if orb_1100 else None,
                 orb_1100.get("mfe") if orb_1100 else None,
                 orb_1100.get("stop_price") if orb_1100 else None,
@@ -1006,6 +1020,8 @@ class FeatureBuilder:
                 orb_1800["break_dir"] if orb_1800 else None,
                 orb_1800["outcome"] if orb_1800 else None,
                 orb_1800["r_multiple"] if orb_1800 else None,
+                orb_1800["outcome"] if orb_1800 else None,  # outcome_rr1 (copy)
+                orb_1800["r_multiple"] if orb_1800 else None,  # r_multiple_rr1 (copy)
                 orb_1800.get("mae") if orb_1800 else None,
                 orb_1800.get("mfe") if orb_1800 else None,
                 orb_1800.get("stop_price") if orb_1800 else None,
@@ -1020,6 +1036,8 @@ class FeatureBuilder:
                 orb_2300["break_dir"] if orb_2300 else None,
                 orb_2300["outcome"] if orb_2300 else None,
                 orb_2300["r_multiple"] if orb_2300 else None,
+                orb_2300["outcome"] if orb_2300 else None,  # outcome_rr1 (copy)
+                orb_2300["r_multiple"] if orb_2300 else None,  # r_multiple_rr1 (copy)
                 orb_2300.get("mae") if orb_2300 else None,
                 orb_2300.get("mfe") if orb_2300 else None,
                 orb_2300.get("stop_price") if orb_2300 else None,
@@ -1034,6 +1052,8 @@ class FeatureBuilder:
                 orb_0030["break_dir"] if orb_0030 else None,
                 orb_0030["outcome"] if orb_0030 else None,
                 orb_0030["r_multiple"] if orb_0030 else None,
+                orb_0030["outcome"] if orb_0030 else None,  # outcome_rr1 (copy)
+                orb_0030["r_multiple"] if orb_0030 else None,  # r_multiple_rr1 (copy)
                 orb_0030.get("mae") if orb_0030 else None,
                 orb_0030.get("mfe") if orb_0030 else None,
                 orb_0030.get("stop_price") if orb_0030 else None,
