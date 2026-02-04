@@ -1,0 +1,46 @@
+AUTHORIZATION REQUEST: Entry Logic Drift Fix
+
+PURPOSE:
+Consolidate duplicated entry detection logic into SINGLE SOURCE OF TRUTH.
+
+PROBLEM (from SSOT audit):
+Entry logic is currently duplicated in 3+ locations:
+1. strategies/execution_engine.py (lines 287-360) - "first close outside ORB"
+2. trading_app/entry_rules.py (lines 53-100) - compute_orb_range()
+3. pipeline/build_daily_features.py - implicit in outcome calculation
+
+RISK:
+- Changes to entry rule require propagation across multiple files
+- No cross-file validation
+- Drift can occur silently
+
+PROPOSED FIX:
+NOT refactoring the files. Instead:
+1. Add a CI guard that verifies entry logic consistency across files
+2. Document the canonical entry rule in one place
+3. Add tests that fail if implementations diverge
+
+SCOPE (MINIMAL):
+- Create: scripts/check/check_entry_logic_consistency.py
+- Create: docs/ENTRY_LOGIC_SSOT.md
+- Create: tests/test_entry_logic_consistency.py
+
+FORBIDDEN PATHS TOUCHED: NONE
+- execution_engine.py: READ ONLY (for verification)
+- entry_rules.py: READ ONLY (for verification)
+- build_daily_features.py: READ ONLY (for verification)
+
+NO CODE CHANGES to forbidden paths. Only NEW guard files.
+
+GATES TO RUN AFTER:
+- python scripts/check/app_preflight.py
+- python test_app_sync.py
+- pytest tests/test_entry_logic_consistency.py
+
+APPROVAL REQUIRED:
+[ ] Approve this scope (guards only, no forbidden path edits)
+[ ] Reject - modify scope
+[ ] Reject - not needed
+
+Sign below to authorize:
+_______________________________
