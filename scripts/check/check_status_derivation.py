@@ -22,12 +22,12 @@ Exit code 0 = PASS, Exit code 1 = FAIL (mismatches found in strict mode)
 import sys
 import os
 from pathlib import Path
-from pipeline.paths import GOLD_DB_PATH
 
-# Add project root to path
+# Add project root to path FIRST
 REPO_ROOT = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 
+from pipeline.paths import GOLD_DB_PATH
 from trading_app.status_utils import derive_status, check_status_consistency, MIN_EXPECTED_R, MIN_SAMPLE_SIZE
 
 
