@@ -51,12 +51,13 @@ from typing import Optional, Dict, Tuple, List
 # Import cost_model for canonical realized RR calculations
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from pipeline.cost_model import calculate_realized_rr
+from pipeline.paths import GOLD_DB_PATH
 
 TZ_LOCAL = ZoneInfo("Australia/Brisbane")
 TZ_UTC = ZoneInfo("UTC")
 
 SYMBOL = "MGC"
-DB_PATH = "data/db/gold.db"
+DB_PATH = str(GOLD_DB_PATH)
 RSI_LEN = 14
 
 RR_DEFAULT = 1.0  # keep simple for now
