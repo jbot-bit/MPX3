@@ -25,11 +25,12 @@ import duckdb
 import sys
 import random
 from datetime import date
+from pipeline.paths import GOLD_DB_PATH
 
 sys.path.insert(0, 'C:/Users/sydne/OneDrive/Desktop/MPX2_fresh')
 from pipeline.cost_model import COST_MODELS
 
-DB_PATH = 'gold.db'
+DB_PATH = GOLD_DB_PATH
 
 # CANONICAL COST MODEL (MANDATORY - honest double-spread accounting)
 MGC_COSTS = COST_MODELS['MGC']

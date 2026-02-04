@@ -22,10 +22,11 @@ Approval Threshold: +0.15R at $7.40 costs
 
 import duckdb
 import sys
+from pipeline.paths import GOLD_DB_PATH
 sys.path.insert(0, 'C:/Users/sydne/OneDrive/Desktop/MPX2_fresh')
 from pipeline.cost_model import COST_MODELS
 
-DB_PATH = 'gold.db'
+DB_PATH = GOLD_DB_PATH
 conn = duckdb.connect(DB_PATH)
 
 # Get MGC cost model

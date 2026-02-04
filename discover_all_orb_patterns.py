@@ -16,13 +16,14 @@ from scipy import stats
 from scipy.stats import pearsonr
 from sklearn.ensemble import RandomForestRegressor
 import warnings
+from pipeline.paths import GOLD_DB_PATH
 warnings.filterwarnings('ignore')
 
 # ============================================================================
 # CONFIGURATION
 # ============================================================================
 
-DB_PATH = "gold.db"
+DB_PATH = GOLD_DB_PATH
 INSTRUMENT = "MGC"
 CUTOFF_DATE = "2026-01-12"
 

@@ -18,6 +18,7 @@ ONLY edges that pass ALL 9 stages are promoted to production.
 """
 
 import sys
+from pipeline.paths import GOLD_DB_PATH
 sys.path.append('.')
 
 import duckdb
@@ -82,7 +83,7 @@ def run_full_pipeline(
     print(f"Strategy Family Filter: {'ENABLED' if use_family_filter else 'DISABLED'}")
     print("="*80 + "\n")
 
-    con = duckdb.connect('gold.db')
+    con = duckdb.connect(GOLD_DB_PATH)
 
     validation_report = {
         'pipeline': 'walkforward_validation',

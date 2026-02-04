@@ -13,6 +13,7 @@ Run with: python -m pytest tests/test_rr_calculation_integrity.py -v
 
 import sys
 from pathlib import Path
+from pipeline.paths import GOLD_DB_PATH
 
 PROJECT_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
@@ -20,7 +21,7 @@ sys.path.insert(0, str(PROJECT_ROOT))
 import pytest
 import duckdb
 
-DB_PATH = PROJECT_ROOT / "data" / "db" / "gold.db"
+DB_PATH = PROJECT_ROOT / "data" / "db" / GOLD_DB_PATH
 
 
 class TestRRIntegrity:

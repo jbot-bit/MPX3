@@ -1,7 +1,8 @@
 ﻿from pathlib import Path
 import duckdb
+from pipeline.paths import GOLD_DB_PATH
 
-DB_PATH = Path("gold.db")
+DB_PATH = Path(GOLD_DB_PATH)
 SYMBOL = "MGC"
 
 def main() -> None:

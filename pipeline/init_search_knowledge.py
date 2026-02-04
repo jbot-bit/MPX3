@@ -11,9 +11,10 @@ Usage:
 
 import duckdb
 from pathlib import Path
+from pipeline.paths import GOLD_DB_PATH
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-DB_PATH = REPO_ROOT / "data" / "db" / "gold.db"
+DB_PATH = REPO_ROOT / "data" / "db" / GOLD_DB_PATH
 SCHEMA_PATH = REPO_ROOT / "pipeline" / "schema_search_knowledge.sql"
 
 

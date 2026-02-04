@@ -1,6 +1,7 @@
 import duckdb
+from pipeline.paths import GOLD_DB_PATH
 
-con = duckdb.connect("gold.db")
+con = duckdb.connect(GOLD_DB_PATH)
 
 con.execute("DELETE FROM bars_1m_mpl WHERE symbol = 'MPL'")
 con.execute("DELETE FROM bars_5m_mpl WHERE symbol = 'MPL'")

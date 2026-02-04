@@ -7,6 +7,7 @@ Compare computed metrics vs target metrics from testfix2.txt
 import sys
 from pathlib import Path
 from datetime import date
+from pipeline.paths import GOLD_DB_PATH
 
 # Add parent to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -18,7 +19,7 @@ import duckdb
 
 # Database path (local gold.db for bar data)
 root = Path(__file__).parent.parent
-db_path = root / "data" / "db" / "gold.db"
+db_path = root / "data" / "db" / GOLD_DB_PATH
 
 # Target metrics from testfix2.txt
 TARGET_METRICS = {

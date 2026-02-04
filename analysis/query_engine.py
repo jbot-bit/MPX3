@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple
 import duckdb
 import numpy as np
 import pandas as pd
+from pipeline.paths import GOLD_DB_PATH
 
 # UI helper for Streamlit dashboards
 # Keys are the internal IDs used in app_trading_hub.py dropdowns.
@@ -164,7 +165,7 @@ def default_strategy() -> StrategyConfig:
     return PRESETS["Boundary | 1m Break (1 close)"]
 
 
-def get_connection(db_path: str = "gold.db") -> duckdb.DuckDBPyConnection:
+def get_connection(db_path: str = GOLD_DB_PATH) -> duckdb.DuckDBPyConnection:
     """Return a DuckDB connection to the gold database."""
     return duckdb.connect(db_path)
 

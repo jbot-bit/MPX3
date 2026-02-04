@@ -21,6 +21,7 @@ Outputs:
 import duckdb
 from typing import Dict, List, Tuple, Optional, Any
 from dataclasses import dataclass
+from pipeline.paths import GOLD_DB_PATH
 
 
 @dataclass
@@ -64,7 +65,7 @@ def calculate_stats(rows: List[Tuple]) -> ORBStats:
 class ORBAnalyzerV2:
     """Analyze ORBs with zero lookahead guarantee"""
 
-    def __init__(self, db_path: str = "gold.db", connection: Optional[duckdb.DuckDBPyConnection] = None):
+    def __init__(self, db_path: str = GOLD_DB_PATH, connection: Optional[duckdb.DuckDBPyConnection] = None):
         """Initialize with either a db_path or an existing connection.
         
         Args:

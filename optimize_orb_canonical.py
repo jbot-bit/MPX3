@@ -20,11 +20,12 @@ import pandas as pd
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 import json
+from pipeline.paths import GOLD_DB_PATH
 
 TZ_LOCAL = ZoneInfo("Australia/Brisbane")
 TZ_UTC = ZoneInfo("UTC")
 
-DB_PATH = 'gold.db'  # Canonical path (root, not data/db)
+DB_PATH = GOLD_DB_PATH  # Canonical path (root, not data/db)
 SYMBOL = 'MGC'
 
 # LOCKED ASSUMPTIONS (2026-01-25 Audit)

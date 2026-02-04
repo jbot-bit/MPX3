@@ -7,6 +7,7 @@ import duckdb
 import logging
 from pathlib import Path
 import os
+from pipeline.paths import GOLD_DB_PATH
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +23,7 @@ def get_database_connection():
             logger.error(f"Failed to connect to MotherDuck: {e}")
             return None
     else:
-        db_path = Path(__file__).parent.parent / "data" / "db" / "gold.db"
+        db_path = Path(__file__).parent.parent / "data" / "db" / GOLD_DB_PATH
         db_path.parent.mkdir(parents=True, exist_ok=True)
         return duckdb.connect(str(db_path))
 

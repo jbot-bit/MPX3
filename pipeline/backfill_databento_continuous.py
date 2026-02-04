@@ -14,6 +14,7 @@ from zoneinfo import ZoneInfo
 
 import databento as db
 from databento.common.error import BentoClientError
+from pipeline.paths import GOLD_DB_PATH
 
 
 # -----------------------------
@@ -22,7 +23,7 @@ from databento.common.error import BentoClientError
 
 @dataclass
 class Cfg:
-    db_path: str = "gold.db"
+    db_path: str = GOLD_DB_PATH
     symbol: str = "MGC"  # logical symbol stored in DB (your continuous)
     tz_local: str = "Australia/Brisbane"
     dataset: str = "GLBX.MDP3"
@@ -34,7 +35,7 @@ class Cfg:
 
 def env_cfg() -> Cfg:
     load_dotenv()
-    db_path = os.getenv("DUCKDB_PATH", "gold.db").strip()
+    db_path = os.getenv("DUCKDB_PATH", GOLD_DB_PATH).strip()
     symbol = os.getenv("SYMBOL", "MGC").strip() or "MGC"
     tz_local = os.getenv("TZ_LOCAL", "Australia/Brisbane").strip() or "Australia/Brisbane"
     dataset = os.getenv("DATABENTO_DATASET", "GLBX.MDP3").strip() or "GLBX.MDP3"

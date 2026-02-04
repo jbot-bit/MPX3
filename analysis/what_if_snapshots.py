@@ -37,6 +37,7 @@ import json
 import uuid
 from typing import Dict, List, Optional
 from datetime import datetime
+from pipeline.paths import GOLD_DB_PATH
 
 
 class SnapshotManager:
@@ -545,7 +546,7 @@ if __name__ == "__main__":
     from what_if_engine import WhatIfEngine
 
     # Connect to database
-    db_path = Path(__file__).parent.parent / "data" / "db" / "gold.db"
+    db_path = Path(__file__).parent.parent / "data" / "db" / GOLD_DB_PATH
     conn = duckdb.connect(str(db_path))
 
     # Create engine and manager

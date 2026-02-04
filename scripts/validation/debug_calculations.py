@@ -10,6 +10,7 @@ Investigates:
 
 import sys
 from pathlib import Path
+from pipeline.paths import GOLD_DB_PATH
 
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
@@ -17,7 +18,7 @@ sys.path.insert(0, str(PROJECT_ROOT))
 import duckdb
 from pipeline.cost_model import get_cost_model
 
-DB_PATH = PROJECT_ROOT / "data" / "db" / "gold.db"
+DB_PATH = PROJECT_ROOT / "data" / "db" / GOLD_DB_PATH
 
 
 def debug_1_cost_model():

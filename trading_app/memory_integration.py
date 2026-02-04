@@ -32,6 +32,7 @@ from trading_app.drawdown_engine import DrawdownResult, DrawdownRequest
 
 # Import RiskEngine types (we enhance its output with AI)
 from trading_app.risk_engine import RiskResult, RiskRequest
+from pipeline.paths import GOLD_DB_PATH
 
 
 # =============================================================================
@@ -290,7 +291,7 @@ class MemoryIntegration:
     Records events, learns patterns, produces intelligent warnings.
     """
 
-    def __init__(self, db_path: str = "gold.db"):
+    def __init__(self, db_path: str = GOLD_DB_PATH):
         self.db_path = Path(db_path)
         self._ensure_schema()
 

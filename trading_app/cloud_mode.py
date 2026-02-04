@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 import duckdb
 import logging
+from pipeline.paths import GOLD_DB_PATH
 
 logger = logging.getLogger(__name__)
 
@@ -129,7 +130,7 @@ def get_database_connection(read_only: bool = True):
     else:
         # D) Local mode - use gold.db
         app_dir = Path(__file__).parent
-        db_path = app_dir.parent / "data" / "db" / "gold.db"
+        db_path = app_dir.parent / "data" / "db" / GOLD_DB_PATH
 
         # Log resolved path
         logger.info(f"Using local DuckDB at: {db_path}")

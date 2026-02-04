@@ -14,8 +14,9 @@ Outputs:
 import duckdb
 import sys
 from typing import Dict, Tuple
+from pipeline.paths import GOLD_DB_PATH
 
-DB_PATH = "gold.db"
+DB_PATH = GOLD_DB_PATH
 
 def calculate_expectancy(win_rate: float, rr: float, cost_r: float) -> float:
     """Calculate expected R per trade"""

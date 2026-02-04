@@ -1,7 +1,8 @@
 """Quick check of instruments in validated_setups"""
 import duckdb
+from pipeline.paths import GOLD_DB_PATH
 
-conn = duckdb.connect('gold.db')
+conn = duckdb.connect(GOLD_DB_PATH)
 
 result = conn.execute('SELECT instrument, COUNT(*) as count FROM validated_setups GROUP BY instrument ORDER BY instrument').fetchall()
 

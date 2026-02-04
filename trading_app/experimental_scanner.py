@@ -24,6 +24,7 @@ from datetime import datetime, date, timedelta
 from zoneinfo import ZoneInfo
 import logging
 from trading_app.time_spec import ORBS  # TSOT: Canonical ORB time source
+from pipeline.paths import GOLD_DB_PATH
 
 logger = logging.getLogger(__name__)
 
@@ -524,7 +525,7 @@ def test_scanner():
     import os
     from pathlib import Path
 
-    db_path = Path(__file__).parent.parent / "data" / "db" / "gold.db"
+    db_path = Path(__file__).parent.parent / "data" / "db" / GOLD_DB_PATH
     con = duckdb.connect(str(db_path))
 
     scanner = ExperimentalScanner(con)

@@ -26,11 +26,12 @@ from pathlib import Path
 from typing import Dict, Optional, Tuple
 import logging
 import os
+from pipeline.paths import GOLD_DB_PATH
 
 logger = logging.getLogger(__name__)
 
 # Database path (relative to project root)
-DB_PATH = Path(__file__).parent.parent / "data" / "db" / "gold.db"
+DB_PATH = Path(__file__).parent.parent / "data" / "db" / GOLD_DB_PATH
 
 
 def get_database_connection():

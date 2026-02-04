@@ -19,12 +19,13 @@ import argparse
 import os
 from datetime import date, timedelta
 from typing import Optional
+from pipeline.paths import GOLD_DB_PATH
 
 
 class CSVExporter:
     """Export MGC data to CSV files"""
 
-    def __init__(self, db_path: str = "gold.db", output_dir: str = "exports"):
+    def __init__(self, db_path: str = GOLD_DB_PATH, output_dir: str = "exports"):
         self.db_path = db_path
         self.output_dir = output_dir
         os.makedirs(output_dir, exist_ok=True)

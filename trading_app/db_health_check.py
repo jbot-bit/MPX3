@@ -7,6 +7,7 @@ Runs before app loads to ensure database is in good state.
 import os
 from pathlib import Path
 import logging
+from pipeline.paths import GOLD_DB_PATH
 
 logger = logging.getLogger(__name__)
 
@@ -103,7 +104,7 @@ def run_startup_health_check(db_connection, db_path: str) -> bool:
 if __name__ == "__main__":
     # Test the health check (NOTE: This standalone test creates its own connection)
     import duckdb
-    db_path = Path(__file__).parent.parent / "data" / "db" / "gold.db"
+    db_path = Path(__file__).parent.parent / "data" / "db" / GOLD_DB_PATH
 
     # Create connection for testing
     conn = duckdb.connect(str(db_path))

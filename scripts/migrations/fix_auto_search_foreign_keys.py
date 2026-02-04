@@ -18,6 +18,7 @@ Usage:
 import sys
 import duckdb
 from pathlib import Path
+from pipeline.paths import GOLD_DB_PATH
 
 def fix_foreign_keys(db_path: str = "data/db/gold.db"):
     """Fix foreign key constraints (idempotent)"""
@@ -107,5 +108,5 @@ def fix_foreign_keys(db_path: str = "data/db/gold.db"):
 
 
 if __name__ == "__main__":
-    db_path = Path(__file__).parent.parent.parent / "data" / "db" / "gold.db"
+    db_path = Path(__file__).parent.parent.parent / "data" / "db" / GOLD_DB_PATH
     fix_foreign_keys(str(db_path))

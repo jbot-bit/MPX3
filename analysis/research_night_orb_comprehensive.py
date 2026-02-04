@@ -27,6 +27,7 @@ from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import TimeSeriesSplit
 import warnings
+from pipeline.paths import GOLD_DB_PATH
 warnings.filterwarnings('ignore')
 
 sys.path.insert(0, 'pipeline')
@@ -43,7 +44,7 @@ print()
 # Database connection
 DB_PATH = Path('data/db/gold.db')
 if not DB_PATH.exists():
-    DB_PATH = Path('gold.db')
+    DB_PATH = Path(GOLD_DB_PATH)
 
 conn = duckdb.connect(str(DB_PATH), read_only=True)
 

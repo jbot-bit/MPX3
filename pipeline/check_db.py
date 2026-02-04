@@ -1,6 +1,7 @@
 import duckdb
+from pipeline.paths import GOLD_DB_PATH
 
-con = duckdb.connect("gold.db")
+con = duckdb.connect(GOLD_DB_PATH)
 
 print("=== bars_1m schema ===")
 print(con.execute("PRAGMA table_info('bars_1m')").fetchall())

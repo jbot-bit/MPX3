@@ -13,8 +13,9 @@ This tells us:
 
 import duckdb
 import pandas as pd
+from pipeline.paths import GOLD_DB_PATH
 
-DB_PATH = 'gold.db'
+DB_PATH = GOLD_DB_PATH
 ORB_TIMES = ['0900', '1000', '1100', '1800']
 
 print("="*80)

@@ -1,5 +1,6 @@
 """Restore the ORIGINAL canonical daily_features (745 rows)"""
 import duckdb
+from pipeline.paths import GOLD_DB_PATH
 
 print("="*80)
 print("RESTORING CANONICAL daily_features FROM BACKUP")
@@ -16,7 +17,7 @@ print(f"Date range: {df['date_local'].min()} to {df['date_local'].max()}")
 print()
 
 # Write to current database
-dst = duckdb.connect('gold.db')
+dst = duckdb.connect(GOLD_DB_PATH)
 
 # Drop old table
 dst.execute('DROP TABLE IF EXISTS daily_features')

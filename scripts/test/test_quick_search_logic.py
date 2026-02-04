@@ -8,6 +8,7 @@ Tests engine initialization, settings validation, and search execution.
 import sys
 from pathlib import Path
 import duckdb
+from pipeline.paths import GOLD_DB_PATH
 
 # Add paths
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "trading_app"))
@@ -34,7 +35,7 @@ def test_quick_search_logic():
     print("\nTest 2: Database Connection")
     print("-"*70)
     try:
-        db_path = Path(__file__).parent.parent.parent / "data" / "db" / "gold.db"
+        db_path = Path(__file__).parent.parent.parent / "data" / "db" / GOLD_DB_PATH
         conn = duckdb.connect(str(db_path))
         print(f"[PASS] Connected to {db_path}")
     except Exception as e:

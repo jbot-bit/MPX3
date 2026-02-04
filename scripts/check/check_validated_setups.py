@@ -1,7 +1,8 @@
 """Check what's in validated_setups table"""
 import duckdb
+from pipeline.paths import GOLD_DB_PATH
 
-conn = duckdb.connect('gold.db')
+conn = duckdb.connect(GOLD_DB_PATH)
 
 print("="*80)
 print("VALIDATED_SETUPS TABLE")

@@ -45,6 +45,7 @@ from typing import Dict, List, Optional, Any
 from datetime import date, datetime
 from dataclasses import dataclass, asdict
 import numpy as np
+from pipeline.paths import GOLD_DB_PATH
 
 # Add paths for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -569,7 +570,7 @@ if __name__ == "__main__":
     from pathlib import Path
 
     # Connect to database
-    db_path = Path(__file__).parent.parent / "data" / "db" / "gold.db"
+    db_path = Path(__file__).parent.parent / "data" / "db" / GOLD_DB_PATH
     conn = duckdb.connect(str(db_path))
 
     # Create engine

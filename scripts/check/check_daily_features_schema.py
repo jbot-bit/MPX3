@@ -1,7 +1,8 @@
 """Check what columns exist in daily_features"""
 import duckdb
+from pipeline.paths import GOLD_DB_PATH
 
-conn = duckdb.connect('gold.db')
+conn = duckdb.connect(GOLD_DB_PATH)
 
 schema = conn.execute('DESCRIBE daily_features').fetchall()
 

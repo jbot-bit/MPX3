@@ -11,6 +11,7 @@ import duckdb
 import httpx
 from dotenv import load_dotenv
 from zoneinfo import ZoneInfo
+from pipeline.paths import GOLD_DB_PATH
 
 
 # -----------------------------
@@ -22,7 +23,7 @@ class Cfg:
     base_url: str
     username: str
     api_key: str
-    db_path: str = "gold.db"
+    db_path: str = GOLD_DB_PATH
     symbol: str = "MGC"         # logical symbol stored in DB
     live: bool = False          # ProjectX "live" flag (historical = False)
     tz_local: str = "Australia/Brisbane"
@@ -41,7 +42,7 @@ def env_cfg() -> Cfg:
     if not key:
         raise RuntimeError("Missing PROJECTX_API_KEY in .env")
 
-    db_path = os.getenv("DUCKDB_PATH", "gold.db").strip()
+    db_path = os.getenv("DUCKDB_PATH", GOLD_DB_PATH).strip()
     symbol = os.getenv("SYMBOL", "MGC").strip()
 
     live_str = os.getenv("PROJECTX_LIVE", "false").strip().lower()

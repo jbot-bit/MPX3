@@ -10,8 +10,9 @@ IMPORTANT: This will REPLACE data/db/gold.db validated_setups with root gold.db 
 
 import duckdb
 import sys
+from pipeline.paths import GOLD_DB_PATH
 
-ROOT_DB = "gold.db"
+ROOT_DB = GOLD_DB_PATH
 APP_DB = "data/db/gold.db"
 
 

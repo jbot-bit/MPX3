@@ -1,7 +1,8 @@
 import duckdb
 from pathlib import Path
+from pipeline.paths import GOLD_DB_PATH
 
-DB_PATH = Path("gold.db")
+DB_PATH = Path(GOLD_DB_PATH)
 SCHEMA_PATH = Path("schema.sql")
 
 def main() -> None:

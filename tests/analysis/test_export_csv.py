@@ -15,6 +15,7 @@ import os
 import sys
 from pathlib import Path
 from datetime import date, timedelta
+from pipeline.paths import GOLD_DB_PATH
 
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
@@ -58,7 +59,7 @@ def mock_db_with_data(tmp_path):
     """Create a mock database with test data"""
     import duckdb
 
-    db_path = tmp_path / "gold.db"
+    db_path = tmp_path / GOLD_DB_PATH
     conn = duckdb.connect(str(db_path))
 
     # Create daily_features table with required columns

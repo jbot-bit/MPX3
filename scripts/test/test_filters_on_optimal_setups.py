@@ -16,9 +16,10 @@ For each filter:
 
 import os
 from pathlib import Path
+from pipeline.paths import GOLD_DB_PATH
 
 # Guard: Skip if gold.db is missing (prevents duckdb.connect errors)
-DB_PATH_CHECK = Path(__file__).parent.parent.parent / 'data' / 'db' / 'gold.db'
+DB_PATH_CHECK = Path(__file__).parent.parent.parent / 'data' / 'db' / GOLD_DB_PATH
 if not DB_PATH_CHECK.exists():
     import sys
     print(f"SKIP: {__file__} - Database not found at {DB_PATH_CHECK}")

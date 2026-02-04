@@ -1,8 +1,9 @@
 import duckdb
+from pipeline.paths import GOLD_DB_PATH
 
 # Check root gold.db
 try:
-    conn = duckdb.connect('gold.db', read_only=True)
+    conn = duckdb.connect(GOLD_DB_PATH, read_only=True)
     count = conn.execute('SELECT COUNT(*) FROM validated_setups').fetchone()[0]
     print(f'Root gold.db - validated_setups count: {count}')
     if count > 0:

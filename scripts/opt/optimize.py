@@ -16,6 +16,7 @@ import json
 import sys
 from datetime import datetime
 from pathlib import Path
+from pipeline.paths import GOLD_DB_PATH
 
 # Optuna import (fail-closed if missing)
 try:
@@ -33,7 +34,7 @@ from trading_app.strategy_discovery import StrategyDiscovery, DiscoveryConfig, B
 
 # For seeding from validated_setups
 import duckdb
-DB_PATH = PROJECT_ROOT / "data" / "db" / "gold.db"
+DB_PATH = PROJECT_ROOT / "data" / "db" / GOLD_DB_PATH
 
 # Paths
 OPTUNA_DIR = PROJECT_ROOT / "artifacts" / "optuna"

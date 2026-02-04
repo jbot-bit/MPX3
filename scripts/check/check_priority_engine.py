@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
+from pipeline.paths import GOLD_DB_PATH
 
 # Add trading_app to path
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -31,7 +32,7 @@ from provenance import create_provenance_dict
 from auto_search_engine import compute_param_hash_v2, PARAM_HASH_VERSION, EPSILON
 
 
-DB_PATH = REPO_ROOT / "data" / "db" / "gold.db"
+DB_PATH = REPO_ROOT / "data" / "db" / GOLD_DB_PATH
 
 
 def check_schema():

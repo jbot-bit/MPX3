@@ -2,7 +2,7 @@
 """
 CI GUARD: Enforce Canonical Database Path Usage
 
-This check WARNS if files hardcode "gold.db" instead of using pipeline.paths.
+This check WARNS if files hardcode GOLD_DB_PATH instead of using pipeline.paths.
 
 Canonical path: data/db/gold.db
 Import from: pipeline.paths.GOLD_DB_PATH
@@ -26,10 +26,10 @@ ALLOWED_FILES = [
 
 # Pattern for hardcoded gold.db (without data/db/ prefix or proper import)
 BAD_PATTERNS = [
-    # Direct "gold.db" without data/db prefix
-    (re.compile(r'["\']gold\.db["\']'), 'Hardcoded "gold.db" - use pipeline.paths.GOLD_DB_PATH'),
-    # DB_PATH = "gold.db" or similar
-    (re.compile(r'DB_PATH\s*=\s*["\']gold\.db["\']'), 'DB_PATH set to "gold.db" - use pipeline.paths.GOLD_DB_PATH'),
+    # Direct GOLD_DB_PATH without data/db prefix
+    (re.compile(r'["\']gold\.db["\']'), 'Hardcoded GOLD_DB_PATH - use pipeline.paths.GOLD_DB_PATH'),
+    # DB_PATH = GOLD_DB_PATH or similar
+    (re.compile(r'DB_PATH\s*=\s*["\']gold\.db["\']'), 'DB_PATH set to GOLD_DB_PATH - use pipeline.paths.GOLD_DB_PATH'),
 ]
 
 # Pattern for GOOD usage (should be ignored)

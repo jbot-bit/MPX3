@@ -37,6 +37,7 @@ from trading_app.result_classifier import classify_result, RULESET_VERSION
 from trading_app.priority_engine import PriorityEngine, PRIORITY_VERSION
 from trading_app.provenance import create_provenance_dict
 from trading_app.time_spec import ORBS, PRIMARY_ORBS
+from pipeline.paths import GOLD_DB_PATH
 
 logger = logging.getLogger(__name__)
 
@@ -910,7 +911,7 @@ def test_engine():
     import os
     from pathlib import Path
 
-    db_path = Path(__file__).parent.parent / "data" / "db" / "gold.db"
+    db_path = Path(__file__).parent.parent / "data" / "db" / GOLD_DB_PATH
     conn = duckdb.connect(str(db_path))
 
     engine = AutoSearchEngine(conn)

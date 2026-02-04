@@ -15,9 +15,10 @@ import duckdb
 import sys
 from datetime import datetime
 from pathlib import Path
+from pipeline.paths import GOLD_DB_PATH
 
 # Database path
-DB_PATH = Path(__file__).parent.parent / "gold.db"
+DB_PATH = Path(__file__).parent.parent / GOLD_DB_PATH
 
 
 def archive_strategy(setup_id: int, reason: str, new_params: str = None):

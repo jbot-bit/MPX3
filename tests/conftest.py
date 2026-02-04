@@ -9,6 +9,7 @@ import sys
 from pathlib import Path
 from datetime import datetime, timedelta
 import pytz
+from pipeline.paths import GOLD_DB_PATH
 
 # Add project root and trading_app to Python path
 PROJECT_ROOT = Path(__file__).parent.parent
@@ -28,7 +29,7 @@ import gc
 _original_duckdb_connect = duckdb.connect
 
 # Production DB path for comparison
-_PROD_DB_PATH = str(Path(__file__).parent.parent / "data" / "db" / "gold.db")
+_PROD_DB_PATH = str(Path(__file__).parent.parent / "data" / "db" / GOLD_DB_PATH)
 
 
 def _patched_duckdb_connect(database=':memory:', read_only=None, **kwargs):

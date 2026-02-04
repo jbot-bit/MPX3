@@ -21,6 +21,12 @@ from pathlib import Path
 from typing import Dict, List, Set, Tuple
 import os
 
+# Add repo root to path for imports
+REPO_ROOT = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(REPO_ROOT))
+
+from pipeline.paths import GOLD_DB_PATH
+
 # ANSI colors
 RED = '\033[91m'
 GREEN = '\033[92m'
@@ -293,12 +299,12 @@ def main():
     if db_path and Path(db_path).exists():
         # Use DUCKDB_PATH if explicitly set and exists
         pass
-    elif (repo_root / 'data' / 'db' / 'gold.db').exists():
+    elif (repo_root / 'data' / 'db' / GOLD_DB_PATH).exists():
         # Default to production database
-        db_path = repo_root / 'data' / 'db' / 'gold.db'
-    elif Path('gold.db').exists():
+        db_path = repo_root / 'data' / 'db' / GOLD_DB_PATH
+    elif Path(GOLD_DB_PATH).exists():
         # Fall back to root gold.db
-        db_path = 'gold.db'
+        db_path = GOLD_DB_PATH
     else:
         print(f"{RED}[FAIL]: Database not found{RESET}")
         return 1

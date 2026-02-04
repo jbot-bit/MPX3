@@ -11,6 +11,7 @@ Displays experimental strategy alerts with trading terminal aesthetics:
 import streamlit as st
 from typing import List, Dict
 from experimental_scanner import ExperimentalScanner
+from pipeline.paths import GOLD_DB_PATH
 
 
 # Professional Trading Terminal CSS
@@ -414,7 +415,7 @@ def demo():
     st.title("🎁 Experimental Strategy Alerts - Demo")
 
     # Connect to database
-    db_path = Path(__file__).parent.parent / "data" / "db" / "gold.db"
+    db_path = Path(__file__).parent.parent / "data" / "db" / GOLD_DB_PATH
     con = duckdb.connect(str(db_path))
     scanner = ExperimentalScanner(con)
 

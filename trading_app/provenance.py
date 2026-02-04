@@ -16,13 +16,14 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional, Dict
 import logging
+from pipeline.paths import GOLD_DB_PATH
 
 # Phase 3A: Logging for fail-closed visibility (debug level for metadata)
 logger = logging.getLogger(__name__)
 
 # Repo root (relative to this file)
 REPO_ROOT = Path(__file__).resolve().parents[1]
-DB_PATH = REPO_ROOT / "data" / "db" / "gold.db"
+DB_PATH = REPO_ROOT / "data" / "db" / GOLD_DB_PATH
 
 
 def get_git_commit() -> Optional[str]:

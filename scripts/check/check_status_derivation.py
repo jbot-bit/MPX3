@@ -22,6 +22,7 @@ Exit code 0 = PASS, Exit code 1 = FAIL (mismatches found in strict mode)
 import sys
 import os
 from pathlib import Path
+from pipeline.paths import GOLD_DB_PATH
 
 # Add project root to path
 REPO_ROOT = Path(__file__).parent.parent.parent
@@ -35,12 +36,12 @@ def get_db_connection():
     import duckdb
 
     # Try data/db/gold.db first (canonical)
-    db_path = REPO_ROOT / 'data' / 'db' / 'gold.db'
+    db_path = REPO_ROOT / 'data' / 'db' / GOLD_DB_PATH
     if db_path.exists():
         return duckdb.connect(str(db_path), read_only=True)
 
     # Fallback to root gold.db
-    db_path = REPO_ROOT / 'gold.db'
+    db_path = REPO_ROOT / GOLD_DB_PATH
     if db_path.exists():
         return duckdb.connect(str(db_path), read_only=True)
 

@@ -13,6 +13,7 @@ Runtime: <10 seconds
 import sys
 from pathlib import Path
 import duckdb
+from pipeline.paths import GOLD_DB_PATH
 
 # Add project root to path
 project_root = Path(__file__).parent.parent.parent
@@ -61,7 +62,7 @@ def test_metric_definitions():
     print("TEST 2: Metric Definitions")
     print("=" * 70)
 
-    db_path = project_root / "data" / "db" / "gold.db"
+    db_path = project_root / "data" / "db" / GOLD_DB_PATH
     conn = duckdb.connect(str(db_path))
 
     # Test with 1000 ORB
@@ -118,7 +119,7 @@ def test_sanity_invariants():
     print("TEST 3: Sanity Invariants")
     print("=" * 70)
 
-    db_path = project_root / "data" / "db" / "gold.db"
+    db_path = project_root / "data" / "db" / GOLD_DB_PATH
     conn = duckdb.connect(str(db_path))
 
     # Test with 1000 ORB

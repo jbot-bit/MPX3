@@ -1,5 +1,6 @@
 """Check what was in ORIGINAL database before I touched it"""
 import duckdb
+from pipeline.paths import GOLD_DB_PATH
 
 # Check the backup database that I copied FROM
 conn = duckdb.connect('data/db/gold.db', read_only=True)
@@ -24,7 +25,7 @@ for table in ['daily_features', 'daily_features']:
 conn.close()
 
 # Check current database
-conn = duckdb.connect('gold.db', read_only=True)
+conn = duckdb.connect(GOLD_DB_PATH, read_only=True)
 
 print("="*80)
 print("CURRENT DATABASE STATE (gold.db)")

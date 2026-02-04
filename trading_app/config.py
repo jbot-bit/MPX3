@@ -9,6 +9,7 @@ from zoneinfo import ZoneInfo
 from pathlib import Path
 from dotenv import load_dotenv
 import sys
+from pipeline.paths import GOLD_DB_PATH
 
 # Add tools directory to path for config_generator import
 sys.path.insert(0, str(Path(__file__).parent.parent / "tools"))
@@ -177,7 +178,7 @@ RISK_LIMITS = {
 # ============================================================================
 # Use absolute path - database is one level up from trading_app/
 from pathlib import Path
-DB_PATH = str(Path(__file__).parent.parent / "data" / "db" / "gold.db")
+DB_PATH = str(Path(__file__).parent.parent / "data" / "db" / GOLD_DB_PATH)
 JOURNAL_TABLE = "live_journal"
 
 # ============================================================================

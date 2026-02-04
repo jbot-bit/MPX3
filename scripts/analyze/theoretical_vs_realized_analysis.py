@@ -13,8 +13,9 @@ Based on:
 
 import duckdb
 import sys
+from pipeline.paths import GOLD_DB_PATH
 
-DB_PATH = "gold.db"
+DB_PATH = GOLD_DB_PATH
 
 # MGC Contract Specs
 POINT_VALUE = 10.0  # $10 per point

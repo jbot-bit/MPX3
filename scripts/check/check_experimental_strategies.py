@@ -19,9 +19,10 @@ Returns:
 import duckdb
 import sys
 from pathlib import Path
+from pipeline.paths import GOLD_DB_PATH
 
 # Database path
-DB_PATH = Path(__file__).parent.parent.parent / "data" / "db" / "gold.db"
+DB_PATH = Path(__file__).parent.parent.parent / "data" / "db" / GOLD_DB_PATH
 
 # Validation thresholds
 EXPECTED_R_MIN = -1.0  # Minimum expected R (sanity check)

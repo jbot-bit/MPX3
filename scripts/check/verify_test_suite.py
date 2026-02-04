@@ -16,10 +16,11 @@ This script checks:
 import sys
 from pathlib import Path
 import subprocess
+from pipeline.paths import GOLD_DB_PATH
 
 PROJECT_ROOT = Path(__file__).parent
 TESTS_DIR = PROJECT_ROOT / "tests"
-DB_PATH = PROJECT_ROOT / "data" / "db" / "gold.db"
+DB_PATH = PROJECT_ROOT / "data" / "db" / GOLD_DB_PATH
 
 # ANSI color codes
 GREEN = '\033[92m'

@@ -1,7 +1,8 @@
 """Check if we have historical data needed for filter optimization"""
 import duckdb
+from pipeline.paths import GOLD_DB_PATH
 
-conn = duckdb.connect('gold.db')
+conn = duckdb.connect(GOLD_DB_PATH)
 
 print("="*80)
 print("CHECKING DATA AVAILABILITY FOR FILTER OPTIMIZATION")

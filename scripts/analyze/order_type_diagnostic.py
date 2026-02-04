@@ -10,8 +10,9 @@ This checks if using LIMIT orders would change outcomes.
 
 import duckdb
 import sys
+from pipeline.paths import GOLD_DB_PATH
 
-DB_PATH = "gold.db"
+DB_PATH = GOLD_DB_PATH
 
 def calculate_expectancy(win_rate: float, rr: float, cost_r: float) -> float:
     return (win_rate/100) * rr - (1 - win_rate/100) * 1.0 - cost_r

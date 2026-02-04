@@ -10,6 +10,7 @@ If concept fails here, DON'T waste time optimizing - the idea doesn't work.
 """
 
 import sys
+from pipeline.paths import GOLD_DB_PATH
 sys.path.append('.')
 
 import duckdb
@@ -254,7 +255,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    con = duckdb.connect('gold.db')
+    con = duckdb.connect(GOLD_DB_PATH)
 
     result = test_concept(
         con=con,

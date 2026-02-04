@@ -25,6 +25,7 @@ from datetime import date, datetime, timedelta
 from typing import List, Dict, Tuple, Optional
 from dataclasses import dataclass
 import json
+from pipeline.paths import GOLD_DB_PATH
 
 
 @dataclass
@@ -41,7 +42,7 @@ class ValidationIssue:
 class DataValidator:
     """Validate MGC data quality"""
 
-    def __init__(self, db_path: str = "gold.db"):
+    def __init__(self, db_path: str = GOLD_DB_PATH):
         self.db_path = db_path
         self.issues: List[ValidationIssue] = []
 

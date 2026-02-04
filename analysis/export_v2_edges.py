@@ -22,6 +22,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, List
 from dataclasses import dataclass, asdict
+from pipeline.paths import GOLD_DB_PATH
 
 
 @dataclass
@@ -46,7 +47,7 @@ class EdgeStats:
 class V2EdgeExporter:
     """Export V2 zero-lookahead edges"""
 
-    def __init__(self, db_path: str = "gold.db"):
+    def __init__(self, db_path: str = GOLD_DB_PATH):
         self.con = duckdb.connect(db_path, read_only=True)
         self.edges = []
 
@@ -288,7 +289,7 @@ class V2EdgeExporter:
             "metadata": {
                 "export_date": datetime.now().isoformat(),
                 "total_edges": len(self.edges),
-                "database": "gold.db",
+                "database": GOLD_DB_PATH,
                 "table": "daily_features",
                 "method": "zero_lookahead_v2"
             },

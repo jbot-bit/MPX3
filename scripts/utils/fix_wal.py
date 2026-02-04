@@ -5,8 +5,9 @@ Fix DuckDB WAL corruption by checkpointing and closing properly
 
 import duckdb
 from pathlib import Path
+from pipeline.paths import GOLD_DB_PATH
 
-db_path = Path(__file__).parent.parent.parent / "data" / "db" / "gold.db"
+db_path = Path(__file__).parent.parent.parent / "data" / "db" / GOLD_DB_PATH
 
 print(f"Fixing WAL for: {db_path}")
 

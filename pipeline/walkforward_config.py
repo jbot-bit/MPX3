@@ -13,6 +13,7 @@ CRITICAL: These splits prevent curve-fitting by ensuring:
 from datetime import datetime, timedelta
 from typing import List, Tuple, Dict
 import duckdb
+from pipeline.paths import GOLD_DB_PATH
 
 
 # ============================================================================
@@ -331,7 +332,7 @@ if __name__ == '__main__':
     import sys
     sys.path.append('.')
 
-    con = duckdb.connect('gold.db')
+    con = duckdb.connect(GOLD_DB_PATH)
 
     print("\n" + "="*60)
     print("WALK-FORWARD CONFIGURATION TEST")

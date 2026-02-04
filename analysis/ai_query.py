@@ -24,6 +24,7 @@ import argparse
 import re
 from typing import Dict, List, Optional, Any, Tuple
 from datetime import date, timedelta
+from pipeline.paths import GOLD_DB_PATH
 
 
 class AIQueryEngine:
@@ -32,7 +33,7 @@ class AIQueryEngine:
     Interprets questions and executes appropriate queries.
     """
 
-    def __init__(self, mgc_db_path: str = "gold.db", journal_db_path: str = "trades.db"):
+    def __init__(self, mgc_db_path: str = GOLD_DB_PATH, journal_db_path: str = "trades.db"):
         self.mgc_db_path = mgc_db_path
         self.journal_db_path = journal_db_path
 

@@ -11,6 +11,7 @@ import duckdb
 from typing import Dict, List, Optional
 import logging
 from trading_app.time_spec import ORBS  # TSOT: Canonical ORB time source
+from pipeline.paths import GOLD_DB_PATH
 
 logger = logging.getLogger(__name__)
 
@@ -271,7 +272,7 @@ if __name__ == "__main__":
     from pathlib import Path
 
     repo_root = Path(__file__).parent.parent
-    db_path = repo_root / "data" / "db" / "gold.db"
+    db_path = repo_root / "data" / "db" / GOLD_DB_PATH
 
     if not db_path.exists():
         print(f"[ERROR] Database not found: {db_path}")

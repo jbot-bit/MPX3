@@ -14,6 +14,7 @@ import pytest
 import re
 import sys
 from pathlib import Path
+from pipeline.paths import GOLD_DB_PATH
 
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
@@ -31,7 +32,7 @@ class TestAIQueryEngineInit:
     def test_default_initialization(self):
         """AIQueryEngine should initialize with defaults"""
         engine = AIQueryEngine()
-        assert engine.mgc_db_path == "gold.db"
+        assert engine.mgc_db_path == GOLD_DB_PATH
         assert engine.journal_db_path == "trades.db"
         assert len(engine.patterns) > 0
 
@@ -360,7 +361,7 @@ class TestPrepareConnection:
         """Create mock database with V2 schema (daily_features)"""
         import duckdb
 
-        db_path = tmp_path / "gold.db"
+        db_path = tmp_path / GOLD_DB_PATH
         conn = duckdb.connect(str(db_path))
 
         # Create daily_features table

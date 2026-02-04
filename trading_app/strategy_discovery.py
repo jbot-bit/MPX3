@@ -16,6 +16,7 @@ import hashlib
 import json
 from datetime import datetime, timedelta
 from trading_app.time_spec import NIGHT_ORBS
+from pipeline.paths import GOLD_DB_PATH
 
 logger = logging.getLogger(__name__)
 
@@ -1067,7 +1068,7 @@ class StrategyDiscovery:
 
 def add_setup_to_production(
     result: BacktestResult,
-    db_path: str = "gold.db",
+    db_path: str = GOLD_DB_PATH,
     config_path: str = "trading_app/config.py"
 ) -> Dict[str, bool]:
     """

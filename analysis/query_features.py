@@ -1,6 +1,7 @@
 import duckdb
+from pipeline.paths import GOLD_DB_PATH
 
-con = duckdb.connect("gold.db")
+con = duckdb.connect(GOLD_DB_PATH)
 
 print("daily_features count:", con.execute("SELECT COUNT(*) FROM daily_features").fetchone())
 

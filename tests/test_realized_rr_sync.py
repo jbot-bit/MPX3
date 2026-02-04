@@ -12,6 +12,7 @@ import sys
 from pathlib import Path
 import duckdb
 from datetime import datetime
+from pipeline.paths import GOLD_DB_PATH
 
 # Add project root to path
 repo_root = Path(__file__).parent.parent
@@ -19,7 +20,7 @@ sys.path.insert(0, str(repo_root))
 
 from pipeline.cost_model import calculate_realized_rr
 
-DB_PATH = str(repo_root / "data" / "db" / "gold.db")  # Absolute path to database
+DB_PATH = str(repo_root / "data" / "db" / GOLD_DB_PATH)  # Absolute path to database
 
 
 def test_daily_features_schema():

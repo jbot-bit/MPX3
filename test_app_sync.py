@@ -30,6 +30,7 @@ import sys
 from pathlib import Path
 import duckdb
 import subprocess
+from pipeline.paths import GOLD_DB_PATH
 
 # Add trading_app to path (from root folder, go directly into trading_app)
 sys.path.insert(0, str(Path(__file__).parent / "trading_app"))
@@ -42,7 +43,7 @@ from trading_app.config import MGC_ORB_CONFIGS, MGC_ORB_SIZE_FILTERS, NQ_ORB_CON
 def test_config_matches_database():
     """Verify config.py matches validated_setups database"""
 
-    db_path = Path(__file__).parent / "data" / "db" / "gold.db"
+    db_path = Path(__file__).parent / "data" / "db" / GOLD_DB_PATH
 
     if not db_path.exists():
         print("[FAIL] FAILED: gold.db not found")

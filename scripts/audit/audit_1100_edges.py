@@ -13,11 +13,12 @@ ASSUME EDGES ARE WRONG. PROVE OR KILL THEM.
 import duckdb
 import sys
 import os
+from pipeline.paths import GOLD_DB_PATH
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from pipeline.cost_model import COST_MODELS
 
-DB_PATH = 'gold.db'
+DB_PATH = GOLD_DB_PATH
 
 print("=" * 80)
 print("HOSTILE AUDIT - 1100 ORB EDGES")

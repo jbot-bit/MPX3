@@ -15,11 +15,12 @@ import duckdb
 import sys
 from pathlib import Path
 import os
+from pipeline.paths import GOLD_DB_PATH
 
 # Force local database
 os.environ['FORCE_LOCAL_DB'] = '1'
 
-def init_database(db_path: str = "gold.db"):
+def init_database(db_path: str = GOLD_DB_PATH):
     """Initialize all required tables for app_canonical.py"""
 
     print(f"Initializing database: {db_path}")
@@ -203,4 +204,4 @@ def init_database(db_path: str = "gold.db"):
     print("You can now run: streamlit run trading_app/app_canonical.py")
 
 if __name__ == "__main__":
-    init_database("gold.db")
+    init_database(GOLD_DB_PATH)

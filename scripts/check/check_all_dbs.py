@@ -1,6 +1,7 @@
 import duckdb
+from pipeline.paths import GOLD_DB_PATH
 
-databases = ['gold.db', 'data/gold.db', 'data/db/gold.db']
+databases = [GOLD_DB_PATH, 'data/gold.db', 'data/db/gold.db']
 
 for db_path in databases:
     try:

@@ -18,12 +18,13 @@ from pathlib import Path
 from datetime import datetime
 import os
 import sys
+from pipeline.paths import GOLD_DB_PATH
 
 # Add parent to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 # Canonical DB path (aligned with project structure)
-DB_PATH = Path(__file__).parent.parent / "data" / "db" / "gold.db"
+DB_PATH = Path(__file__).parent.parent / "data" / "db" / GOLD_DB_PATH
 
 
 def get_db_connection():

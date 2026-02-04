@@ -33,6 +33,7 @@ import sys
 from datetime import datetime
 from pathlib import Path
 from typing import Any
+from pipeline.paths import GOLD_DB_PATH
 
 
 # Repo root (2 levels up from scripts/check/)
@@ -42,7 +43,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 ARTIFACTS_DIR = REPO_ROOT / "artifacts"
 
 # Database path
-DB_PATH = REPO_ROOT / "data" / "db" / "gold.db"
+DB_PATH = REPO_ROOT / "data" / "db" / GOLD_DB_PATH
 
 
 # =============================================================================

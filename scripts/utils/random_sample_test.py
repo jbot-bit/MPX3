@@ -11,11 +11,12 @@ import random
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 import sys
+from pipeline.paths import GOLD_DB_PATH
 
 TZ_LOCAL = ZoneInfo("Australia/Brisbane")
 TZ_UTC = ZoneInfo("UTC")
 
-DB_PATH = 'gold.db'
+DB_PATH = GOLD_DB_PATH
 SYMBOL = 'MGC'
 
 from optimize_orb_canonical import simulate_canonical

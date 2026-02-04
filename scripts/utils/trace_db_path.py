@@ -1,6 +1,7 @@
 import sys
 import os
 from pathlib import Path
+from pipeline.paths import GOLD_DB_PATH
 sys.path.insert(0, str(Path(__file__).parent / "trading_app"))
 
 # Show current directory and environment
@@ -12,7 +13,7 @@ import cloud_mode
 
 # Manually compute the path like cloud_mode does
 app_dir = Path(cloud_mode.__file__).parent
-db_path = app_dir.parent / "data" / "db" / "gold.db"
+db_path = app_dir.parent / "data" / "db" / GOLD_DB_PATH
 
 print("\ncloud_mode.__file__:", Path(cloud_mode.__file__).resolve())
 print("app_dir:", app_dir.resolve())
